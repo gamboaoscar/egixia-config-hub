@@ -23,7 +23,8 @@ const titles: Record<string, string> = {
 
 function AppLayout() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const title = titles[pathname] ?? "EGIXIA Configurator";
+  let title = titles[pathname] ?? "EGIXIA Configurator";
+  if (pathname.startsWith("/app/modulo/")) title = "Revisión de módulo";
 
   return (
     <PrivateShell title={title} allow={["admin", "implementador"]}>
