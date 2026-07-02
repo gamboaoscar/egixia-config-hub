@@ -413,3 +413,218 @@ export const desvincularMiembro = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+async function exigirAdmin(admin: Cliente, userId: string) {
+  const rol = await rolDe(admin, userId);
+  if (rol !== "admin") throw new Error("Acción reservada al administrador.");
+}
+
+// ---------- Usuarios (admin) ---------------------------------------------
+
+const cambiarEstadoUsuarioSchema = z.object({
+  profileId: z.string().uuid(),
+  estado: z.enum(["activo", "inhabilitado"]),
+});
+
+export const cambiarEstadoUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => cambiarEstadoUsuarioSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+    if (data.profileId === userId)
+      throw new Error("No puedes inhabilitar tu propia cuenta.");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ estado: data.estado })
+      .eq("id", data.profileId);
+    if (error) throw new Error("No se pudo actualizar el usuario.");
+    await auditar(
+      supabaseAdmin,
+      data.estado === "inhabilitado" ? "usuario_inhabilitado" : "usuario_activado",
+      "profile",
+      data.profileId,
+      {},
+    );
+    return { ok: true };
+  });
+
+const cambiarRolSchema = z.object({
+  profileId: z.string().uuid(),
+  rol: z.enum(["admin", "implementador", "cliente"]),
+});
+
+export const cambiarRolUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => cambiarRolSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+    if (data.profileId === userId)
+      throw new Error("No puedes cambiar tu propio rol.");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ rol: data.rol })
+      .eq("id", data.profileId);
+    if (error) throw new Error("No se pudo cambiar el rol.");
+    await auditar(supabaseAdmin, "usuario_rol_cambiado", "profile", data.profileId, {
+      rol: data.rol,
+    });
+    return { ok: true };
+  });
+
+export const eliminarUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => z.object({ profileId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+    if (data.profileId === userId)
+      throw new Error("No puedes eliminar tu propia cuenta.");
+
+    const { data: p } = await supabaseAdmin
+      .from("profiles")
+      .select("email, rol")
+      .eq("id", data.profileId)
+      .maybeSingle();
+
+    // Auth admin borra usuario -> cascada a profiles y miembros por FK.
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.profileId);
+    if (error) throw new Error("No se pudo eliminar la cuenta.");
+
+    await auditar(supabaseAdmin, "usuario_eliminado", "profile", data.profileId, {
+      email: p?.email ?? null,
+      rol: p?.rol ?? null,
+    });
+    return { ok: true };
+  });
+
+// ---------- Proyecto (eliminar) ------------------------------------------
+
+export const eliminarProyecto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => z.object({ proyectoId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+
+    const { data: p } = await supabaseAdmin
+      .from("proyectos")
+      .select("nombre, empresa")
+      .eq("id", data.proyectoId)
+      .maybeSingle();
+    if (!p) throw new Error("Proyecto no encontrado.");
+
+    const { error } = await supabaseAdmin
+      .from("proyectos")
+      .delete()
+      .eq("id", data.proyectoId);
+    if (error) throw new Error("No se pudo eliminar el proyecto.");
+
+    await auditar(supabaseAdmin, "proyecto_eliminado", "proyecto", data.proyectoId, {
+      nombre: p.nombre,
+      empresa: p.empresa,
+    });
+    return { ok: true };
+  });
+
+// ---------- Catálogo (overrides por proyecto) ----------------------------
+
+const overrideSchema = z.object({
+  proyectoId: z.string().uuid(),
+  moduloKey: z.string().min(1),
+  campoKey: z.string().min(1),
+  activo: z.boolean().optional(),
+  label: z.string().max(200).nullable().optional(),
+  requerido: z.boolean().nullable().optional(),
+  guia: z
+    .object({
+      que: z.string().max(500).optional(),
+      formato: z.string().max(200).optional(),
+      tamano: z.string().max(200).optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export const guardarOverrideCampo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => overrideSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+
+    const row: Record<string, unknown> = {
+      proyecto_id: data.proyectoId,
+      modulo_key: data.moduloKey,
+      campo_key: data.campoKey,
+      updated_by: userId,
+    };
+    if (typeof data.activo === "boolean") row.activo = data.activo;
+    if (data.label !== undefined) row.label = data.label;
+    if (data.requerido !== undefined) row.requerido = data.requerido;
+    if (data.guia !== undefined) row.guia = data.guia;
+
+    const { error } = await supabaseAdmin
+      .from("catalogo_overrides")
+      .upsert(row as never, { onConflict: "proyecto_id,modulo_key,campo_key" });
+    if (error) throw new Error("No se pudo guardar el override.");
+
+    await auditar(
+      supabaseAdmin,
+      "catalogo_override_guardado",
+      "catalogo_override",
+      `${data.proyectoId}:${data.moduloKey}:${data.campoKey}`,
+      { proyecto_id: data.proyectoId, campos: Object.keys(row) },
+    );
+    return { ok: true };
+  });
+
+// ---------- Configuración del sistema ------------------------------------
+
+const configSchema = z.object({
+  clave: z.enum(["branding", "correo", "parametros"]),
+  valor: z.record(z.string(), z.unknown()),
+});
+
+export const guardarConfiguracion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => configSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+    const { error } = await supabaseAdmin
+      .from("configuracion_sistema")
+      .upsert({
+        clave: data.clave,
+        valor: data.valor as never,
+        updated_by: userId,
+      } as never);
+    if (error) throw new Error("No se pudo guardar la configuración.");
+    await auditar(
+      supabaseAdmin,
+      "configuracion_actualizada",
+      "configuracion_sistema",
+      data.clave,
+      { claves: Object.keys(data.valor) },
+    );
+    return { ok: true };
+  });
