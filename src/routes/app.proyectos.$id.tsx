@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   FileText,
   Loader2,
   Mail,
+  Trash2,
   UserMinus,
   UserX,
   UserCheck,
@@ -22,7 +23,9 @@ import { descargarActaFirmada } from "@/lib/acta.functions";
 import {
   actualizarMiembroEstado,
   desvincularMiembro,
+  eliminarProyecto,
 } from "@/lib/admin.functions";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/app/proyectos/$id")({
   component: DetalleProyecto,
