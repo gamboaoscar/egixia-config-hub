@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Users, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Settings, LogOut } from "lucide-react";
 
 import {
   Sidebar,
@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Inicio", url: "/", icon: LayoutDashboard },
-  { title: "Formularios", url: "/formularios", icon: FileText },
-  { title: "Proyectos", url: "/proyectos", icon: Users },
-  { title: "Configuración", url: "/configuracion", icon: Settings },
+  { title: "Inicio", url: "/app", icon: LayoutDashboard },
+  { title: "Formularios", url: "/app/formularios", icon: FileText },
+  { title: "Proyectos", url: "/app/proyectos", icon: Users },
+  { title: "Configuración", url: "/app/configuracion", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -29,16 +29,16 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-foreground font-bold">
             E
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-foreground">EGIXIA</span>
-              <span className="text-xs text-muted-foreground">Configurator</span>
+              <span className="text-sm font-semibold text-sidebar-foreground">EGIXIA</span>
+              <span className="text-xs text-sidebar-foreground/60">Configurator</span>
             </div>
           )}
         </div>
@@ -46,7 +46,11 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Menú</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-sidebar-foreground/60">
+              Menú
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -65,11 +69,26 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
+        <div className="flex items-center gap-2 px-2 py-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground text-xs font-semibold">
+            U
+          </div>
+          {!collapsed && (
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate text-sm font-medium text-sidebar-foreground">
+                Usuario demo
+              </span>
+              <span className="truncate text-xs text-sidebar-foreground/60">
+                demo@egixia.com
+              </span>
+            </div>
+          )}
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Ayuda">
-              <HelpCircle className="h-4 w-4" />
-              <span>Ayuda</span>
+            <SidebarMenuButton tooltip="Cerrar sesión">
+              <LogOut className="h-4 w-4" />
+              <span>Cerrar sesión</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
