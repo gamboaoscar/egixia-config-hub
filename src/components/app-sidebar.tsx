@@ -1,5 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Users, Settings, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  ClipboardCheck,
+  Mail,
+  Users,
+  BookMarked,
+  ShieldCheck,
+  Settings,
+  LogOut,
+  Briefcase,
+  type LucideIcon,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Sidebar,
@@ -14,19 +27,74 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth, type Rol } from "@/hooks/use-auth";
 
-const items = [
-  { title: "Inicio", url: "/app", icon: LayoutDashboard },
-  { title: "Formularios", url: "/app/formularios", icon: FileText },
-  { title: "Proyectos", url: "/app/proyectos", icon: Users },
-  { title: "Configuración", url: "/app/configuracion", icon: Settings },
-];
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+}
+
+const menusPorRol: Record<Rol, NavItem[]> = {
+  cliente: [
+    { title: "Inicio", url: "/mi-proyecto", icon: LayoutDashboard },
+    { title: "Mis módulos", url: "/mi-proyecto/modulos", icon: Briefcase },
+  ],
+  implementador: [
+    { title: "Inicio", url: "/app", icon: LayoutDashboard },
+    { title: "Proyectos", url: "/app/proyectos", icon: FolderKanban },
+    { title: "Revisiones pendientes", url: "/app/revisiones", icon: ClipboardCheck },
+    { title: "Invitaciones", url: "/app/invitaciones", icon: Mail },
+  ],
+  admin: [
+    { title: "Inicio", url: "/app", icon: LayoutDashboard },
+    { title: "Proyectos", url: "/app/proyectos", icon: FolderKanban },
+    { title: "Revisiones pendientes", url: "/app/revisiones", icon: ClipboardCheck },
+    { title: "Invitaciones", url: "/app/invitaciones", icon: Mail },
+    { title: "Usuarios", url: "/app/usuarios", icon: Users },
+    { title: "Catálogo de módulos", url: "/app/catalogo", icon: BookMarked },
+    { title: "Auditoría", url: "/app/auditoria", icon: ShieldCheck },
+    { title: "Configuración", url: "/app/configuracion", icon: Settings },
+  ],
+};
+
+function initials(nombre?: string | null, apellido?: string | null, email?: string | null) {
+  const n = (nombre?.[0] ?? "").toUpperCase();
+  const a = (apellido?.[0] ?? "").toUpperCase();
+  if (n || a) return `${n}${a}` || n || a;
+  return (email?.[0] ?? "U").toUpperCase();
+}
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const isActive = (path: string) => currentPath === path;
+  const { profile, avatarUrl, signOut } = useAuth();
+
+  const rol: Rol = profile?.rol ?? "cliente";
+  const items = menusPorRol[rol];
+  const perfilUrl = rol === "cliente" ? "/mi-proyecto/mi-perfil" : "/app/mi-perfil";
+
+  const isActive = (path: string) => {
+    if (path === "/app" || path === "/mi-proyecto") return currentPath === path;
+    return currentPath === path || currentPath.startsWith(`${path}/`);
+  };
+
+  const nombreCompleto = profile
+    ? `${profile.nombre} ${profile.apellido}`.trim() || profile.email
+    : "Cargando…";
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Sesión cerrada");
+      window.location.href = "/login";
+    } catch (err) {
+      toast.error("No se pudo cerrar sesión");
+      console.error(err);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -54,8 +122,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                  >
                     <Link to={item.url} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -69,24 +141,36 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground text-xs font-semibold">
-            U
-          </div>
-          {!collapsed && (
-            <div className="flex min-w-0 flex-col leading-tight">
-              <span className="truncate text-sm font-medium text-sidebar-foreground">
-                Usuario demo
-              </span>
-              <span className="truncate text-xs text-sidebar-foreground/60">
-                demo@egixia.com
-              </span>
-            </div>
-          )}
-        </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Cerrar sesión">
+            <SidebarMenuButton
+              asChild
+              isActive={isActive(perfilUrl)}
+              tooltip={nombreCompleto}
+              className="h-auto py-2"
+            >
+              <Link to={perfilUrl} className="flex items-center gap-2">
+                <Avatar className="h-7 w-7 shrink-0">
+                  {avatarUrl ? <AvatarImage src={avatarUrl} alt={nombreCompleto} /> : null}
+                  <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground text-xs">
+                    {initials(profile?.nombre, profile?.apellido, profile?.email)}
+                  </AvatarFallback>
+                </Avatar>
+                {!collapsed && (
+                  <div className="flex min-w-0 flex-col leading-tight">
+                    <span className="truncate text-sm font-medium text-sidebar-foreground">
+                      {nombreCompleto}
+                    </span>
+                    <span className="truncate text-xs text-sidebar-foreground/60 capitalize">
+                      {rol}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} tooltip="Cerrar sesión">
               <LogOut className="h-4 w-4" />
               <span>Cerrar sesión</span>
             </SidebarMenuButton>
