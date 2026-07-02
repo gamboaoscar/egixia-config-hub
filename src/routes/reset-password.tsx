@@ -54,7 +54,7 @@ function ResetPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-soft via-background to-background p-6">
+    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-primary-soft via-background to-background p-6">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg">
         <h1 className="text-xl font-semibold text-foreground">Define tu nueva contraseña</h1>
         <p className="mt-1 text-sm text-muted-foreground">

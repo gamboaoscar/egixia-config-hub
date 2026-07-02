@@ -109,7 +109,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-soft via-background to-background p-6">
+    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-primary-soft via-background to-background p-6">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
