@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { aceptarInvitacion } from "@/lib/invitaciones.functions";
+import { aceptarInvitacion, validarInvitacion } from "@/lib/invitaciones.functions";
 
 type ValidacionOk = {
   email: string;
@@ -47,17 +47,19 @@ function InvitacionPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data, error } = await supabase.rpc("validar_invitacion", { _token: token });
-      if (!active) return;
-      if (error) {
-        setErrorMsg("No pudimos validar tu invitación. Inténtalo más tarde.");
-      } else if (!data || (Array.isArray(data) && data.length === 0)) {
-        setErrorMsg("Esta invitación no es válida, ya fue utilizada o expiró.");
-      } else {
-        const row = Array.isArray(data) ? data[0] : data;
-        setInvitacion(row as ValidacionOk);
+      try {
+        const row = await validarInvitacion({ data: { token } });
+        if (!active) return;
+        if (!row) {
+          setErrorMsg("Esta invitación no es válida, ya fue utilizada o expiró.");
+        } else {
+          setInvitacion(row as ValidacionOk);
+        }
+      } catch {
+        if (active) setErrorMsg("No pudimos validar tu invitación. Inténtalo más tarde.");
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     })();
     return () => {
       active = false;

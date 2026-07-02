@@ -1,6 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const validarSchema = z.object({ token: z.string().min(10).max(200) });
+
+export const validarInvitacion = createServerFn({ method: "POST" })
+  .validator((input: unknown) => validarSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.rpc("validar_invitacion", {
+      _token: data.token,
+    });
+    if (error) throw new Error("No pudimos validar tu invitación. Inténtalo más tarde.");
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return null;
+    return row as {
+      email: string;
+      rol_invitado: "implementador" | "invitado";
+      proyecto_id: string | null;
+      proyecto_nombre: string | null;
+      expira_at: string;
+    };
+  });
+
 const aceptarSchema = z.object({
   token: z.string().min(10),
   nombre: z.string().trim().min(1, "El nombre es obligatorio").max(80),
