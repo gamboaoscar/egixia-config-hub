@@ -2,6 +2,25 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.4.0] — 2026-07-02
+
+### Añadido
+- **Modelo de datos de negocio (Parte 3)**: tablas `proyectos`,
+  `proyecto_miembros`, `proyecto_modulos`, `invitaciones`, `observaciones`,
+  `actas` y `archivos`, con sus enums y triggers de `updated_at`.
+- **Buckets privados** en Storage: `logos-clientes`, `documentos` y `actas`
+  (acceso mediante URLs firmadas, política basada en membresía de proyecto
+  mediante el primer segmento del path `{proyecto_id}/…`).
+- **Flujo público de invitación**: función RPC `validar_invitacion(token)`,
+  server function `aceptarInvitacion` (SECURITY DEFINER + service role) y
+  ruta pública `/invitacion/:token` con formulario de nombre, apellido y
+  contraseña. Tokens de un solo uso, con expiración y reclamo atómico.
+- **Funciones de negocio**: `is_project_member`, `puede_editar_modulo`,
+  `destinatarios_notificacion` y trigger `autocompletar_proyecto` (marca el
+  proyecto como `completado` cuando todos sus módulos quedan aprobados).
+- **RLS por rol** en todas las tablas nuevas siguiendo el principio de
+  mínimo privilegio (ver `docs/SEGURIDAD.md`).
+
 ## [0.3.0] — 2026-07-02
 
 ### Añadido
