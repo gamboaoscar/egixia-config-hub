@@ -10,7 +10,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | Key           | Estado         | Archivo                                          |
 | ------------- | -------------- | ------------------------------------------------ |
 | `imagen`      | ✅ Completo    | `src/lib/form-engine/modulos/imagen.ts`          |
-| `sociedades`  | 🚧 Demo        | `src/lib/form-engine/modulo-ejemplo.ts`          |
+| `sociedades`  | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`      |
 | `seguridad`   | 🚧 Demo        | `src/lib/form-engine/modulo-ejemplo.ts`          |
 
 ---
@@ -111,3 +111,53 @@ Ambas se validan con `url_https` (deben comenzar con `https://`).
 2. Importarlo y registrarlo en `REGISTRO` dentro de
    `src/lib/form-engine/modulo-ejemplo.ts`.
 3. Actualizar este documento con la ficha del módulo.
+
+---
+
+## Módulo `sociedades` — Creación de Sociedades
+
+Registra las sociedades del grupo que participarán en el portal. Se
+implementa como una única **tabla dinámica** (`tipo: "tabla"`); una fila
+por sociedad, sin límite fijo (capacidad mínima 8, se puede añadir más).
+
+### Columnas
+
+| Key                     | Tipo    | Req | Guía / Notas                                                    |
+| ----------------------- | ------- | :-: | --------------------------------------------------------------- |
+| `pais`                  | select  | ✅  | País donde opera legalmente. 15 países + "Otro".                |
+| `tipo_documento`        | select  | ✅  | NIT · RUC · RFC · RUT · CUIT · Otro.                            |
+| `numero_identificacion` | texto   | ✅  | Número de identificación tributaria, solo dígitos.              |
+| `digito_verificacion`   | texto   | ⚪  | Exactamente 1 carácter numérico (aplica en Colombia).           |
+| `razon_social`          | texto   | ✅  | Nombre legal completo.                                          |
+| `descripcion`           | texto   | ⚪  | Descripción breve de la actividad.                              |
+| `ciudad`                | texto   | ⚪  | Ciudad de la sede principal.                                    |
+| `telefono`              | texto   | ⚪  | Con indicativo del país.                                        |
+| `correo`                | email   | ⚪  | Correo de contacto de la sociedad.                              |
+| `logo`                  | archivo | ⚪  | 200×200 px. PNG/SVG. Auto-ajuste con recorte centrado.          |
+
+Cada columna incluye guía contextual (popover "i" en el encabezado) con
+"qué ingresar" y formato. El archivo del logo reutiliza el componente
+`CampoArchivo` de la Parte 6: valida formato/peso, muestra el panel de
+ajuste cuando la imagen no cumple 200×200, y sube al bucket
+`logos-clientes` con path único por celda (`campoKey_fila_columna`).
+
+### Comportamiento
+
+- **Añadir/eliminar filas** dinámicamente desde la tabla.
+- **Sin límite** superior de filas.
+- **Progreso**: para tablas con columnas requeridas, el motor cuenta las
+  celdas requeridas llenas en todas las filas (`filas × columnas_req`).
+  Si no hay filas todavía, cuenta como una unidad sin llenar para
+  incentivar añadir la primera. Ver `calcularProgreso()` en
+  `src/lib/form-engine/validacion.ts`.
+- **Módulo iniciado**: se considera en diligenciamiento con ≥1 fila.
+
+### Extensiones del motor (Parte 8)
+
+- `ColumnaTabla` ahora soporta los tipos `select` (con `opciones`) y
+  `archivo` (con `ConfigArchivo`), además de `guia`, `longitud`,
+  `placeholder` y `ancho`.
+- `TablaDinamica` renderiza cada celda con el control apropiado y expone
+  la guía por columna con el mismo popover "i" que los campos.
+- `calcularProgreso` maneja el caso especial de tablas con columnas
+  requeridas.

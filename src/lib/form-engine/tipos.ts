@@ -55,8 +55,20 @@ export interface OpcionCampo {
 export interface ColumnaTabla {
   key: string;
   label: string;
-  tipo: "texto" | "email" | "url" | "numero";
+  tipo: "texto" | "email" | "url" | "numero" | "select" | "archivo";
   requerido?: boolean;
+  /** Opciones para `tipo === 'select'`. */
+  opciones?: OpcionCampo[];
+  /** Configuración para `tipo === 'archivo'`. */
+  archivo?: ConfigArchivo;
+  /** Guía contextual mostrada como popover en el encabezado. */
+  guia?: GuiaCampo;
+  /** Longitud exacta para texto (ej. 1 carácter para dígito de verificación). */
+  longitud?: number;
+  /** Placeholder del input. */
+  placeholder?: string;
+  /** Ancho sugerido en px para la celda. */
+  ancho?: number;
 }
 
 /** Configuración específica para campos tipo `archivo`. */
