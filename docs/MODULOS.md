@@ -11,7 +11,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | ------------- | -------------- | ------------------------------------------------ |
 | `imagen`      | ✅ Completo    | `src/lib/form-engine/modulos/imagen.ts`          |
 | `sociedades`  | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`      |
-| `seguridad`   | 🚧 Demo        | `src/lib/form-engine/modulo-ejemplo.ts`          |
+| `seguridad`   | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`       |
 
 ---
 
