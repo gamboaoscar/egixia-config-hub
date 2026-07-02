@@ -118,8 +118,38 @@ export function calcularProgreso(
     .flatMap((s) => s.campos)
     .filter((c) => campoActivo(c) && campoVisible(c, datos));
   const requeridos = activos.filter((c) => c.requerido);
-  const base = requeridos.length > 0 ? requeridos : activos;
-  if (base.length === 0) return 0;
-  const llenos = base.filter((c) => valorLleno(datos[c.key])).length;
-  return Math.round((llenos / base.length) * 100);
+  const usarRequeridos = requeridos.length > 0;
+  const campos = usarRequeridos ? requeridos : activos;
+  if (campos.length === 0) return 0;
+
+  let base = 0;
+  let llenos = 0;
+
+  for (const c of campos) {
+    // Tabla con columnas requeridas: cada celda requerida cuenta como 1.
+    if (c.tipo === "tabla" && c.columnas) {
+      const reqCols = c.columnas.filter((col) => col.requerido);
+      if (reqCols.length > 0) {
+        const filas = Array.isArray(datos[c.key])
+          ? (datos[c.key] as Record<string, unknown>[])
+          : [];
+        if (filas.length === 0) {
+          // Aún no se ha añadido ninguna fila: cuenta como 1 unidad sin llenar.
+          base += 1;
+        } else {
+          base += filas.length * reqCols.length;
+          for (const fila of filas) {
+            for (const col of reqCols) {
+              if (valorLleno(fila[col.key])) llenos += 1;
+            }
+          }
+        }
+        continue;
+      }
+    }
+    base += 1;
+    if (valorLleno(datos[c.key])) llenos += 1;
+  }
+
+  return base === 0 ? 0 : Math.round((llenos / base) * 100);
 }
