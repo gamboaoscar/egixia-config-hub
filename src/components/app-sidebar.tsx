@@ -1,0 +1,79 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { LayoutDashboard, FileText, Users, Settings, HelpCircle } from "lucide-react";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+const items = [
+  { title: "Inicio", url: "/", icon: LayoutDashboard },
+  { title: "Formularios", url: "/formularios", icon: FileText },
+  { title: "Proyectos", url: "/proyectos", icon: Users },
+  { title: "Configuración", url: "/configuracion", icon: Settings },
+];
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const currentPath = useRouterState({ select: (r) => r.location.pathname });
+  const isActive = (path: string) => currentPath === path;
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex items-center gap-2 px-2 py-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
+            E
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold text-foreground">EGIXIA</span>
+              <span className="text-xs text-muted-foreground">Configurator</span>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Menú</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <Link to={item.url} className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Ayuda">
+              <HelpCircle className="h-4 w-4" />
+              <span>Ayuda</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
