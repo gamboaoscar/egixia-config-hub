@@ -45,3 +45,27 @@ vistas internas.
 | Cambiar `rol` / `estado` / borrar   |   ✓   |       —       |   —    |
 | Leer la auditoría                   |   ✓   |       ✓       |   —    |
 | Insertar en auditoría (vía helper)  |   ✓   |       ✓       |   ✓    |
+
+## Acciones del panel del Implementador / Administrador
+
+El área privada `/app` está reservada a `admin` e `implementador`.
+`PrivateShell` bloquea el acceso de cualquier otro rol.
+
+| Acción del panel                        | Admin | Implementador |
+| --------------------------------------- | :---: | :-----------: |
+| Ver dashboard con métricas globales     |   ✓   |       ✓       |
+| Ver **todos** los proyectos             |   ✓   |       ✓       |
+| Crear proyecto (nombre, empresa, mods.) |   ✓   |       ✓       |
+| Editar respuestas de un módulo (audit.) |   ✓   |       ✓       |
+| Ver / descargar actas versionadas       |   ✓   |       ✓       |
+| Exportar proyecto (JSON / CSV)          |   ✓   |       ✓       |
+| Enviar invitación (implementador/inv.)  |   ✓   |       ✓       |
+| Reenviar o revocar invitación pendiente |   ✓   |       ✓       |
+| Inhabilitar / reactivar miembro         |   ✓   |       ✓       |
+| Desvincular invitado de un proyecto     |   ✓   |       ✓       |
+
+Todas las mutaciones anteriores se realizan mediante server functions
+en `src/lib/admin.functions.ts`, que verifican el rol del llamante y
+registran cada acción en la tabla `auditoria` (RPC
+`registrar_auditoria`). El invitado nunca ve estas rutas ni las
+funciones — se guarda por `PrivateShell` + validación server-side.
