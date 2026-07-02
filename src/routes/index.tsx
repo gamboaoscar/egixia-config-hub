@@ -43,6 +43,7 @@ function LandingPage() {
       </header>
 
       {/* Hero */}
+      <main>
       <section
         className="relative"
         style={{
@@ -126,6 +127,7 @@ function LandingPage() {
           ))}
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="mt-auto bg-primary-dark text-primary-foreground">
@@ -133,7 +135,7 @@ function LandingPage() {
           <div className="text-sm font-medium">
             EGIXIA · Portal de Proveedores
           </div>
-          <div className="text-xs text-primary-foreground/70">
+          <div className="text-xs text-primary-foreground/90">
             © 2026 EGIXIA. Todos los derechos reservados.
           </div>
         </div>
