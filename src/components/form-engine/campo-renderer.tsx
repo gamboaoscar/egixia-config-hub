@@ -1,4 +1,4 @@
-import { UploadCloud, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,12 +19,15 @@ import type {
 } from "@/lib/form-engine/tipos";
 
 import { CampoInfo } from "./campo-info";
+import { CampoArchivo } from "./campo-archivo";
 
 interface Props {
   campo: CampoDefinicion;
   valor: unknown;
   error?: string;
   disabled?: boolean;
+  proyectoId: string;
+  moduloId: string;
   onChange: (valor: unknown) => void;
   onBlur?: () => void;
 }
@@ -34,6 +37,8 @@ export function CampoRenderer({
   valor,
   error,
   disabled,
+  proyectoId,
+  moduloId,
   onChange,
   onBlur,
 }: Props) {
@@ -61,6 +66,8 @@ export function CampoRenderer({
         valor={valor}
         disabled={disabled}
         error={!!error}
+        proyectoId={proyectoId}
+        moduloId={moduloId}
         onChange={onChange}
         onBlur={onBlur}
       />
@@ -80,6 +87,8 @@ function CampoControl({
   valor,
   disabled,
   error,
+  proyectoId,
+  moduloId,
   onChange,
   onBlur,
 }: {
@@ -88,6 +97,8 @@ function CampoControl({
   valor: unknown;
   disabled?: boolean;
   error?: boolean;
+  proyectoId: string;
+  moduloId: string;
   onChange: (v: unknown) => void;
   onBlur?: () => void;
 }) {
@@ -189,10 +200,21 @@ function CampoControl({
       );
 
     case "archivo":
+      if (!campo.archivo) {
+        return (
+          <p className="text-xs text-red-600">
+            Campo mal configurado: falta `archivo`.
+          </p>
+        );
+      }
       return (
-        <AreaArchivo
-          valor={valor as { nombre?: string } | null}
+        <CampoArchivo
+          campoKey={campo.key}
+          config={campo.archivo}
+          valor={valor}
           disabled={disabled}
+          proyectoId={proyectoId}
+          moduloId={moduloId}
           onChange={onChange}
         />
       );
@@ -313,65 +335,6 @@ function SelectorColor({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-function AreaArchivo({
-  valor,
-  disabled,
-  onChange,
-}: {
-  valor: { nombre?: string } | null;
-  disabled?: boolean;
-  onChange: (v: unknown) => void;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 p-6 text-center",
-        disabled && "opacity-60",
-      )}
-    >
-      <UploadCloud className="h-6 w-6 text-primary" />
-      <div className="text-sm font-medium text-foreground">
-        {valor?.nombre ?? "Arrastra o selecciona un archivo"}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        La carga real se habilita en el módulo de archivos.
-      </p>
-      <div className="flex items-center gap-2">
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            className="hidden"
-            disabled={disabled}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (!f) return;
-              onChange({ nombre: f.name, size: f.size, type: f.type });
-            }}
-          />
-          <span
-            className={cn(
-              "inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-medium",
-              !disabled && "hover:bg-primary-soft hover:text-primary",
-            )}
-          >
-            Seleccionar archivo
-          </span>
-        </label>
-        {valor?.nombre && !disabled && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => onChange(null)}
-          >
-            Quitar
-          </Button>
-        )}
-      </div>
     </div>
   );
 }
