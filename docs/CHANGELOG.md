@@ -2,6 +2,78 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.0] — 2026-07-02 — Cierre v1
+
+EGIXIA Configurator v1 está listo para uso interno y con clientes.
+Este cierre no añade nuevas capacidades; consolida acabado, accesibilidad,
+manejo de errores y seguridad sobre el trabajo previo.
+
+### Ajustado
+- **Viewport móvil**: pantallas de altura completa migradas de
+  `min-h-screen` a `min-h-dvh` en `login`, `reset-password`,
+  `invitacion.$token`, landing pública, `__root`, `private-shell` y
+  `cliente-shell` para evitar cortes con la barra de navegación móvil.
+- **Sidebar colapsable**: verificado en móvil (variante offcanvas) y en
+  escritorio (variante `icon`) — el disparador queda siempre visible
+  en la topbar.
+- **Accesibilidad**: todos los inputs tienen `<Label>` asociada;
+  botones ícono llevan `aria-label`; foco visible respetado por los
+  primitivos shadcn; contraste sobre tokens del sistema
+  (`text-foreground`, `text-muted-foreground`) — no se usan colores
+  arbitrarios.
+- **Estados vacíos** presentes en todas las listas (proyectos,
+  invitaciones, usuarios, auditoría, revisiones, módulos del invitado)
+  con mensajes amables en español neutro LATAM.
+- **Skeletons** de carga en dashboards, detalles de proyecto,
+  configuración, catálogo y módulos.
+- **Toasts** de éxito/error (`sonner`) en toda mutación; los mensajes
+  se muestran en español y evitan tecnicismos.
+
+### Seguridad revisada
+- **RLS activa** en las 11 tablas del esquema `public`
+  (`profiles`, `proyectos`, `proyecto_miembros`, `proyecto_modulos`,
+  `invitaciones`, `observaciones`, `actas`, `archivos`, `auditoria`,
+  `catalogo_overrides`, `configuracion_sistema`).
+- **Acceso cruzado bloqueado**: los invitados solo ven sus proyectos
+  vía `is_project_member`; las tablas hijas (módulos, observaciones,
+  actas, archivos) heredan la restricción por FK al proyecto.
+- **Bloqueo por estado**: `puede_editar_modulo` impide que el
+  invitado edite un módulo en `en_revision` o `aprobado`.
+- **Sin secretos en el frontend**: `SUPABASE_SERVICE_ROLE_KEY` y las
+  llaves de correo viven solo en el runtime del servidor
+  (`client.server.ts`, secretos de la Edge Function `enviar-correo`).
+  Las server functions administrativas verifican el rol del llamante
+  antes de instanciarlas.
+- **Validación de archivos** en `campo-archivo.tsx`: formato contra
+  `formatosPermitidos` y tamaño contra `tamanoMaxBytes(config)` antes
+  de subir. Nombre saneado (slug) al construir el path
+  `{proyecto_id}/{modulo_id}/{campo_key}/...`.
+- **Buckets privados** (`avatares`, `logos-clientes`, `documentos`,
+  `actas`) con políticas ancladas al primer segmento del path
+  (proyecto).
+
+### Rendimiento
+- Consultas con selects columnares (no `*`) y filtros con índice
+  natural por FK.
+- `refreshModulos` y `refreshOverrides` disparados solo al cambiar
+  de proyecto activo, no en cada render.
+- Autoguardado con debounce configurable (parámetro global).
+- Auditoría global limitada a 1.000 registros por vista con
+  exportación CSV completa.
+
+### Documentación
+- `README.md` refleja el estado final del stack, rutas y roles.
+- `/docs`:
+  - `ARQUITECTURA.md`, `MODELO_DE_DATOS.md`, `MODULOS.md`,
+    `FLUJO_Y_ESTADOS.md`, `ROLES_Y_PERMISOS.md`, `SEGURIDAD.md`,
+    `GUIA_UX.md`, `DECISIONES.md`, `CHANGELOG.md` completos y en
+    español.
+
+### Estado
+**v1 completa.** La aplicación queda lista para invitar al primer
+cliente real y ejecutar el proceso completo:
+Invitación → Diligenciamiento → Acta → Revisión → Aprobación → Cierre.
+
 ## [0.13.0] — 2026-07-02
 
 ### Añadido
