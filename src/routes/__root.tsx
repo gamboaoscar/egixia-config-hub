@@ -94,6 +94,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "EGIXIA Configurator" },
+      { name: "description", content: "EGIXIA Configurator is a web app for configuring B2B supplier portals." },
+      { property: "og:description", content: "EGIXIA Configurator is a web app for configuring B2B supplier portals." },
+      { name: "twitter:description", content: "EGIXIA Configurator is a web app for configuring B2B supplier portals." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7267bb6c-0d91-4176-8d88-c5400c5ab0c5/id-preview-039aab99--9bf4e600-9447-41e5-a3d8-d575e146b361.lovable.app-1783030031264.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7267bb6c-0d91-4176-8d88-c5400c5ab0c5/id-preview-039aab99--9bf4e600-9447-41e5-a3d8-d575e146b361.lovable.app-1783030031264.png" },
     ],
     links: [
       {
