@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {/* Topbar */}
       <header className="border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">

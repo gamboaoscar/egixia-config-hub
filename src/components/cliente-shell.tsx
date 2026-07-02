@@ -46,7 +46,7 @@ export function ClienteShell({ children }: Props) {
 
   if (loading || !session || !profile || profile.rol !== "cliente") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
@@ -55,7 +55,7 @@ export function ClienteShell({ children }: Props) {
   return (
     <MiProyectoProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
+        <div className="flex min-h-dvh w-full bg-background">
           <AppSidebar />
           <div className="flex flex-1 flex-col">
             <ClienteTopbar />

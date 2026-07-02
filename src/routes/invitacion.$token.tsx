@@ -106,7 +106,7 @@ function InvitacionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f4f8] via-white to-[#e6ecf5] flex items-center justify-center px-4 py-10">
+    <div className="min-h-dvh bg-gradient-to-br from-[#f0f4f8] via-white to-[#e6ecf5] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-semibold text-[#0F2B8E]">EGIXIA Configurator</h1>
