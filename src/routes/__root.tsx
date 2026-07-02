@@ -77,14 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "EGIXIA Configurator" },
+      {
+        name: "description",
+        content:
+          "Portal de onboarding de EGIXIA: configura tu Portal de Proveedores de forma guiada.",
+      },
+      { name: "author", content: "EGIXIA" },
+      { property: "og:title", content: "EGIXIA Configurator" },
+      {
+        property: "og:description",
+        content:
+          "Portal de onboarding de EGIXIA: configura tu Portal de Proveedores de forma guiada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
