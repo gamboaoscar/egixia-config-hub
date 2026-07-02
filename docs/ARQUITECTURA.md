@@ -88,3 +88,76 @@ bloquear`. Los campos se desactivan y los cambios se ignoran.
 `src/lib/form-engine/modulo-ejemplo.ts` registra definiciones mínimas
 para probar el motor (Imagen / Sociedades / Seguridad). Las
 definiciones reales se cargan en las Partes 7–9.
+
+## Flujo de archivos y auto-ajuste
+
+Los campos `tipo: 'archivo'` se declaran con un bloque `archivo` en la
+definición:
+
+```ts
+{
+  key: 'logo',
+  tipo: 'archivo',
+  archivo: {
+    bucket: 'logos-clientes',        // o 'documentos' para PDFs
+    formatosPermitidos: ['image/png', '.svg'],
+    tamanoMaxMB: 5,
+    dimensiones: { ancho: 400, alto: 110 },
+  },
+}
+```
+
+### Ciclo de vida de una subida
+
+1. **Selección** — el usuario elige un archivo. Se valida en cliente
+   tipo (`formatoPermitido`) y tamaño (`tamanoMaxBytes`).
+2. **Rama por tipo**:
+   - **PDF** → se sube tal cual al bucket `documentos`.
+   - **SVG** → se valida que contenga la etiqueta `<svg>` y se sube sin
+     re-encodear (los buckets guardan el binario original).
+   - **Imagen raster** (PNG / JPG / WEBP / ICO):
+     - Si el campo declara `dimensiones` y la imagen **ya coincide**,
+       se sube sin tocarla.
+     - Si no coincide, se abre el **panel de ajuste** con vista previa
+       en modo `object-fit: cover` y dos sliders para reposicionar el
+       encuadre. Al confirmar, `redimensionarCover()` genera un PNG a
+       las dimensiones exactas usando canvas y esa es la versión que
+       se sube.
+     - Si no hay `dimensiones` declaradas, la imagen se sube tal cual.
+3. **Storage** — el binario se guarda en el bucket privado del campo,
+   con path `{proyecto_id}/{modulo_id}/{campo_key}/{timestamp}-{slug}`.
+4. **Metadatos** — se inserta una fila en `public.archivos`
+   (`nombre_original`, `storage_path`, `tipo`, `tamano`,
+   `dimensiones`).
+5. **Referencia en el módulo** — `proyecto_modulos.datos[campoKey]`
+   recibe un `ValorArchivo`:
+   ```ts
+   {
+     archivoId, bucket, storagePath,
+     nombre, tipo, tamano, dimensiones, ajustado?
+   }
+   ```
+6. **Autosave** — el hook `useFormModulo` persiste el `datos` completo
+   y recalcula `progreso`. La subida no depende del debounce del
+   autosave: viaja en cuanto se confirma.
+
+### Previsualización
+
+La miniatura del componente `<CampoArchivo />` obtiene una **URL
+firmada** con `createSignedUrl(bucket, path, 3600)`. Los buckets son
+privados: nunca se exponen URLs públicas.
+
+### Reemplazo y quitar
+
+- **Reemplazar** — subida nueva → registro nuevo → borrado del binario
+  anterior (`remove([path])`). La fila anterior en `public.archivos`
+  se conserva como histórico.
+- **Quitar** — borra el binario y limpia la referencia del `datos`.
+
+### Piezas del código
+
+- `src/lib/form-engine/archivo.ts` — validación, redimensionado
+  (canvas cover), subida y firma de URL.
+- `src/components/form-engine/campo-archivo.tsx` — UI: dropzone,
+  panel de ajuste con sliders, tarjeta de archivo cargado con botones
+  "Reemplazar" / "Quitar" y etiqueta *"Ajustado a 400×110 px"*.
