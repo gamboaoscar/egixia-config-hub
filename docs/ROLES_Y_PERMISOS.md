@@ -64,6 +64,12 @@ El área privada `/app` está reservada a `admin` e `implementador`.
 | Inhabilitar / reactivar miembro         |   ✓   |       ✓       |
 | Desvincular invitado de un proyecto     |   ✓   |       ✓       |
 
+> El implementador puede crear, reenviar y revocar invitaciones,
+> pero **no ve el token en claro**: la lectura de la tabla
+> `invitaciones` está restringida a `admin`. Toda la gestión pasa
+> por server functions que devuelven metadatos (email, rol, estado,
+> expiración) sin exponer el enlace de aceptación.
+
 Todas las mutaciones anteriores se realizan mediante server functions
 en `src/lib/admin.functions.ts`, que verifican el rol del llamante y
 registran cada acción en la tabla `auditoria` (RPC

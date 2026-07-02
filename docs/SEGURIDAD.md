@@ -90,10 +90,18 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
   token = $1 AND estado = 'pendiente' AND expira_at > now() RETURNING
   ...`. Este reclamo atómico impide que dos solicitudes simultáneas
   utilicen el mismo token.
-- **Sin acceso directo desde el navegador**: `anon` no tiene privilegios
-  sobre la tabla `invitaciones`; solo puede llamar a la RPC
-  `validar_invitacion(token)` (lectura acotada) y a la server function
-  `aceptarInvitacion` (proceso completo).
+- **Sin acceso directo desde el navegador**: ni `anon` ni
+  `authenticated` tienen `EXECUTE` sobre `validar_invitacion`; la RPC
+  se llama únicamente desde el servidor. El flujo `/invitacion/:token`
+  invoca la server function `validarInvitacion`
+  (`src/lib/invitaciones.functions.ts`), que usa el cliente admin y
+  devuelve al navegador solo los datos mínimos (email, rol, proyecto,
+  expiración). La aceptación pasa por `aceptarInvitacion`.
+- **Token invisible para implementadores**: la política `inv_select`
+  restringe la lectura de `invitaciones` a `admin`. Los
+  implementadores gestionan la cola (crear / reenviar / revocar)
+  exclusivamente a través de server functions que no exponen el
+  token en claro.
 
 ## Buckets privados
 
@@ -123,6 +131,26 @@ del primer segmento del path y se usa en las políticas de
 | `actas`             | Internos / miembros              | Admin / implementador                                  | Solo admin            |
 | `archivos`          | Internos / miembros              | Internos siempre; invitado si puede editar el módulo   | Admin / implementador |
 | `auditoria`         | Admin / implementador            | Vía helper `registrar_auditoria`                       | —                     |
+
+## Blindaje de `profiles`
+
+Además de la política RLS que sólo permite a un usuario actualizar su
+propio perfil, el trigger `profiles_guard_privileged_fields_trg`
+bloquea a nivel de base cualquier intento de un usuario no-admin de
+modificar `rol`, `estado` o `email` en su propia fila. Esto ofrece
+defensa en profundidad frente a un cliente comprometido que intente
+escalar privilegios saltándose el `WITH CHECK` del cliente.
+
+## Escrituras en Storage
+
+Los buckets `logos-clientes`, `documentos` y `actas` permiten
+`INSERT` a miembros del proyecto (para que el invitado suba
+archivos de su módulo), pero `UPDATE` está restringido a `admin` e
+`implementador`. El flujo de reemplazo del motor de formularios hace
+`INSERT` del nuevo binario y luego `remove()` del anterior, por lo
+que el invitado no necesita permiso de `UPDATE`. Esto evita que un
+cliente construya un path ajeno para sobrescribir un objeto de otro
+proyecto.
 
 ## Auditoría
 

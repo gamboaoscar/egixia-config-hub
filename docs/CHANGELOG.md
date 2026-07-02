@@ -2,6 +2,59 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.2] — 2026-07-02 — Endurecimiento de seguridad (2ª pasada)
+
+Segunda ronda de hallazgos del escáner de seguridad, aplicada sobre
+la v1.
+
+### Seguridad
+- **Validación de invitaciones movida al servidor**: se revocó
+  `EXECUTE` sobre `public.validar_invitacion` para `anon` y
+  `authenticated`. La validación del token se realiza ahora en la
+  server function `validarInvitacion` (`src/lib/invitaciones.functions.ts`)
+  usando el cliente admin. `src/routes/invitacion.$token.tsx` la
+  consume vía `useServerFn`; el navegador ya no puede llamar a la
+  RPC directamente.
+- **Tokens de invitación ocultos al implementador**: la política
+  `inv_select` en `public.invitaciones` se restringió a `admin`. Los
+  implementadores siguen operando la cola de invitaciones a través
+  de server functions (`crearInvitacion`, `reenviarInvitacion`,
+  `revocarInvitacion`) sin recibir el token en el navegador.
+- **Blindaje de campos privilegiados en `profiles`**: nuevo trigger
+  `profiles_guard_privileged_fields_trg` que bloquea a nivel de base
+  cualquier `UPDATE` de `rol`, `estado` o `email` realizado por un
+  usuario no-admin sobre su propio perfil, incluso si burlara la
+  política RLS del cliente.
+- **`UPDATE` en Storage limitado al equipo interno**: las políticas
+  de `storage.objects` para los buckets `logos-clientes`,
+  `documentos` y `actas` ahora exigen rol `admin` o `implementador`
+  para actualizar objetos. Los invitados siguen pudiendo subir y
+  reemplazar archivos vía el flujo controlado del motor (que hace
+  `INSERT` + `remove` del anterior), pero ya no pueden mutar
+  objetos existentes construyendo un path ajeno.
+
+### Documentación
+- `docs/SEGURIDAD.md` actualizado: nueva sección "Validación de
+  invitaciones" y ajuste de la matriz de RLS/Storage.
+- `docs/ROLES_Y_PERMISOS.md`: aclaración de que el implementador
+  gestiona invitaciones sin ver el token en claro.
+
+## [1.0.1] — 2026-07-02 — SEO
+
+### Añadido
+- H1 semántico en `cliente-shell.tsx` y landmark `<main>` en la
+  landing pública.
+- Metadatos únicos por ruta pública (`/`, `/login`) con `og:*`,
+  `twitter:card`, `og:url` y `canonical` autorreferenciados.
+- JSON-LD `Organization` + `WebSite` en la ruta raíz.
+- `public/robots.txt` (bloquea `/app/`, `/mi-proyecto/`,
+  `/invitacion/`, `/reset-password`), `public/llms.txt` y
+  `src/routes/sitemap[.]xml.ts` (mapa dinámico).
+
+### Ajustado
+- Contraste del footer subido a 90 % de opacidad.
+- Eliminación de metatags duplicados en `src/routes/__root.tsx`.
+
 ## [1.0.0] — 2026-07-02 — Cierre v1
 
 EGIXIA Configurator v1 está listo para uso interno y con clientes.
