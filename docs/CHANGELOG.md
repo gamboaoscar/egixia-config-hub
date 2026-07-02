@@ -2,6 +2,36 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.7.0] — 2026-07-02
+
+### Añadido
+- **Carga real de archivos (Parte 6)**: el motor de formularios sube
+  binarios a los buckets privados `logos-clientes` (imágenes / logos)
+  y `documentos` (PDFs), registra metadatos en `public.archivos` y
+  guarda la referencia (`archivoId`, `bucket`, `storagePath`,
+  `dimensiones`, `ajustado`) en `proyecto_modulos.datos`.
+- **Configuración `archivo` por campo**: nueva forma en
+  `CampoDefinicion.archivo` con `bucket`, `formatosPermitidos`,
+  `tamanoMaxMB` y `dimensiones: { ancho, alto }` opcionales.
+- **Validación en cliente**: `formatoPermitido()` acepta mimes
+  (`image/png`) o extensiones (`.svg`); `tamanoMaxBytes()` rechaza con
+  mensaje claro en español los archivos que superan el límite (5 MB
+  por defecto).
+- **Auto-ajuste al tamaño exacto**: cuando la imagen raster no
+  coincide con las dimensiones declaradas, se abre un panel de ajuste
+  con vista previa en modo `cover` y dos sliders para reposicionar el
+  encuadre. Al confirmar, `redimensionarCover()` genera un PNG a las
+  dimensiones exactas con canvas y sube esa versión. La original nunca
+  llega a Storage.
+- **SVG y PDF**: no se re-encodean; SVG se valida contenido y PDF solo
+  tipo/tamaño.
+- **Previsualización con URLs firmadas** (`createSignedUrl`, 1 hora)
+  porque los buckets son privados.
+- **Tarjeta del archivo cargado**: miniatura + nombre + peso +
+  dimensiones + pastilla *"Ajustado a 400×110 px"* + acciones
+  Reemplazar / Quitar. Al reemplazar se borra el binario anterior de
+  Storage.
+
 ## [0.6.0] — 2026-07-02
 
 ### Añadido
