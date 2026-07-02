@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Settings,
   LogOut,
-  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
