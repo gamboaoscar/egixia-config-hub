@@ -91,6 +91,24 @@ function DetalleProyecto() {
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
   const descargarActa = useServerFn(descargarActaFirmada);
+  const remove = useServerFn(eliminarProyecto);
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleEliminarProyecto = async () => {
+    if (!proy) return;
+    if (!confirm(
+      `Eliminar el proyecto "${proy.nombre}"? Esta acción borra sus módulos, ` +
+      `observaciones y actas. No se puede deshacer.`,
+    )) return;
+    try {
+      await remove({ data: { proyectoId: proy.id } });
+      toast.success("Proyecto eliminado.");
+      navigate({ to: "/app/proyectos" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar.");
+    }
+  };
 
   const cargar = async () => {
     const [p, m, mem, ac] = await Promise.all([
