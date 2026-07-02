@@ -58,10 +58,16 @@ const DEMO_IMAGEN: ModuloDefinicion = {
           key: "logo",
           label: "Logotipo principal",
           tipo: "archivo",
+          archivo: {
+            bucket: "logos-clientes",
+            formatosPermitidos: ["image/png", "image/svg+xml", ".png", ".svg"],
+            tamanoMaxMB: 5,
+            dimensiones: { ancho: 400, alto: 110 },
+          },
           guia: {
             que: "Logotipo que aparecerá en el portal de proveedores.",
             formato: "PNG con transparencia o SVG.",
-            tamano: "512×512 px, máximo 2 MB.",
+            tamano: "Se ajustará a 400×110 px. Máximo 5 MB.",
           },
         },
       ],

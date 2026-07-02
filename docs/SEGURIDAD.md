@@ -15,6 +15,35 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
   `validar_invitacion`).
 - **Sin secretos en el cliente ni en la documentación**.
 
+## Archivos y Storage
+
+- **Todos los buckets son privados**: `logos-clientes`, `documentos`,
+  `actas` y `avatares`. No hay URLs públicas.
+- **Previsualización con URLs firmadas**: la miniatura del campo
+  `archivo` se muestra con `createSignedUrl(bucket, path, 3600)`. La URL
+  vive máximo 1 hora y no es indexable.
+- **Path predecible por proyecto**: los archivos se guardan en
+  `{proyecto_id}/{modulo_id}/{campo_key}/{timestamp}-{slug}`. Las
+  políticas RLS de `storage.objects` usan el primer segmento (el
+  `proyecto_id`) para decidir si el usuario es miembro del proyecto.
+- **Validación en cliente y en servidor**:
+  - Cliente (`src/lib/form-engine/archivo.ts`): `formatoPermitido()` y
+    `tamanoMaxBytes()` rechazan tipos y tamaños fuera de la
+    configuración del campo antes de tocar la red.
+  - Servidor: RLS en `storage.objects` y en `public.archivos` impide
+    subir a rutas de proyectos ajenos, y `puede_editar_modulo()`
+    bloquea escrituras cuando el módulo está `en_revision` o
+    `aprobado`.
+- **Auto-ajuste de imagen**: cuando el campo declara
+  `dimensiones: { ancho, alto }`, el motor redimensiona en el
+  navegador con recorte centrado (canvas `cover`) y sube **solo la
+  imagen ya ajustada**. La original nunca llega a Storage. SVG y PDF
+  no se re-encodean.
+- **Reemplazo limpio**: al reemplazar un archivo, el binario anterior
+  se elimina de Storage (`remove([path])`) tras insertar el nuevo
+  registro; la fila anterior en `public.archivos` queda como histórico
+  auditable.
+
 ## Tokens de invitación
 
 - `invitaciones.token`: cadena única con índice; asignada por quien

@@ -165,6 +165,7 @@ function ModuloPage() {
       {/* Formulario dinámico (motor de la Parte 5) */}
       <FormularioModulo
         moduloId={modulo.id}
+        proyectoId={modulo.proyecto_id}
         definicion={definicionModulo(modulo.modulo_key)}
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}
