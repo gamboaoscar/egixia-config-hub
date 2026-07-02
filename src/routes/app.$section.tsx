@@ -1,16 +1,11 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { Construction } from "lucide-react";
 
-import { RevisionesPendientes } from "@/components/revisiones-pendientes";
-
 export const Route = createFileRoute("/app/$section")({
   component: StubSection,
 });
 
 const nombres: Record<string, string> = {
-  proyectos: "Proyectos",
-  revisiones: "Revisiones pendientes",
-  invitaciones: "Invitaciones",
   usuarios: "Usuarios",
   catalogo: "Catálogo de módulos",
   auditoria: "Auditoría",
@@ -19,7 +14,6 @@ const nombres: Record<string, string> = {
 
 function StubSection() {
   const { section } = useParams({ from: "/app/$section" });
-  if (section === "revisiones") return <RevisionesPendientes />;
   const nombre = nombres[section] ?? section;
   return (
     <div className="mx-auto max-w-2xl">
