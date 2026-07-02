@@ -2,6 +2,38 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.6.0] — 2026-07-02
+
+### Añadido
+- **Motor de formularios dinámicos (Parte 5)**: definición
+  declarativa de módulos en `src/lib/form-engine/tipos.ts`
+  (`ModuloDefinicion`, `SeccionDefinicion`, `CampoDefinicion`) con
+  soporte para 10 tipos de campo (`texto`, `textarea`, `numero`,
+  `email`, `url`, `select`, `radio_tarjetas`, `color`, `archivo`,
+  `tabla`), guía por campo, validaciones (`url_https`, `email`,
+  `min`, `max`, `longitud`) y bandera `activo` para desactivar
+  campos por configuración del proyecto (no se muestran ni cuentan).
+- **Renderizador genérico** `<FormularioModulo />` que pinta cada
+  sección como tarjeta ("cuadrito") y delega en `<CampoRenderer />`
+  por tipo. `radio_tarjetas`, `color` y `tabla` con estilo EGIXIA.
+- **Botón "i" con popover** (`<CampoInfo />`) que muestra *qué
+  ingresar*, *formato* y *tamaño recomendado* solo al pulsarlo;
+  nunca expandido por defecto.
+- **Validaciones en línea** en español, con tono amable, mostradas
+  debajo del campo. No bloquean el autoguardado del borrador; solo
+  se exigen los requeridos al enviar a revisión (Parte 10).
+- **Autoguardado + progreso**: hook `useFormModulo` con debounce
+  (~700 ms) que persiste `proyecto_modulos.datos` y recalcula
+  `proyecto_modulos.progreso` (campos requeridos activos con valor
+  ÷ total requeridos activos × 100). El indicador del topbar
+  refleja `Guardando…`, `Guardado hh:mm` o `No se pudo guardar`.
+- **Solo lectura** automático cuando el módulo está en revisión,
+  aprobado o vencido con bloqueo: los campos se deshabilitan y el
+  autosave no se dispara.
+- **Módulos de ejemplo** (`modulo-ejemplo.ts`) con definiciones
+  mínimas de Imagen, Sociedades y Seguridad para validar el motor.
+  El contenido real llega en las Partes 7–9.
+
 ## [0.5.0] — 2026-07-02
 
 ### Añadido
