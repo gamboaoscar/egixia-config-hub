@@ -227,9 +227,12 @@ function CampoControl({
     case "tabla":
       return (
         <TablaDinamica
+          campoKey={campo.key}
           columnas={campo.columnas ?? []}
           valor={Array.isArray(valor) ? (valor as Record<string, unknown>[]) : []}
           disabled={disabled}
+          proyectoId={proyectoId}
+          moduloId={moduloId}
           onChange={onChange}
         />
       );
