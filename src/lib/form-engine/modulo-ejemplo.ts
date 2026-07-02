@@ -91,7 +91,7 @@ const DEMO_SEGURIDAD: ModuloDefinicion = {
 };
 
 const REGISTRO: Record<string, ModuloDefinicion> = {
-  imagen: DEMO_IMAGEN,
+  imagen: MODULO_IMAGEN,
   sociedades: DEMO_SOCIEDADES,
   seguridad: DEMO_SEGURIDAD,
 };
