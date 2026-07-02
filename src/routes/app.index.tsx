@@ -19,7 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
-import { estadoLabel } from "@/lib/modulo-estado";
+import { ESTADO_LABEL, type ModuloEstado } from "@/lib/modulo-estado";
 
 export const Route = createFileRoute("/app/")({
   component: DashboardAdmin,
@@ -234,7 +234,7 @@ function DashboardAdmin() {
                         {cat.nombre}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {m.proyectos?.nombre} · {estadoLabel(m.estado as never)}
+                        {m.proyectos?.nombre} · {ESTADO_LABEL[m.estado as ModuloEstado]}
                       </p>
                     </div>
                     <span
