@@ -16,6 +16,7 @@ import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { supabase } from "@/integrations/supabase/client";
 import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import { aplicarOverrides } from "@/lib/form-engine/overrides";
 import {
   enviarModuloARevision,
   reenviarModulo,
@@ -230,7 +231,10 @@ function ModuloPage() {
       <FormularioModulo
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={definicionModulo(modulo.modulo_key)}
+        definicion={aplicarOverrides(
+          definicionModulo(modulo.modulo_key),
+          overrides,
+        )}
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}
       />
