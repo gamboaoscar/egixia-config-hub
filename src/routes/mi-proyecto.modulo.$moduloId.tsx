@@ -12,7 +12,8 @@ import { useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
+import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 
 export const Route = createFileRoute("/mi-proyecto/modulo/$moduloId")({
   component: ModuloPage,
@@ -161,33 +162,13 @@ function ModuloPage() {
         </section>
       )}
 
-      {/* Secciones (marcadores hasta la Parte 5) */}
-      <section className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Secciones del módulo
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {cat.secciones.map((s, i) => (
-            <div
-              key={s}
-              className={cn(
-                "rounded-xl border border-dashed border-border bg-card p-5",
-                soloLectura && "opacity-70",
-              )}
-            >
-              <div className="text-xs font-medium text-muted-foreground">
-                Sección {i + 1}
-              </div>
-              <div className="mt-1 text-base font-medium text-foreground">
-                {s}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Los campos de esta sección se habilitarán en la próxima entrega.
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Formulario dinámico (motor de la Parte 5) */}
+      <FormularioModulo
+        moduloId={modulo.id}
+        definicion={definicionModulo(modulo.modulo_key)}
+        datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
+        soloLectura={soloLectura}
+      />
 
       {/* Acciones */}
       <div className="flex flex-col-reverse items-stretch gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
