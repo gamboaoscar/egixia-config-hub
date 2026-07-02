@@ -2,6 +2,34 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.5.0] — 2026-07-02
+
+### Añadido
+- **Espacio del invitado (Parte 4)**: shell dedicado en `/mi-proyecto`
+  con `MiProyectoProvider` que carga el proyecto donde el usuario es
+  miembro y sus `proyecto_modulos` (respeta RLS: solo su proyecto).
+- **Sidebar dinámico del invitado**: enlace a *Inicio* y un ítem por
+  cada módulo asignado con ícono, pastilla de estado y % de avance.
+- **Topbar del invitado**: nombre del proyecto, empresa, pastilla con la
+  fecha límite más próxima e indicador de guardado (`Guardando…`,
+  `Guardado hh:mm`, `No se pudo guardar`).
+- **Dashboard del proyecto** (`/mi-proyecto`): tarjeta de bienvenida con
+  avance general (anillo SVG), grid de tarjetas por módulo con botón
+  contextual (*Comenzar*, *Continuar*, *Ver*, *Corregir observaciones*)
+  y mensaje amable de siguiente paso.
+- **Shell de módulo** (`/mi-proyecto/modulo/:moduloId`): encabezado con
+  estado y avance, listado de observaciones abiertas, marcadores de
+  secciones (los campos reales llegan en la Parte 5), botón *Enviar a
+  revisión* visible pero deshabilitado.
+- **Bloqueo por estado y fecha límite** en la UI: modo solo lectura si
+  el módulo está `en_revision`/`aprobado` o si venció con
+  `comportamiento_vencimiento = bloquear`.
+- **Banners de vencimiento** (`VencimientoBanner`) con variantes según
+  `comportamiento_vencimiento` y recordatorio suave a ≤ 3 días.
+- **Autoguardado con debounce** (`useAutosaveModulo`): actualiza
+  `proyecto_modulos.datos`/`progreso` y refresca el indicador del
+  topbar. Cableado listo para la Parte 5.
+
 ## [0.4.0] — 2026-07-02
 
 ### Añadido

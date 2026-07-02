@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Settings,
   LogOut,
-  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +28,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth, type Rol } from "@/hooks/use-auth";
+import { useMiProyectoOptional } from "@/hooks/use-mi-proyecto";
+import { EstadoPastilla } from "@/components/estado-pastilla";
+import { moduloCatalogo } from "@/lib/modulos-catalogo";
 
 interface NavItem {
   title: string;
@@ -39,7 +41,6 @@ interface NavItem {
 const menusPorRol: Record<Rol, NavItem[]> = {
   cliente: [
     { title: "Inicio", url: "/mi-proyecto", icon: LayoutDashboard },
-    { title: "Mis módulos", url: "/mi-proyecto/modulos", icon: Briefcase },
   ],
   implementador: [
     { title: "Inicio", url: "/app", icon: LayoutDashboard },
@@ -71,10 +72,14 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { profile, avatarUrl, signOut } = useAuth();
+  const miProyecto = useMiProyectoOptional();
 
   const rol: Rol = profile?.rol ?? "cliente";
   const items = menusPorRol[rol];
   const perfilUrl = rol === "cliente" ? "/mi-proyecto/mi-perfil" : "/app/mi-perfil";
+
+  const modulosInvitado =
+    rol === "cliente" ? miProyecto?.modulos ?? [] : [];
 
   const isActive = (path: string) => {
     if (path === "/app" || path === "/mi-proyecto") return currentPath === path;
@@ -138,6 +143,53 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {rol === "cliente" && modulosInvitado.length > 0 && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-sidebar-foreground/60">
+                Mis módulos
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {modulosInvitado.map((m) => {
+                  const cat = moduloCatalogo(m.modulo_key);
+                  const url = `/mi-proyecto/modulo/${m.id}`;
+                  const active =
+                    currentPath === url || currentPath.startsWith(`${url}/`);
+                  return (
+                    <SidebarMenuItem key={m.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={`${cat.nombre} · ${m.progreso}%`}
+                        className="h-auto py-2"
+                      >
+                        <Link to={url} className="flex items-start gap-2">
+                          <cat.icon className="mt-0.5 h-4 w-4 shrink-0" />
+                          {!collapsed && (
+                            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                              <span className="truncate text-sm">
+                                {cat.nombre}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <EstadoPastilla estado={m.estado} size="sm" />
+                                <span className="text-[10px] text-sidebar-foreground/60">
+                                  {m.progreso}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
