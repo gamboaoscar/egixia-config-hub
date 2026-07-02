@@ -271,19 +271,29 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo enviar el módulo a revisión.");
 
-    const version = await generarActa(supabaseAdmin, modulo.id, userId);
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+    const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, "modulo_enviado_revision", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo enviado a revisión: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue enviado a revisión. Se generó el acta v${version}.`,
-    );
+    await notificar({
+      proyectoId: modulo.proyecto_id,
+      moduloId: modulo.id,
+      moduloNombre: definicion.nombre,
+      tipo: "acta_envio",
+      proyectoNombre: meta.nombre,
+      empresa: meta.empresa,
+      actorNombre,
+      actaVersion: version,
+      actaUrl: urlFirmada ?? undefined,
+    });
 
     return { ok: true, acta_version: version };
   });
@@ -323,13 +333,19 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo aprobado: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue aprobado por el equipo de EGIXIA.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_aprobacion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+      });
+    }
 
     return { ok: true };
   });
@@ -405,13 +421,20 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
         cantidad_observaciones: filas.length,
       },
     );
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo devuelto con observaciones: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue devuelto con ${filas.length} observación(es) para corrección.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_devolucion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+        observacionesCount: filas.length,
+      });
+    }
 
     return { ok: true, observaciones: filas.length };
   });
@@ -451,13 +474,20 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo reabierto: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue reabierto por el equipo de EGIXIA para nuevas correcciones.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_devolucion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+        observacionesCount: 0,
+      });
+    }
 
     return { ok: true };
   });
@@ -527,19 +557,29 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo reenviar el módulo a revisión.");
 
-    const version = await generarActa(supabaseAdmin, modulo.id, userId);
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+    const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, "modulo_reenviado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo reenviado a revisión: ${modulo.modulo_key}`,
-      `El proveedor corrigió las observaciones del módulo "${modulo.modulo_key}" y lo reenvió a revisión. Se generó el acta v${version}.`,
-    );
+    await notificar({
+      proyectoId: modulo.proyecto_id,
+      moduloId: modulo.id,
+      moduloNombre: definicion.nombre,
+      tipo: "acta_envio",
+      proyectoNombre: meta.nombre,
+      empresa: meta.empresa,
+      actorNombre,
+      actaVersion: version,
+      actaUrl: urlFirmada ?? undefined,
+    });
 
     return { ok: true, acta_version: version };
   });
