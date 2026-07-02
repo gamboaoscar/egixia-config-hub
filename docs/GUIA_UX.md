@@ -174,3 +174,57 @@ Layout reutilizable para toda el área privada. Se compone de:
 ## Idioma
 
 Español neutro LATAM en toda la interfaz.
+
+## Panel del Implementador / Administrador
+
+El panel `/app` está pensado para ser **silencioso y accionable**:
+pocas métricas, mucho aire, tarjetas ("cuadritos") sobre fondo
+`--background`. El azul EGIXIA se reserva para acentos (íconos,
+valores destacados, botones primarios) — nada de fondos saturados.
+
+### Dashboard (`/app`)
+
+- Saludo personalizado y una frase breve de contexto.
+- **4 métricas** en tarjetas: *Proyectos activos*, *Pendientes de
+  revisión* (acento primario suave), *Próximos a vencer*, *Módulos
+  aprobados*. Ícono lucide + etiqueta + valor grande + hint.
+- **Gráfica de barras** (recharts) con módulos por estado, en
+  primario `#0F2B8E`.
+- Dos listas cortas: *Revisiones pendientes* (primeros 5, con
+  vínculo directo al módulo) y *Próximos a vencer* (chips coloreados
+  por urgencia: rojo si vencido, ámbar ≤3 días, primario suave si
+  ≤7 días).
+
+### Proyectos (`/app/proyectos`)
+
+- Barra de búsqueda con lupa y filtro por estado. Vacío = tarjeta
+  guiada, no bloque de error.
+- Cada proyecto se presenta como una fila-tarjeta con nombre, empresa,
+  estado, próxima fecha límite y % de avance promedio.
+- El detalle (`/app/proyectos/{id}`) organiza el contenido en
+  bloques: encabezado con estado + botones de exportación, módulos
+  (cada uno con estado, avance, "Ver/editar" y "Acta vN"), miembros
+  (dos sublistas: equipo interno vs invitados) y auditoría reciente.
+
+### Nuevo proyecto (`/app/proyectos/nuevo`)
+
+Formulario en dos bloques: **Datos** (nombre, empresa) y **Módulos a
+asignar**. Cada módulo es un cuadrito que se resalta con
+`--primary-soft` al activarse, y despliega inline los campos de fecha
+límite y comportamiento al vencer.
+
+### Revisiones (`/app/revisiones`)
+
+Cola simple, ordenada por antigüedad. Cada módulo enlaza a la vista
+de revisión, donde el implementador aprueba, devuelve con
+observaciones, reabre o **edita respuestas** (con banner ámbar que
+recuerda que quedará en auditoría).
+
+### Invitaciones (`/app/invitaciones`)
+
+- Formulario compacto de una fila: correo, rol, proyecto (deshabilitado
+  cuando el rol es implementador) y botón *Enviar*.
+- Debajo, listado con pastilla de estado (`pendiente`, `aceptada`,
+  `revocada`, `expirada` — esta última se infiere si el token venció).
+  Botones *Reenviar* y *Revocar* solo aparecen mientras la invitación
+  esté `pendiente`.

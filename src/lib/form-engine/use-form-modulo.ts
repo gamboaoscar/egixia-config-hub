@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useMiProyecto } from "@/hooks/use-mi-proyecto";
+import { useMiProyectoOptional } from "@/hooks/use-mi-proyecto";
 
 import type { DatosModulo, ModuloDefinicion } from "./tipos";
 import { calcularProgreso, validarCampo, validarModulo } from "./validacion";
@@ -12,6 +12,12 @@ interface Params {
   datosIniciales: DatosModulo;
   soloLectura?: boolean;
   debounceMs?: number;
+  /**
+   * Si se define, el hook NO autopersiste en Supabase; en su lugar emite
+   * los datos actualizados hacia el padre (usado por el flujo de edición
+   * del implementador, que guarda vía server function con auditoría).
+   */
+  onCambio?: (datos: DatosModulo) => void;
 }
 
 export function useFormModulo({
@@ -20,8 +26,12 @@ export function useFormModulo({
   datosIniciales,
   soloLectura = false,
   debounceMs = 700,
+  onCambio,
 }: Params) {
-  const { setSaveStatus, markSaved, refreshModulos } = useMiProyecto();
+  const mi = useMiProyectoOptional();
+  const setSaveStatus = mi?.setSaveStatus ?? (() => {});
+  const markSaved = mi?.markSaved ?? (() => {});
+  const refreshModulos = mi?.refreshModulos ?? (() => {});
   const [datos, setDatos] = useState<DatosModulo>(datosIniciales);
   const [errores, setErrores] = useState<Record<string, string>>(() =>
     validarModulo(definicion, datosIniciales, false),
@@ -38,6 +48,7 @@ export function useFormModulo({
 
   const persistir = useCallback(
     async (nuevos: DatosModulo) => {
+      if (onCambio) return; // el padre se encarga de guardar
       const progreso = calcularProgreso(definicion, nuevos);
       setSaveStatus("saving");
       const { error } = await supabase
@@ -52,7 +63,7 @@ export function useFormModulo({
       markSaved();
       refreshModulos();
     },
-    [moduloId, definicion, setSaveStatus, markSaved, refreshModulos],
+    [moduloId, definicion, setSaveStatus, markSaved, refreshModulos, onCambio],
   );
 
   const setValor = useCallback(
@@ -73,15 +84,19 @@ export function useFormModulo({
             return next;
           });
         }
-        // Autosave con debounce (no bloqueado por errores de formato).
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-          persistir(nuevos);
-        }, debounceMs);
+        if (onCambio) {
+          onCambio(nuevos);
+        } else {
+          // Autosave con debounce (no bloqueado por errores de formato).
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => {
+            persistir(nuevos);
+          }, debounceMs);
+        }
         return nuevos;
       });
     },
-    [definicion, soloLectura, persistir, debounceMs],
+    [definicion, soloLectura, persistir, debounceMs, onCambio],
   );
 
   const marcarTocado = useCallback((campoKey: string) => {

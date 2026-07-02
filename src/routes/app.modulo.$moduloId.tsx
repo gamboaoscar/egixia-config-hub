@@ -6,8 +6,10 @@ import {
   CheckCircle2,
   Loader2,
   MessageSquareWarning,
+  Pencil,
   Plus,
   RotateCcw,
+  Save,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -32,6 +34,8 @@ import {
   devolverModuloConObservaciones,
   reabrirModulo,
 } from "@/lib/revision.functions";
+import { editarDatosModulo } from "@/lib/admin.functions";
+import { calcularProgreso } from "@/lib/form-engine/validacion";
 
 export const Route = createFileRoute("/app/modulo/$moduloId")({
   component: RevisionModuloPage,
@@ -80,6 +84,10 @@ function RevisionModuloPage() {
   const aprobar = useServerFn(aprobarModulo);
   const devolver = useServerFn(devolverModuloConObservaciones);
   const reabrir = useServerFn(reabrirModulo);
+  const editar = useServerFn(editarDatosModulo);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [datosEdit, setDatosEdit] = useState<Record<string, unknown>>({});
+  const [guardando, setGuardando] = useState(false);
 
   const cargar = async () => {
     setLoading(true);
@@ -101,6 +109,7 @@ function RevisionModuloPage() {
       .order("created_at", { ascending: false });
     setObservaciones((obs ?? []) as Observacion[]);
     setLoading(false);
+    if (data) setDatosEdit((data.datos as Record<string, unknown>) ?? {});
   };
 
   useEffect(() => {
@@ -134,6 +143,25 @@ function RevisionModuloPage() {
   const puedeAprobar = modulo.estado === "en_revision";
   const puedeDevolver = modulo.estado === "en_revision";
   const puedeReabrir = modulo.estado === "aprobado";
+
+  const handleGuardarEdicion = async () => {
+    if (!modulo) return;
+    setGuardando(true);
+    try {
+      const def = definicionModulo(modulo.modulo_key);
+      const progreso = calcularProgreso(def, datosEdit);
+      await editar({
+        data: { moduloId: modulo.id, datos: datosEdit, progreso },
+      });
+      toast.success("Cambios guardados. Se registró en auditoría.");
+      setModoEdicion(false);
+      await cargar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const handleAprobar = async () => {
     setAccion("aprobar");
@@ -251,12 +279,52 @@ function RevisionModuloPage() {
       )}
 
       {/* Formulario en solo lectura para revisar */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Contenido del módulo
+        </p>
+        {!modoEdicion ? (
+          <Button size="sm" variant="outline" onClick={() => setModoEdicion(true)}>
+            <Pencil className="mr-1 h-4 w-4" />
+            Editar respuestas
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setDatosEdit((modulo.datos as Record<string, unknown>) ?? {});
+                setModoEdicion(false);
+              }}
+              disabled={guardando}
+            >
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={handleGuardarEdicion} disabled={guardando}>
+              {guardando ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-1 h-4 w-4" />
+              )}
+              Guardar
+            </Button>
+          </div>
+        )}
+      </div>
+      {modoEdicion && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          Estás editando respuestas del invitado. Cada guardado queda registrado
+          en la auditoría del proyecto.
+        </p>
+      )}
       <FormularioModulo
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
         definicion={definicionModulo(modulo.modulo_key)}
-        datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
-        soloLectura
+        datosIniciales={modoEdicion ? datosEdit : (modulo.datos as Record<string, unknown>) ?? {}}
+        soloLectura={!modoEdicion}
+        onCambio={modoEdicion ? setDatosEdit : undefined}
       />
 
       {/* Panel de decisión */}
