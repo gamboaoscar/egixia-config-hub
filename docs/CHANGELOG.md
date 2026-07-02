@@ -2,6 +2,31 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.9.0] — 2026-07-02
+
+### Añadido
+- **Módulo `sociedades` — Creación de Sociedades (Parte 8)**: definición
+  completa en `src/lib/form-engine/modulos/sociedades.ts` como tabla
+  dinámica con 10 columnas (país, tipo doc., n.º identificación, DV,
+  razón social, descripción, ciudad, teléfono, correo, logo 200×200).
+  Sin límite de filas; capacidad mínima 8.
+- **Motor de tablas extendido**: `ColumnaTabla` ahora admite los tipos
+  `select` (con `opciones: OpcionCampo[]`) y `archivo` (con
+  `ConfigArchivo`), además de `guia`, `longitud`, `placeholder` y
+  `ancho`. `TablaDinamica` renderiza el control adecuado por celda y
+  muestra el popover "i" en el encabezado cuando la columna tiene guía.
+- **Auto-ajuste en celdas de archivo**: cada logo de sociedad usa
+  `CampoArchivo` (Parte 6) con path único por celda
+  (`campoKey_fila_columna`), heredando validación de formato/peso y el
+  panel de ajuste con recorte centrado a 200×200 px.
+- **Progreso ponderado para tablas**: `calcularProgreso()` cuenta las
+  celdas requeridas llenas en todas las filas
+  (`filas × columnas_requeridas`). Si aún no hay filas, la tabla cuenta
+  como una unidad sin llenar; con ≥1 fila el módulo pasa a estar
+  "iniciado".
+- **Documentación**: `docs/MODULOS.md` incluye la ficha completa del
+  módulo `sociedades` y las extensiones del motor.
+
 ## [0.8.0] — 2026-07-02
 
 ### Añadido
