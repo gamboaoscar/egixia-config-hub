@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      actas: {
+        Row: {
+          archivo_url: string
+          generada_at: string
+          generada_por: string | null
+          id: string
+          proyecto_modulo_id: string
+          version: number
+        }
+        Insert: {
+          archivo_url: string
+          generada_at?: string
+          generada_por?: string | null
+          id?: string
+          proyecto_modulo_id: string
+          version?: number
+        }
+        Update: {
+          archivo_url?: string
+          generada_at?: string
+          generada_por?: string | null
+          id?: string
+          proyecto_modulo_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actas_generada_por_fkey"
+            columns: ["generada_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actas_proyecto_modulo_id_fkey"
+            columns: ["proyecto_modulo_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_modulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archivos: {
+        Row: {
+          campo_key: string | null
+          created_at: string
+          created_by: string | null
+          dimensiones: string | null
+          id: string
+          nombre_original: string
+          proyecto_modulo_id: string | null
+          storage_path: string
+          tamano: number | null
+          tipo: string | null
+        }
+        Insert: {
+          campo_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          dimensiones?: string | null
+          id?: string
+          nombre_original: string
+          proyecto_modulo_id?: string | null
+          storage_path: string
+          tamano?: number | null
+          tipo?: string | null
+        }
+        Update: {
+          campo_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          dimensiones?: string | null
+          id?: string
+          nombre_original?: string
+          proyecto_modulo_id?: string | null
+          storage_path?: string
+          tamano?: number | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archivos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "archivos_proyecto_modulo_id_fkey"
+            columns: ["proyecto_modulo_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_modulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria: {
         Row: {
           accion: string
@@ -43,6 +139,108 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      invitaciones: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          estado: Database["public"]["Enums"]["invitacion_estado"]
+          expira_at: string
+          id: string
+          invited_by: string | null
+          proyecto_id: string | null
+          rol_invitado: Database["public"]["Enums"]["invitacion_rol"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          estado?: Database["public"]["Enums"]["invitacion_estado"]
+          expira_at: string
+          id?: string
+          invited_by?: string | null
+          proyecto_id?: string | null
+          rol_invitado: Database["public"]["Enums"]["invitacion_rol"]
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          estado?: Database["public"]["Enums"]["invitacion_estado"]
+          expira_at?: string
+          id?: string
+          invited_by?: string | null
+          proyecto_id?: string | null
+          rol_invitado?: Database["public"]["Enums"]["invitacion_rol"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitaciones_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitaciones_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observaciones: {
+        Row: {
+          campo_key: string
+          comentario: string
+          created_at: string
+          created_by: string | null
+          estado: Database["public"]["Enums"]["observacion_estado"]
+          id: string
+          proyecto_modulo_id: string
+          resuelta_at: string | null
+        }
+        Insert: {
+          campo_key: string
+          comentario: string
+          created_at?: string
+          created_by?: string | null
+          estado?: Database["public"]["Enums"]["observacion_estado"]
+          id?: string
+          proyecto_modulo_id: string
+          resuelta_at?: string | null
+        }
+        Update: {
+          campo_key?: string
+          comentario?: string
+          created_at?: string
+          created_by?: string | null
+          estado?: Database["public"]["Enums"]["observacion_estado"]
+          id?: string
+          proyecto_modulo_id?: string
+          resuelta_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observaciones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observaciones_proyecto_modulo_id_fkey"
+            columns: ["proyecto_modulo_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_modulos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -83,16 +281,187 @@ export type Database = {
         }
         Relationships: []
       }
+      proyecto_miembros: {
+        Row: {
+          created_at: string
+          estado: Database["public"]["Enums"]["miembro_estado"]
+          id: string
+          profile_id: string
+          proyecto_id: string
+          rol_en_proyecto: Database["public"]["Enums"]["miembro_rol"]
+        }
+        Insert: {
+          created_at?: string
+          estado?: Database["public"]["Enums"]["miembro_estado"]
+          id?: string
+          profile_id: string
+          proyecto_id: string
+          rol_en_proyecto: Database["public"]["Enums"]["miembro_rol"]
+        }
+        Update: {
+          created_at?: string
+          estado?: Database["public"]["Enums"]["miembro_estado"]
+          id?: string
+          profile_id?: string
+          proyecto_id?: string
+          rol_en_proyecto?: Database["public"]["Enums"]["miembro_rol"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_miembros_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_miembros_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_modulos: {
+        Row: {
+          comportamiento_vencimiento:
+            | Database["public"]["Enums"]["comportamiento_vencimiento"]
+            | null
+          created_at: string
+          datos: Json
+          enviado_at: string | null
+          enviado_por: string | null
+          estado: Database["public"]["Enums"]["modulo_estado"]
+          fecha_limite: string | null
+          id: string
+          modulo_key: string
+          progreso: number
+          proyecto_id: string
+          revisado_at: string | null
+          revisado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          comportamiento_vencimiento?:
+            | Database["public"]["Enums"]["comportamiento_vencimiento"]
+            | null
+          created_at?: string
+          datos?: Json
+          enviado_at?: string | null
+          enviado_por?: string | null
+          estado?: Database["public"]["Enums"]["modulo_estado"]
+          fecha_limite?: string | null
+          id?: string
+          modulo_key: string
+          progreso?: number
+          proyecto_id: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comportamiento_vencimiento?:
+            | Database["public"]["Enums"]["comportamiento_vencimiento"]
+            | null
+          created_at?: string
+          datos?: Json
+          enviado_at?: string | null
+          enviado_por?: string | null
+          estado?: Database["public"]["Enums"]["modulo_estado"]
+          fecha_limite?: string | null
+          id?: string
+          modulo_key?: string
+          progreso?: number
+          proyecto_id?: string
+          revisado_at?: string | null
+          revisado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_modulos_enviado_por_fkey"
+            columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_modulos_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_modulos_revisado_por_fkey"
+            columns: ["revisado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyectos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa: string
+          estado: Database["public"]["Enums"]["proyecto_estado"]
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa: string
+          estado?: Database["public"]["Enums"]["proyecto_estado"]
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa?: string
+          estado?: Database["public"]["Enums"]["proyecto_estado"]
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyectos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      destinatarios_notificacion: {
+        Args: { _proyecto_id: string }
+        Returns: string[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_project_member: {
+        Args: { _proyecto_id: string; _uid: string }
+        Returns: boolean
+      }
+      puede_editar_modulo: {
+        Args: { _modulo_id: string; _uid: string }
         Returns: boolean
       }
       registrar_auditoria: {
@@ -104,9 +473,42 @@ export type Database = {
         }
         Returns: string
       }
+      storage_proyecto_from_path: { Args: { _name: string }; Returns: string }
+      validar_invitacion: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expira_at: string
+          proyecto_id: string
+          proyecto_nombre: string
+          rol_invitado: Database["public"]["Enums"]["invitacion_rol"]
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "implementador" | "cliente"
+      comportamiento_vencimiento:
+        | "bloquear"
+        | "editable_avisar"
+        | "solo_avisar"
+        | "extension_implementador"
+      invitacion_estado: "pendiente" | "aceptada" | "revocada" | "expirada"
+      invitacion_rol: "implementador" | "invitado"
+      miembro_estado: "activo" | "inhabilitado"
+      miembro_rol: "implementador" | "invitado"
+      modulo_estado:
+        | "sin_iniciar"
+        | "en_diligenciamiento"
+        | "en_revision"
+        | "con_observaciones"
+        | "aprobado"
+      observacion_estado: "abierta" | "resuelta"
+      proyecto_estado:
+        | "nuevo"
+        | "en_proceso"
+        | "en_revision"
+        | "completado"
+        | "cerrado"
       user_estado: "activo" | "inhabilitado"
     }
     CompositeTypes: {
@@ -236,6 +638,31 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "implementador", "cliente"],
+      comportamiento_vencimiento: [
+        "bloquear",
+        "editable_avisar",
+        "solo_avisar",
+        "extension_implementador",
+      ],
+      invitacion_estado: ["pendiente", "aceptada", "revocada", "expirada"],
+      invitacion_rol: ["implementador", "invitado"],
+      miembro_estado: ["activo", "inhabilitado"],
+      miembro_rol: ["implementador", "invitado"],
+      modulo_estado: [
+        "sin_iniciar",
+        "en_diligenciamiento",
+        "en_revision",
+        "con_observaciones",
+        "aprobado",
+      ],
+      observacion_estado: ["abierta", "resuelta"],
+      proyecto_estado: [
+        "nuevo",
+        "en_proceso",
+        "en_revision",
+        "completado",
+        "cerrado",
+      ],
       user_estado: ["activo", "inhabilitado"],
     },
   },
