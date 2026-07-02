@@ -8,6 +8,7 @@ import {
   campoVisible,
   valorLleno,
 } from "@/lib/form-engine/validacion";
+import type { TipoCorreo } from "@/lib/acta/plantillas-correo";
 
 /**
  * Servidor de transiciones del flujo de revisión por módulo (Sección B).
@@ -103,62 +104,103 @@ async function auditar(
 }
 
 /**
- * Encola una notificación por correo. Mientras no haya proveedor de
- * correo conectado, se persiste en `auditoria` como
- * `notificacion_pendiente` con la lista de destinatarios y el asunto.
+ * Notifica a los destinatarios del proyecto usando la plantilla
+ * correspondiente y la Edge Function `enviar-correo`. Toda la lógica
+ * vive en `acta/notificaciones.server.ts` (server-only).
  */
-async function notificar(
-  admin: AdminClient,
-  proyectoId: string,
-  moduloId: string,
-  asunto: string,
-  mensaje: string,
-) {
-  const { data } = await (admin as any).rpc("destinatarios_notificacion", {
-    _proyecto_id: proyectoId,
-  });
-  const destinatarios = (data ?? [])
-    .map((r: { destinatarios_notificacion?: string } | string) =>
-      typeof r === "string" ? r : r.destinatarios_notificacion,
-    )
-    .filter(Boolean);
-
-  await auditar(admin, "notificacion_pendiente", moduloId, {
-    proyecto_id: proyectoId,
-    asunto,
-    mensaje,
-    destinatarios,
+async function notificar(input: {
+  proyectoId: string;
+  moduloId: string;
+  moduloNombre: string;
+  tipo: TipoCorreo;
+  proyectoNombre: string;
+  empresa: string | null;
+  actorNombre: string;
+  actaVersion?: number;
+  actaUrl?: string;
+  observacionesCount?: number;
+}) {
+  const { notificarProyecto } = await import("@/lib/acta/notificaciones.server");
+  const urlAppPath = `/app/modulo/${input.moduloId}`;
+  const urlMiProyectoPath = `/mi-proyecto/modulo/${input.moduloId}`;
+  const contextoBase =
+    input.tipo === "acta_envio"
+      ? {
+          acta: {
+            proyecto: input.proyectoNombre,
+            empresa: input.empresa,
+            moduloNombre: input.moduloNombre,
+            version: input.actaVersion ?? 1,
+            autorNombre: input.actorNombre,
+            urlActa: input.actaUrl,
+          },
+        }
+      : input.tipo === "acta_devolucion"
+        ? {
+            observaciones: {
+              proyecto: input.proyectoNombre,
+              moduloNombre: input.moduloNombre,
+              cantidad: input.observacionesCount ?? 0,
+            },
+          }
+        : input.tipo === "acta_aprobacion"
+          ? {
+              aprobacion: {
+                proyecto: input.proyectoNombre,
+                moduloNombre: input.moduloNombre,
+              },
+            }
+          : {};
+  await notificarProyecto({
+    proyectoId: input.proyectoId,
+    moduloId: input.moduloId,
+    tipo: input.tipo,
+    contextoBase,
+    urlAppPath,
+    urlMiProyectoPath,
   });
 }
 
 /**
- * Genera una nueva versión de acta para el módulo (numera consecutivo).
- * Devuelve la nueva versión.
+ * Genera una nueva versión de acta (PDF real) para el módulo:
+ * renderiza el PDF con `pdf-lib`, lo sube al bucket privado `actas`
+ * y registra la versión en la tabla `actas`.
  */
 async function generarActa(
   admin: AdminClient,
   moduloId: string,
   actorId: string,
-): Promise<number> {
-  const { data: previa } = await admin
-    .from("actas")
-    .select("version")
-    .eq("proyecto_modulo_id", moduloId)
-    .order("version", { ascending: false })
-    .limit(1)
+): Promise<{ version: number; archivoUrl: string; urlFirmada: string | null }> {
+  void admin; // parámetro conservado por consistencia; usamos supabaseAdmin.
+  const { renderYSubirActa, urlFirmadaActa } = await import(
+    "@/lib/acta/acta.server"
+  );
+  const { version, archivoUrl } = await renderYSubirActa(moduloId, actorId);
+  const urlFirmada = await urlFirmadaActa(archivoUrl);
+  return { version, archivoUrl, urlFirmada };
+}
+
+/** Metadatos del proyecto y del autor usados al enviar/reenviar. */
+async function metadatosProyecto(admin: AdminClient, proyectoId: string) {
+  const { data } = await admin
+    .from("proyectos")
+    .select("nombre, empresa")
+    .eq("id", proyectoId)
     .maybeSingle();
-  const version = ((previa?.version as number | undefined) ?? 0) + 1;
-  // El PDF definitivo se genera en la Parte 11; aquí registramos la
-  // versión y una URL marcador que el generador reemplazará.
-  const url = `acta://modulo/${moduloId}/v${version}`;
-  const { error } = await admin.from("actas").insert({
-    proyecto_modulo_id: moduloId,
-    version,
-    archivo_url: url,
-    generada_por: actorId,
-  });
-  if (error) throw new Error("No se pudo generar el acta.");
-  return version;
+  return {
+    nombre: (data?.nombre as string | undefined) ?? "Proyecto",
+    empresa: (data?.empresa as string | null | undefined) ?? null,
+  };
+}
+
+async function nombreActor(admin: AdminClient, actorId: string) {
+  const { data } = await admin
+    .from("profiles")
+    .select("nombre, apellido, email")
+    .eq("id", actorId)
+    .maybeSingle();
+  const full = [data?.nombre, data?.apellido].filter(Boolean).join(" ");
+  return full || (data?.email as string | undefined) || "Usuario";
 }
 
 // ---------- Enviar a revisión (invitado) -----------------------------------
