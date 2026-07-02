@@ -185,8 +185,10 @@ export function useAutosaveModulo(moduloId: string | null, debounceMs = 800) {
         // Debounce simple: cada llamada reemplaza la anterior.
         clearTimeout((saveDatos as unknown as { _t?: number })._t);
         (saveDatos as unknown as { _t?: number })._t = window.setTimeout(async () => {
-          const payload: Record<string, unknown> = { datos };
-          if (typeof progreso === "number") payload.progreso = progreso;
+          const payload =
+            typeof progreso === "number"
+              ? { datos: datos as never, progreso }
+              : { datos: datos as never };
           const { error } = await supabase
             .from("proyecto_modulos")
             .update(payload)
