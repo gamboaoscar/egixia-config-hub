@@ -93,7 +93,11 @@ function ModuloPage() {
     try {
       const res = await previsualizar({ data: { moduloId: modulo.id } });
       const bytes = base64ABytes(res.base64);
-      const blob = new Blob([bytes], { type: "application/pdf" });
+      const buf = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([buf], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank", "noopener");
       // Liberamos el objeto tras un momento razonable.
