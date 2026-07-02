@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MiProyectoIndexRouteImport } from './routes/mi-proyecto.index'
@@ -19,9 +21,19 @@ import { Route as MiProyectoSectionRouteImport } from './routes/mi-proyecto.$sec
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MiProyectoRoute = MiProyectoRouteImport.update({
   id: '/mi-proyecto',
   path: '/mi-proyecto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -68,7 +80,9 @@ const AppSectionRoute = AppSectionRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
@@ -78,6 +92,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
@@ -89,7 +105,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
@@ -102,7 +120,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/login'
     | '/mi-proyecto'
+    | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
     | '/mi-proyecto/$section'
@@ -112,6 +132,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
     | '/mi-proyecto/$section'
@@ -122,7 +144,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/login'
     | '/mi-proyecto'
+    | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
     | '/mi-proyecto/$section'
@@ -134,16 +158,32 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MiProyectoRoute: typeof MiProyectoRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mi-proyecto': {
       id: '/mi-proyecto'
       path: '/mi-proyecto'
       fullPath: '/mi-proyecto'
       preLoaderRoute: typeof MiProyectoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -238,7 +278,9 @@ const MiProyectoRouteWithChildren = MiProyectoRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   MiProyectoRoute: MiProyectoRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
