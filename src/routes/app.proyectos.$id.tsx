@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { EstadoPastilla } from "@/components/estado-pastilla";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
-import { descargarActaPreview } from "@/lib/acta.functions";
+import { descargarActaFirmada } from "@/lib/acta.functions";
 import {
   actualizarMiembroEstado,
   desvincularMiembro,
@@ -87,7 +87,7 @@ function DetalleProyecto() {
 
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
-  const descargarActa = useServerFn(descargarActaPreview);
+  const descargarActa = useServerFn(descargarActaFirmada);
 
   const cargar = async () => {
     const [p, m, mem, ac] = await Promise.all([
@@ -179,17 +179,11 @@ function DetalleProyecto() {
     try {
       const res = await descargarActa({ data: { moduloId: mid } });
       // res esperado: { base64, filename } o url
-      const cualquiera = res as { base64?: string; filename?: string; url?: string };
-      if (cualquiera.url) {
-        window.open(cualquiera.url, "_blank");
-      } else if (cualquiera.base64) {
-        const blob = await (await fetch(`data:application/pdf;base64,${cualquiera.base64}`)).blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = cualquiera.filename || "acta.pdf";
-        a.click();
-        URL.revokeObjectURL(url);
+      const r = res as { url?: string | null };
+      if (r.url) {
+        window.open(r.url, "_blank");
+      } else {
+        toast.error("Aún no hay acta persistida para este módulo.");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo descargar el acta.");

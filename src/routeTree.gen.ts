@@ -23,6 +23,7 @@ import { Route as AppSectionRouteImport } from './routes/app.$section'
 import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
 import { Route as MiProyectoModuloModuloIdRouteImport } from './routes/mi-proyecto.modulo.$moduloId'
 import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nuevo'
+import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
 import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -96,6 +97,11 @@ const AppProyectosNuevoRoute = AppProyectosNuevoRouteImport.update({
   path: '/proyectos/nuevo',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProyectosIdRoute = AppProyectosIdRouteImport.update({
+  id: '/proyectos/$id',
+  path: '/proyectos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppModuloModuloIdRoute = AppModuloModuloIdRouteImport.update({
   id: '/modulo/$moduloId',
   path: '/modulo/$moduloId',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
   '/app/proyectos/': typeof AppProyectosIndexRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/mi-proyecto': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
   '/app/proyectos': typeof AppProyectosIndexRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
   '/app/proyectos/': typeof AppProyectosIndexRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/mi-proyecto/'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
     | '/app/proyectos/'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/mi-proyecto'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
     | '/app/proyectos'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/mi-proyecto/'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
     | '/app/proyectos/'
@@ -313,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProyectosNuevoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/proyectos/$id': {
+      id: '/app/proyectos/$id'
+      path: '/proyectos/$id'
+      fullPath: '/app/proyectos/$id'
+      preLoaderRoute: typeof AppProyectosIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/modulo/$moduloId': {
       id: '/app/modulo/$moduloId'
       path: '/modulo/$moduloId'
@@ -328,6 +347,7 @@ interface AppRouteChildren {
   AppMiPerfilRoute: typeof AppMiPerfilRoute
   AppIndexRoute: typeof AppIndexRoute
   AppModuloModuloIdRoute: typeof AppModuloModuloIdRoute
+  AppProyectosIdRoute: typeof AppProyectosIdRoute
   AppProyectosNuevoRoute: typeof AppProyectosNuevoRoute
   AppProyectosIndexRoute: typeof AppProyectosIndexRoute
 }
@@ -337,6 +357,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMiPerfilRoute: AppMiPerfilRoute,
   AppIndexRoute: AppIndexRoute,
   AppModuloModuloIdRoute: AppModuloModuloIdRoute,
+  AppProyectosIdRoute: AppProyectosIdRoute,
   AppProyectosNuevoRoute: AppProyectosNuevoRoute,
   AppProyectosIndexRoute: AppProyectosIndexRoute,
 }
