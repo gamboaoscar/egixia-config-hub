@@ -1,0 +1,13 @@
+# EGIXIA Configurator
+
+> Portal de onboarding de EGIXIA para configurar Portales de Proveedores (procure-to-pay) de forma guiada, reemplazando el envío manual de archivos Excel por correo.
+
+EGIXIA es una empresa SaaS B2B de LATAM que implementa Portales de Proveedores para grandes empresas. EGIXIA Configurator guía a los clientes durante la fase de configuración inicial: diligencian módulos (imagen corporativa, sociedades, seguridad, etc.) a su ritmo, con autoguardado y validación por parte del equipo implementador.
+
+## Pages
+
+- [Inicio](/): Presentación del portal y acceso con invitación.
+
+## Optional
+
+- [Ingresar](/login): Pantalla de acceso para usuarios ya registrados.

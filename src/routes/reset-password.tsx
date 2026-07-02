@@ -9,7 +9,16 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Nueva contraseña · EGIXIA Configurator" }] }),
+  head: () => ({
+    meta: [
+      { title: "Nueva contraseña · EGIXIA Configurator" },
+      {
+        name: "description",
+        content: "Define una nueva contraseña para tu cuenta de EGIXIA Configurator.",
+      },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
   component: ResetPage,
 });
 

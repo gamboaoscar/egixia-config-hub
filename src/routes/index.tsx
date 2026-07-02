@@ -16,7 +16,9 @@ export const Route = createFileRoute("/")({
         content:
           "Portal de onboarding de EGIXIA para configurar tu Portal de Proveedores.",
       },
+      { property: "og:url", content: "https://egixia-config-hub.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://egixia-config-hub.lovable.app/" }],
   }),
   component: LandingPage,
 });

@@ -24,7 +24,24 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/login")({
   validateSearch: searchSchema,
-  head: () => ({ meta: [{ title: "Ingresar · EGIXIA Configurator" }] }),
+  head: () => ({
+    meta: [
+      { title: "Ingresar · EGIXIA Configurator" },
+      {
+        name: "description",
+        content:
+          "Accede a EGIXIA Configurator con tu cuenta para continuar la configuración de tu Portal de Proveedores.",
+      },
+      { property: "og:title", content: "Ingresar · EGIXIA Configurator" },
+      {
+        property: "og:description",
+        content: "Accede a EGIXIA Configurator con tu cuenta.",
+      },
+      { property: "og:url", content: "https://egixia-config-hub.lovable.app/login" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+    links: [{ rel: "canonical", href: "https://egixia-config-hub.lovable.app/login" }],
+  }),
   component: LoginPage,
 });
 

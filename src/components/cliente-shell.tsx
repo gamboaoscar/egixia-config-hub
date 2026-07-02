@@ -85,11 +85,11 @@ function ClienteTopbar() {
       <SidebarTrigger className="-ml-1" />
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">
+          <h1 className="truncate text-sm font-semibold text-foreground">
             {loading
               ? "Cargando…"
               : proyecto?.nombre ?? "Sin proyecto asignado"}
-          </div>
+          </h1>
           {proyecto?.empresa && (
             <div className="truncate text-xs text-muted-foreground">
               {proyecto.empresa}
