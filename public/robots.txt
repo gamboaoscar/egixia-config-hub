@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /mi-proyecto/
+Disallow: /invitacion/
+Disallow: /reset-password
+
+Sitemap: https://egixia-config-hub.lovable.app/sitemap.xml

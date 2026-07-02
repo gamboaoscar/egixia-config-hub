@@ -18,7 +18,16 @@ type ValidacionOk = {
 };
 
 export const Route = createFileRoute("/invitacion/$token")({
-  head: () => ({ meta: [{ title: "Invitación · EGIXIA Configurator" }] }),
+  head: () => ({
+    meta: [
+      { title: "Invitación · EGIXIA Configurator" },
+      {
+        name: "description",
+        content: "Acepta tu invitación para acceder a EGIXIA Configurator.",
+      },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
   component: InvitacionPage,
 });
 
