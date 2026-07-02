@@ -115,7 +115,7 @@ function RevisionModuloPage() {
     for (const s of def.secciones) {
       for (const c of s.campos) {
         if (c.tipo === "info") continue;
-        out.push({ key: c.key, label: c.etiqueta, seccion: s.titulo });
+        out.push({ key: c.key, label: c.label, seccion: s.titulo });
       }
     }
     return out;
