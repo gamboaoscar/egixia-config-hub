@@ -5,6 +5,7 @@ import type { DatosModulo, ModuloDefinicion } from "@/lib/form-engine/tipos";
 
 interface Props {
   moduloId: string;
+  proyectoId: string;
   definicion: ModuloDefinicion;
   datosIniciales: DatosModulo;
   soloLectura?: boolean;
@@ -17,6 +18,7 @@ interface Props {
  */
 export function FormularioModulo({
   moduloId,
+  proyectoId,
   definicion,
   datosIniciales,
   soloLectura,
@@ -56,6 +58,8 @@ export function FormularioModulo({
                   valor={datos[campo.key]}
                   error={tocados[campo.key] ? errores[campo.key] : undefined}
                   disabled={soloLectura}
+                  proyectoId={proyectoId}
+                  moduloId={moduloId}
                   onChange={(v) => {
                     marcarTocado(campo.key);
                     setValor(campo.key, v);
