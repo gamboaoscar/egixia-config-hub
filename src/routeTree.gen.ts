@@ -18,6 +18,7 @@ import { Route as MiProyectoIndexRouteImport } from './routes/mi-proyecto.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as MiProyectoMiPerfilRouteImport } from './routes/mi-proyecto.mi-perfil'
 import { Route as MiProyectoSectionRouteImport } from './routes/mi-proyecto.$section'
+import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
 
@@ -66,6 +67,11 @@ const MiProyectoSectionRoute = MiProyectoSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => MiProyectoRoute,
 } as any)
+const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
+  id: '/invitacion/$token',
+  path: '/invitacion/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppMiPerfilRoute = AppMiPerfilRouteImport.update({
   id: '/mi-perfil',
   path: '/mi-perfil',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app': typeof AppIndexRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/$section': typeof MiProyectoSectionRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
+    | '/invitacion/$token'
     | '/mi-proyecto/$section'
     | '/mi-proyecto/mi-perfil'
     | '/app/'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
+    | '/invitacion/$token'
     | '/mi-proyecto/$section'
     | '/mi-proyecto/mi-perfil'
     | '/app'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/mi-perfil'
+    | '/invitacion/$token'
     | '/mi-proyecto/$section'
     | '/mi-proyecto/mi-perfil'
     | '/app/'
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MiProyectoRoute: typeof MiProyectoRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  InvitacionTokenRoute: typeof InvitacionTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiProyectoSectionRouteImport
       parentRoute: typeof MiProyectoRoute
     }
+    '/invitacion/$token': {
+      id: '/invitacion/$token'
+      path: '/invitacion/$token'
+      fullPath: '/invitacion/$token'
+      preLoaderRoute: typeof InvitacionTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/mi-perfil': {
       id: '/app/mi-perfil'
       path: '/mi-perfil'
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MiProyectoRoute: MiProyectoRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  InvitacionTokenRoute: InvitacionTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
