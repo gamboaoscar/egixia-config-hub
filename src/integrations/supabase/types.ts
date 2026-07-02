@@ -140,6 +140,77 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_overrides: {
+        Row: {
+          activo: boolean
+          campo_key: string
+          created_at: string
+          guia: Json | null
+          id: string
+          label: string | null
+          modulo_key: string
+          proyecto_id: string
+          requerido: boolean | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activo?: boolean
+          campo_key: string
+          created_at?: string
+          guia?: Json | null
+          id?: string
+          label?: string | null
+          modulo_key: string
+          proyecto_id: string
+          requerido?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activo?: boolean
+          campo_key?: string
+          created_at?: string
+          guia?: Json | null
+          id?: string
+          label?: string | null
+          modulo_key?: string
+          proyecto_id?: string
+          requerido?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_overrides_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracion_sistema: {
+        Row: {
+          clave: string
+          updated_at: string
+          updated_by: string | null
+          valor: Json
+        }
+        Insert: {
+          clave: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: Json
+        }
+        Update: {
+          clave?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: Json
+        }
+        Relationships: []
+      }
       invitaciones: {
         Row: {
           accepted_at: string | null
