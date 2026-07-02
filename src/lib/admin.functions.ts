@@ -15,7 +15,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 
 type Rol = "admin" | "implementador" | "cliente";
-type Cliente = { from: (t: string) => any; rpc: (n: string, p: any) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Cliente = any;
 
 async function rolDe(admin: Cliente, userId: string): Promise<Rol> {
   const { data } = await admin
@@ -149,11 +150,11 @@ export const editarDatosModulo = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prev) throw new Error("Módulo no encontrado.");
 
-    const upd: Record<string, unknown> = { datos: data.datos };
+    const upd: Record<string, unknown> = { datos: data.datos as Record<string, unknown> };
     if (typeof data.progreso === "number") upd.progreso = data.progreso;
     const { error } = await supabaseAdmin
       .from("proyecto_modulos")
-      .update(upd)
+      .update(upd as never)
       .eq("id", data.moduloId);
     if (error) throw new Error("No se pudo actualizar el módulo.");
 
