@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
 import { Route as LoginRouteImport } from './routes/login'
@@ -32,6 +33,11 @@ import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nu
 import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
 import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-proyecto'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mi-proyecto'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -294,11 +306,19 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MiProyectoRoute: typeof MiProyectoRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   InvitacionTokenRoute: typeof InvitacionTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -512,6 +532,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MiProyectoRoute: MiProyectoRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   InvitacionTokenRoute: InvitacionTokenRoute,
 }
 export const routeTree = rootRouteImport
