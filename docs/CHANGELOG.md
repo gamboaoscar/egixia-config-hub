@@ -2,6 +2,58 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.13.0] — 2026-07-02
+
+### Añadido
+- **Panel del Implementador / Administrador** (`/app`) con estilo
+  calmado y tarjetas:
+  - **Dashboard analítico** (`src/routes/app.index.tsx`) con 4 métricas
+    clave (proyectos activos, pendientes de revisión, próximos a
+    vencer, módulos aprobados), gráfica de barras `recharts` por
+    estado de módulos, y listas cortas de revisiones pendientes y
+    próximos vencimientos.
+  - **Proyectos**:
+    - `src/routes/app.proyectos.index.tsx`: listado con búsqueda por
+      nombre/empresa y filtro por estado.
+    - `src/routes/app.proyectos.nuevo.tsx`: alta de proyecto con
+      selección de módulos (imagen, sociedades, seguridad), fecha
+      límite por módulo y comportamiento al vencer.
+    - `src/routes/app.proyectos.$id.tsx`: detalle con miembros
+      (equipo interno + invitados), módulos con estado y avance,
+      accesos a revisión/edición y a actas descargables, exportación
+      (JSON y CSV) y bloque de auditoría del proyecto.
+  - **Revisiones pendientes** (`src/routes/app.revisiones.tsx`): cola
+    de módulos `en_revision` ordenada por antigüedad.
+  - **Invitaciones** (`src/routes/app.invitaciones.index.tsx`):
+    envío (email + rol + proyecto), **reenvío**, **revocación** y
+    estado (pendiente / aceptada / revocada / expirada).
+  - **Edición de respuestas por el implementador**: en la vista de
+    revisión del módulo, botón "Editar respuestas" que activa el
+    formulario en modo edición y guarda vía server function
+    `editarDatosModulo`, dejando traza en `auditoria`.
+  - **Gestión de invitados**: en el detalle del proyecto, se puede
+    **inhabilitar** / reactivar y **desvincular** un invitado sin
+    eliminar su cuenta.
+- **Server functions** (`src/lib/admin.functions.ts`):
+  `crearProyecto`, `editarDatosModulo`, `crearInvitacion`,
+  `reenviarInvitacion`, `revocarInvitacion`, `actualizarMiembroEstado`,
+  `desvincularMiembro`. Todas requieren rol interno y registran la
+  acción en `auditoria` con detalle relevante.
+- **Motor de formularios**: `useFormModulo` y `FormularioModulo` ahora
+  aceptan `onCambio` para desactivar el autoguardado y delegar la
+  persistencia al padre (necesario para el modo edición del
+  implementador con auditoría). Además `useFormModulo` usa
+  `useMiProyectoOptional`, lo que permite renderizar el formulario
+  fuera del portal del invitado.
+
+### Cambiado
+- `src/routes/app.$section.tsx` deja de servir `proyectos`,
+  `revisiones` e `invitaciones` (ahora rutas dedicadas) y solo se
+  usa como stub para `usuarios`, `catalogo`, `auditoria` y
+  `configuracion`.
+- `src/routes/app.tsx` reconoce nuevos títulos de topbar para
+  `Nuevo proyecto` y `Detalle del proyecto`.
+
 ## [0.12.0] — 2026-07-02
 
 ### Añadido
