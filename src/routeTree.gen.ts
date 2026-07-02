@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProyectosRouteImport } from './routes/proyectos'
 import { Route as FormulariosRouteImport } from './routes/formularios'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ProyectosRoute = ProyectosRouteImport.update({
+  id: '/proyectos',
+  path: '/proyectos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FormulariosRoute = FormulariosRouteImport.update({
   id: '/formularios',
   path: '/formularios',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/formularios': typeof FormulariosRoute
+  '/proyectos': typeof ProyectosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/formularios': typeof FormulariosRoute
+  '/proyectos': typeof ProyectosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/formularios': typeof FormulariosRoute
+  '/proyectos': typeof ProyectosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/formularios'
+  fullPaths: '/' | '/formularios' | '/proyectos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/formularios'
-  id: '__root__' | '/' | '/formularios'
+  to: '/' | '/formularios' | '/proyectos'
+  id: '__root__' | '/' | '/formularios' | '/proyectos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   FormulariosRoute: typeof FormulariosRoute
+  ProyectosRoute: typeof ProyectosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/proyectos': {
+      id: '/proyectos'
+      path: '/proyectos'
+      fullPath: '/proyectos'
+      preLoaderRoute: typeof ProyectosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/formularios': {
       id: '/formularios'
       path: '/formularios'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   FormulariosRoute: FormulariosRoute,
+  ProyectosRoute: ProyectosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
