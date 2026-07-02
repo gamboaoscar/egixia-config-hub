@@ -2,6 +2,50 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.11.0] — 2026-07-02
+
+### Añadido
+- **Flujo de revisión por módulo (Parte 12)**: transiciones de estado
+  gobernadas por servidor (`src/lib/revision.functions.ts`) con las
+  server functions `enviarModuloARevision`, `aprobarModulo`,
+  `devolverModuloConObservaciones`, `reabrirModulo` y
+  `reenviarModulo`. Toda escritura sobre `proyecto_modulos`,
+  `observaciones` y `actas` se hace con `supabaseAdmin` porque las
+  políticas RLS impiden explícitamente que el invitado cambie a
+  `en_revision` y que el proveedor marque observaciones como
+  resueltas; la autorización se valida en código (rol y membresía).
+- **Generación de acta (v1..N)**: cada envío/reenvío inserta una fila
+  en `actas` con `version` consecutiva por módulo. El PDF real lo
+  producirá la Parte 11; hoy se guarda una URL marcador
+  (`acta://modulo/{id}/vN`).
+- **Notificaciones por correo (encoladas)**: helper `notificar` que
+  usa la RPC `destinatarios_notificacion` y registra la intención en
+  `auditoria` como `notificacion_pendiente` (destinatarios, asunto,
+  mensaje). Cuando se conecte un proveedor de correo, este helper
+  disparará el envío real sin cambiar los call-sites.
+- **Autocompletado de proyecto**: trigger `trg_autocompletar_proyecto`
+  sobre `proyecto_modulos` que ejecuta `autocompletar_proyecto()`
+  cuando un módulo pasa a `aprobado` — si todos los módulos del
+  proyecto quedan aprobados, el proyecto pasa a `completado`.
+- **Vista del proveedor**: el botón "Enviar a revisión" en
+  `src/routes/mi-proyecto.modulo.$moduloId.tsx` se habilita solo con
+  `progreso === 100`, muestra "Reenviar tras corregir" cuando el
+  módulo está `con_observaciones` y refresca datos al terminar.
+- **Vista interna de revisión**: nueva ruta `/app/modulo/:moduloId`
+  (`src/routes/app.modulo.$moduloId.tsx`) que muestra el módulo en
+  solo lectura, lista las observaciones abiertas/resueltas y ofrece
+  Aprobar, Devolver (constructor de observaciones por campo) y
+  Reabrir (para módulos aprobados).
+- **Bandeja de revisiones**: `src/components/revisiones-pendientes.tsx`
+  reemplaza el stub de `/app/revisiones` con la lista real de módulos
+  en estado `en_revision`, ordenados por antigüedad del envío.
+
+### Cambiado
+- Cada transición registra una entrada en `auditoria`
+  (`modulo_enviado_revision`, `modulo_aprobado`,
+  `modulo_devuelto_con_observaciones`, `modulo_reabierto`,
+  `modulo_reenviado`) más la `notificacion_pendiente` asociada.
+
 ## [0.10.0] — 2026-07-02
 
 ### Añadido

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Lock, MessageSquareWarning, Send } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { EstadoPastilla } from "@/components/estado-pastilla";
@@ -14,6 +16,10 @@ import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { supabase } from "@/integrations/supabase/client";
 import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import {
+  enviarModuloARevision,
+  reenviarModulo,
+} from "@/lib/revision.functions";
 
 export const Route = createFileRoute("/mi-proyecto/modulo/$moduloId")({
   component: ModuloPage,
@@ -29,9 +35,12 @@ interface Observacion {
 
 function ModuloPage() {
   const { moduloId } = Route.useParams();
-  const { modulos, loading } = useMiProyecto();
+  const { modulos, loading, refreshModulos } = useMiProyecto();
   const modulo = modulos.find((m) => m.id === moduloId);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
+  const [enviando, setEnviando] = useState(false);
+  const enviar = useServerFn(enviarModuloARevision);
+  const reenviar = useServerFn(reenviarModulo);
 
   useEffect(() => {
     if (!moduloId) return;
@@ -67,6 +76,34 @@ function ModuloPage() {
     modulo.comportamiento_vencimiento,
   );
   const soloLectura = bloqueadoPorEstado || bloqueadoPorVencimiento;
+  const puedeEnviar =
+    !soloLectura &&
+    modulo.progreso >= 100 &&
+    (modulo.estado === "sin_iniciar" ||
+      modulo.estado === "en_diligenciamiento" ||
+      modulo.estado === "con_observaciones");
+  const esReenvio = modulo.estado === "con_observaciones";
+
+  const handleEnviar = async () => {
+    setEnviando(true);
+    try {
+      if (esReenvio) {
+        await reenviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo reenviado a revisión.");
+      } else {
+        await enviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo enviado a revisión.");
+      }
+      await refreshModulos();
+      setObservaciones([]);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "No se pudo enviar el módulo.";
+      toast.error(msg);
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -177,9 +214,22 @@ function ModuloPage() {
           Tus cambios se guardan automáticamente. Puedes cerrar sesión y volver
           cuando quieras.
         </p>
-        <Button disabled className="sm:w-auto">
-          <Send className="mr-2 h-4 w-4" />
-          Enviar a revisión
+        <Button
+          onClick={handleEnviar}
+          disabled={!puedeEnviar || enviando}
+          className="sm:w-auto"
+          title={
+            !puedeEnviar && !enviando
+              ? "Completa todos los campos requeridos para habilitar el envío."
+              : undefined
+          }
+        >
+          {enviando ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-2 h-4 w-4" />
+          )}
+          {esReenvio ? "Reenviar tras corregir" : "Enviar a revisión"}
         </Button>
       </div>
     </div>
