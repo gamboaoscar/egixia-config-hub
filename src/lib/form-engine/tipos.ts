@@ -59,6 +59,27 @@ export interface ColumnaTabla {
   requerido?: boolean;
 }
 
+/** Configuración específica para campos tipo `archivo`. */
+export type BucketArchivo = "logos-clientes" | "documentos";
+
+export interface ConfigArchivo {
+  /** Bucket privado donde se persiste el binario. */
+  bucket: BucketArchivo;
+  /**
+   * Formatos aceptados. Puede incluir mimes (`image/png`) o
+   * extensiones (`.svg`, `.ico`, `.pdf`).
+   */
+  formatosPermitidos: string[];
+  /** Tamaño máximo del archivo en MB. Por defecto 5. */
+  tamanoMaxMB?: number;
+  /**
+   * Dimensiones exactas requeridas para imágenes rasterizadas
+   * (PNG/JPG/WEBP). Si se declaran y la imagen no coincide, el motor
+   * redimensiona con recorte centrado ("cover") antes de subir.
+   */
+  dimensiones?: { ancho: number; alto: number };
+}
+
 export interface CampoDefinicion {
   key: string;
   label: string;
@@ -71,6 +92,8 @@ export interface CampoDefinicion {
   placeholder?: string;
   /** Configuración de tabla dinámica (tipo 'tabla'). */
   columnas?: ColumnaTabla[];
+  /** Configuración del campo cuando `tipo === 'archivo'`. */
+  archivo?: ConfigArchivo;
   /**
    * Si `false`, el campo está desactivado por configuración del proyecto:
    * no se renderiza y no cuenta para el progreso. Por defecto: `true`.
