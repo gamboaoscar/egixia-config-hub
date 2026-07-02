@@ -14,6 +14,40 @@
 6. **Tono tranquilo y moderno.** Formulario amigable, mucho espacio en blanco,
    colores suaves. Acompañar, no abrumar.
 
+## Dashboard del invitado
+
+La pantalla `/mi-proyecto` es la puerta de entrada del cliente y sigue
+el estilo "cuadritos" con azul EGIXIA como acento:
+
+- **Encabezado**: saludo personalizado, nombre del proyecto y empresa,
+  mensaje amable de siguiente paso (p. ej. *“Te faltan 2 módulos”* o
+  *“Tienes 1 módulo con observaciones por corregir”*) y **anillo de
+  avance general** (promedio del % de sus módulos).
+- **Tarjeta por módulo** con ícono, pastilla de estado, barra de
+  avance, fecha límite (si aplica) y un botón contextual:
+  - *Comenzar* (sin iniciar) · *Continuar* (en diligenciamiento) ·
+    *Ver* (en revisión/aprobado) · *Corregir observaciones*
+    (destacado en ámbar).
+- **Sidebar** con *Inicio* y un ítem por módulo asignado (ícono,
+  pastilla y %). En estado colapsado se muestra solo el ícono, con la
+  información completa en el tooltip.
+- **Topbar** con nombre del proyecto, pastilla de fecha límite más
+  próxima e indicador de guardado.
+
+### Pastillas de estado
+
+Se usa el componente `<EstadoPastilla />` en dashboard, sidebar y
+encabezado de módulo. Colores (Tailwind tokens, no hex directos):
+
+| Estado                | Color                        |
+| --------------------- | ---------------------------- |
+| `sin_iniciar`         | gris (`slate-100/700`)       |
+| `en_diligenciamiento` | azul (`blue-50/700`)         |
+| `en_revision`         | azul info (`sky-50/700`)     |
+| `con_observaciones`   | ámbar (`amber-50/800`)       |
+| `aprobado`            | verde (`emerald-50/700`)     |
+
+
 ## Paleta de colores
 
 El Azul Rey es el color de marca y se usa **con mesura**: la interfaz es
