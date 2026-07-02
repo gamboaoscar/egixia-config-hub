@@ -9,6 +9,8 @@ interface Props {
   definicion: ModuloDefinicion;
   datosIniciales: DatosModulo;
   soloLectura?: boolean;
+  /** Si se define, no autopersiste; emite cambios al padre. */
+  onCambio?: (datos: DatosModulo) => void;
 }
 
 /**
@@ -22,12 +24,14 @@ export function FormularioModulo({
   definicion,
   datosIniciales,
   soloLectura,
+  onCambio,
 }: Props) {
   const { datos, errores, tocados, setValor, marcarTocado } = useFormModulo({
     moduloId,
     definicion,
     datosIniciales,
     soloLectura,
+    onCambio,
   });
 
   return (
