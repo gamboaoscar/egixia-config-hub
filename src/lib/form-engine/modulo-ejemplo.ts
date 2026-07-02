@@ -1,73 +1,18 @@
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 
 import type { ModuloDefinicion } from "./tipos";
-
-/**
- * Definición de ejemplo (Parte 5). El contenido real de los módulos
- * llega en las Partes 7–9 (Imagen, Sociedades, Seguridad).
- *
- * Aquí solo se muestran algunos campos representativos para probar el
- * motor: uno con guía, uno requerido, y varios tipos distintos.
- */
-
 import { MODULO_IMAGEN } from "./modulos/imagen";
 import { MODULO_SOCIEDADES } from "./modulos/sociedades";
+import { MODULO_SEGURIDAD } from "./modulos/seguridad";
 
-const DEMO_SEGURIDAD: ModuloDefinicion = {
-  key: "seguridad",
-  nombre: "Seguridad",
-  secciones: [
-    {
-      key: "politicas",
-      titulo: "Políticas y responsables",
-      campos: [
-        {
-          key: "nivel_madurez",
-          label: "Nivel de madurez del programa de seguridad",
-          tipo: "radio_tarjetas",
-          requerido: true,
-          opciones: [
-            {
-              valor: "inicial",
-              etiqueta: "Inicial",
-              descripcion: "Procesos ad hoc, sin políticas formales.",
-            },
-            {
-              valor: "gestionado",
-              etiqueta: "Gestionado",
-              descripcion: "Políticas documentadas y responsables asignados.",
-            },
-            {
-              valor: "optimizado",
-              etiqueta: "Optimizado",
-              descripcion: "Programa maduro, con métricas y mejora continua.",
-            },
-          ],
-        },
-        {
-          key: "email_responsable",
-          label: "Correo del responsable de seguridad",
-          tipo: "email",
-          requerido: true,
-          guia: {
-            que: "Persona a la que EGIXIA escribirá para temas de seguridad.",
-          },
-        },
-        {
-          key: "observaciones",
-          label: "Notas adicionales",
-          tipo: "textarea",
-          placeholder: "Contexto adicional útil para el equipo de EGIXIA.",
-        },
-      ],
-    },
-  ],
-};
-
+/**
+ * Registro de definiciones de módulos disponibles en el motor de
+ * formularios (Partes 7–9): Imagen, Sociedades y Seguridad.
+ */
 const REGISTRO: Record<string, ModuloDefinicion> = {
   imagen: MODULO_IMAGEN,
   sociedades: MODULO_SOCIEDADES,
-  seguridad: DEMO_SEGURIDAD,
+  seguridad: MODULO_SEGURIDAD,
 };
 
 /**
