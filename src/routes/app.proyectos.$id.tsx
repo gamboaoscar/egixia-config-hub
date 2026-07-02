@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   FileText,
   Loader2,
   Mail,
+  Trash2,
   UserMinus,
   UserX,
   UserCheck,
@@ -22,7 +23,9 @@ import { descargarActaFirmada } from "@/lib/acta.functions";
 import {
   actualizarMiembroEstado,
   desvincularMiembro,
+  eliminarProyecto,
 } from "@/lib/admin.functions";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/app/proyectos/$id")({
   component: DetalleProyecto,
@@ -88,6 +91,24 @@ function DetalleProyecto() {
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
   const descargarActa = useServerFn(descargarActaFirmada);
+  const remove = useServerFn(eliminarProyecto);
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleEliminarProyecto = async () => {
+    if (!proy) return;
+    if (!confirm(
+      `Eliminar el proyecto "${proy.nombre}"? Esta acción borra sus módulos, ` +
+      `observaciones y actas. No se puede deshacer.`,
+    )) return;
+    try {
+      await remove({ data: { proyectoId: proy.id } });
+      toast.success("Proyecto eliminado.");
+      navigate({ to: "/app/proyectos" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar.");
+    }
+  };
 
   const cargar = async () => {
     const [p, m, mem, ac] = await Promise.all([
@@ -258,6 +279,17 @@ function DetalleProyecto() {
               <Download className="mr-1 h-4 w-4" />
               CSV
             </Button>
+            {profile?.rol === "admin" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                onClick={handleEliminarProyecto}
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                Eliminar
+              </Button>
+            )}
           </div>
         </div>
       </section>

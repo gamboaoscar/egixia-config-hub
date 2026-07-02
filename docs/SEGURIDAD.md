@@ -129,3 +129,21 @@ del primer segmento del path y se usa en las políticas de
 Toda operación sensible (aceptación de invitaciones, cambios de rol,
 envíos a revisión, aprobaciones) queda registrada en la tabla
 `auditoria`. Los usuarios `cliente` nunca ven este registro.
+## Superficies añadidas por el panel de Administrador
+
+- **`catalogo_overrides`**: RLS permite lectura a miembros del proyecto
+  (los invitados sí necesitan leer para renderizar su formulario) y
+  escritura solo a `admin`. La escritura pasa por
+  `guardarOverrideCampo`, que audita cada cambio.
+- **`configuracion_sistema`**: lectura para todo usuario autenticado
+  (necesaria para branding); escritura reservada a `admin` vía
+  `guardarConfiguracion`. Las llaves de API de correo se almacenan como
+  secretos de la Edge Function `enviar-correo` y nunca viajan al
+  frontend.
+- **Eliminación de usuarios**: `eliminarUsuario` usa el cliente admin de
+  Supabase Auth (`auth.admin.deleteUser`), lo que dispara el borrado en
+  cascada de `profiles` a través del FK a `auth.users`. El endpoint
+  exige rol `admin` y registra la acción en `auditoria`.
+- **Eliminación de proyectos**: `eliminarProyecto` está protegida por el
+  mismo control y borra en cascada módulos, observaciones, actas y
+  miembros.

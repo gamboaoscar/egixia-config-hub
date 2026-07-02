@@ -435,3 +435,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 - Integración con Supabase (auth, DB, storage).
 - Modelo de datos y catálogo de módulos/campos.
 - Formularios guiados con progreso, autoguardado y ayuda por campo.
+## Panel del Administrador
+
+- Ruta `/app/usuarios`: listado con filtros por rol y búsqueda; el admin
+  puede cambiar rol, habilitar/inhabilitar y eliminar cuentas (los
+  implementadores solo consultan).
+- Ruta `/app/catalogo`: catálogo maestro de módulos con overrides por
+  proyecto — activar/desactivar campos y editar etiqueta, requerido y guía.
+- Ruta `/app/auditoria`: histórico global (últimos 1.000 eventos) con
+  búsqueda, filtro por entidad y exportación CSV.
+- Ruta `/app/configuracion`: branding, parámetros de correo (proveedor y
+  remitente, sin llaves en el frontend) y parámetros generales.
+- Detalle de proyecto: acción "Eliminar" visible solo para admin.
+- Motor de formularios: `aplicarOverrides` inyecta la personalización
+  administrativa tanto en la vista del invitado como en la de revisión,
+  respetando el cálculo de progreso.

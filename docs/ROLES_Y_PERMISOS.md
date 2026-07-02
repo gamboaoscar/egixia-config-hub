@@ -69,3 +69,19 @@ en `src/lib/admin.functions.ts`, que verifican el rol del llamante y
 registran cada acción en la tabla `auditoria` (RPC
 `registrar_auditoria`). El invitado nunca ve estas rutas ni las
 funciones — se guarda por `PrivateShell` + validación server-side.
+## Acciones exclusivas del Administrador
+
+| Acción                                          | Admin | Implementador |
+|-------------------------------------------------|:-----:|:-------------:|
+| Cambiar rol de un usuario                       |  ✅   |      ❌       |
+| Habilitar / inhabilitar cuenta                  |  ✅   |      ❌       |
+| Eliminar cuenta de usuario                      |  ✅   |      ❌       |
+| Eliminar proyecto (y su información)            |  ✅   |      ❌       |
+| Editar catálogo (overrides por proyecto)        |  ✅   |      ❌       |
+| Configurar branding / correo / parámetros       |  ✅   |      ❌       |
+| Consultar auditoría global y exportarla         |  ✅   |      ✅       |
+| Invitar usuarios internos                       |  ✅   |      ✅       |
+
+Las mutaciones sensibles se ejecutan en server functions
+(`src/lib/admin.functions.ts`) que verifican el rol del llamante contra
+`profiles.rol` antes de tocar la base o el servicio de Auth.

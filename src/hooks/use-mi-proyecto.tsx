@@ -14,6 +14,7 @@ import type {
   ComportamientoVencimiento,
   ModuloEstado,
 } from "@/lib/modulo-estado";
+import type { CampoOverride } from "@/lib/form-engine/overrides";
 
 export interface ProyectoLite {
   id: string;
@@ -42,6 +43,7 @@ interface MiProyectoContextValue {
   proyecto: ProyectoLite | null;
   modulos: ProyectoModulo[];
   moduloById: (id: string) => ProyectoModulo | undefined;
+  overrides: CampoOverride[];
   cambiarProyecto: (id: string) => void;
   refreshModulos: () => Promise<void>;
   saveStatus: SaveStatus;
@@ -58,6 +60,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   const [proyectos, setProyectos] = useState<ProyectoLite[]>([]);
   const [proyectoId, setProyectoId] = useState<string | null>(null);
   const [modulos, setModulos] = useState<ProyectoModulo[]>([]);
+  const [overrides, setOverrides] = useState<CampoOverride[]>([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
@@ -101,6 +104,15 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
     setModulos((data ?? []) as ProyectoModulo[]);
   }, [proyectoId]);
 
+  const refreshOverrides = useCallback(async () => {
+    if (!proyectoId) { setOverrides([]); return; }
+    const { data } = await supabase
+      .from("catalogo_overrides")
+      .select("modulo_key, campo_key, activo, label, requerido, guia")
+      .eq("proyecto_id", proyectoId);
+    setOverrides((data ?? []) as unknown as CampoOverride[]);
+  }, [proyectoId]);
+
   useEffect(() => {
     if (authLoading) return;
     setLoading(true);
@@ -110,7 +122,8 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!proyectoId) return;
     refreshModulos();
-  }, [proyectoId, refreshModulos]);
+    refreshOverrides();
+  }, [proyectoId, refreshModulos, refreshOverrides]);
 
   const cambiarProyecto = useCallback((id: string) => {
     setProyectoId(id);
@@ -133,6 +146,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       proyecto: proyectos.find((p) => p.id === proyectoId) ?? null,
       modulos,
       moduloById,
+      overrides,
       cambiarProyecto,
       refreshModulos,
       saveStatus,
@@ -146,6 +160,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       proyectoId,
       modulos,
       moduloById,
+      overrides,
       cambiarProyecto,
       refreshModulos,
       saveStatus,
