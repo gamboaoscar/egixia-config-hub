@@ -11,33 +11,7 @@ import type { ModuloDefinicion } from "./tipos";
  */
 
 import { MODULO_IMAGEN } from "./modulos/imagen";
-
-const DEMO_SOCIEDADES: ModuloDefinicion = {
-  key: "sociedades",
-  nombre: "Sociedades",
-  secciones: [
-    {
-      key: "listado",
-      titulo: "Sociedades del grupo",
-      campos: [
-        {
-          key: "sociedades",
-          label: "Listado de sociedades",
-          tipo: "tabla",
-          requerido: true,
-          columnas: [
-            { key: "razon_social", label: "Razón social", tipo: "texto", requerido: true },
-            { key: "nit", label: "NIT / RUT", tipo: "texto", requerido: true },
-            { key: "contacto", label: "Correo de contacto", tipo: "email" },
-          ],
-          guia: {
-            que: "Todas las sociedades del grupo que participarán en el portal.",
-          },
-        },
-      ],
-    },
-  ],
-};
+import { MODULO_SOCIEDADES } from "./modulos/sociedades";
 
 const DEMO_SEGURIDAD: ModuloDefinicion = {
   key: "seguridad",
@@ -92,7 +66,7 @@ const DEMO_SEGURIDAD: ModuloDefinicion = {
 
 const REGISTRO: Record<string, ModuloDefinicion> = {
   imagen: MODULO_IMAGEN,
-  sociedades: DEMO_SOCIEDADES,
+  sociedades: MODULO_SOCIEDADES,
   seguridad: DEMO_SEGURIDAD,
 };
 
