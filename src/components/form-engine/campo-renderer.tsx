@@ -348,14 +348,20 @@ function SelectorColor({
 }
 
 function TablaDinamica({
+  campoKey,
   columnas,
   valor,
   disabled,
+  proyectoId,
+  moduloId,
   onChange,
 }: {
+  campoKey: string;
   columnas: ColumnaTabla[];
   valor: Record<string, unknown>[];
   disabled?: boolean;
+  proyectoId: string;
+  moduloId: string;
   onChange: (v: unknown) => void;
 }) {
   const filas = valor;
@@ -371,7 +377,7 @@ function TablaDinamica({
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               {columnas.map((c) => (
@@ -379,9 +385,17 @@ function TablaDinamica({
                   key={c.key}
                   className="px-3 py-2 text-left font-medium"
                   scope="col"
+                  style={c.ancho ? { minWidth: c.ancho } : undefined}
                 >
-                  {c.label}
-                  {c.requerido && <span className="ml-0.5 text-primary">*</span>}
+                  <div className="flex items-center gap-1.5">
+                    <span>{c.label}</span>
+                    {c.requerido && (
+                      <span className="text-primary" aria-label="requerido">
+                        *
+                      </span>
+                    )}
+                    {c.guia && <CampoInfo guia={c.guia} campoLabel={c.label} />}
+                  </div>
                 </th>
               ))}
               <th className="w-10" aria-label="Acciones" />
@@ -399,36 +413,17 @@ function TablaDinamica({
               </tr>
             )}
             {filas.map((f, i) => (
-              <tr key={i} className="border-t border-border">
+              <tr key={i} className="border-t border-border align-top">
                 {columnas.map((c) => (
                   <td key={c.key} className="px-2 py-1.5">
-                    <Input
-                      type={
-                        c.tipo === "numero"
-                          ? "number"
-                          : c.tipo === "email"
-                            ? "email"
-                            : c.tipo === "url"
-                              ? "url"
-                              : "text"
-                      }
-                      value={
-                        typeof f[c.key] === "string" ||
-                        typeof f[c.key] === "number"
-                          ? String(f[c.key])
-                          : ""
-                      }
+                    <CeldaTabla
+                      columna={c}
+                      valor={f[c.key]}
                       disabled={disabled}
-                      onChange={(e) =>
-                        setCelda(
-                          i,
-                          c.key,
-                          c.tipo === "numero" && e.target.value !== ""
-                            ? Number(e.target.value)
-                            : e.target.value,
-                        )
-                      }
-                      className="h-8 border-transparent bg-transparent focus-visible:border-border focus-visible:bg-background"
+                      proyectoId={proyectoId}
+                      moduloId={moduloId}
+                      celdaKey={`${campoKey}_${i}_${c.key}`}
+                      onChange={(v) => setCelda(i, c.key, v)}
                     />
                   </td>
                 ))}
@@ -463,5 +458,94 @@ function TablaDinamica({
         </Button>
       </div>
     </div>
+  );
+}
+
+function CeldaTabla({
+  columna,
+  valor,
+  disabled,
+  proyectoId,
+  moduloId,
+  celdaKey,
+  onChange,
+}: {
+  columna: ColumnaTabla;
+  valor: unknown;
+  disabled?: boolean;
+  proyectoId: string;
+  moduloId: string;
+  celdaKey: string;
+  onChange: (v: unknown) => void;
+}) {
+  const base =
+    "h-8 border-transparent bg-transparent focus-visible:border-border focus-visible:bg-background";
+
+  if (columna.tipo === "select") {
+    return (
+      <Select
+        value={typeof valor === "string" ? valor : ""}
+        onValueChange={(v) => onChange(v)}
+        disabled={disabled}
+      >
+        <SelectTrigger className={cn(base, "px-2")}>
+          <SelectValue placeholder={columna.placeholder ?? "Selecciona"} />
+        </SelectTrigger>
+        <SelectContent>
+          {(columna.opciones ?? []).map((o) => (
+            <SelectItem key={o.valor} value={o.valor}>
+              {o.etiqueta}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  if (columna.tipo === "archivo" && columna.archivo) {
+    return (
+      <div className="min-w-[220px] py-1">
+        <CampoArchivo
+          campoKey={celdaKey}
+          config={columna.archivo}
+          valor={valor}
+          disabled={disabled}
+          proyectoId={proyectoId}
+          moduloId={moduloId}
+          onChange={onChange}
+        />
+      </div>
+    );
+  }
+
+  const type =
+    columna.tipo === "numero"
+      ? "number"
+      : columna.tipo === "email"
+        ? "email"
+        : columna.tipo === "url"
+          ? "url"
+          : "text";
+
+  return (
+    <Input
+      type={type}
+      value={
+        typeof valor === "string" || typeof valor === "number"
+          ? String(valor)
+          : ""
+      }
+      placeholder={columna.placeholder}
+      maxLength={columna.longitud}
+      disabled={disabled}
+      onChange={(e) =>
+        onChange(
+          columna.tipo === "numero" && e.target.value !== ""
+            ? Number(e.target.value)
+            : e.target.value,
+        )
+      }
+      className={base}
+    />
   );
 }
