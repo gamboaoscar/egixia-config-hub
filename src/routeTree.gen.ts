@@ -21,6 +21,7 @@ import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
 import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
 import { Route as AppRevisionesRouteImport } from './routes/app.revisiones'
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
+import { Route as AppCatalogoRouteImport } from './routes/app.catalogo'
 import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
 import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
@@ -90,6 +91,11 @@ const AppMiPerfilRoute = AppMiPerfilRouteImport.update({
   path: '/mi-perfil',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCatalogoRoute = AppCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAuditoriaRoute = AppAuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMiPerfilRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/catalogo': {
+      id: '/app/catalogo'
+      path: '/catalogo'
+      fullPath: '/app/catalogo'
+      preLoaderRoute: typeof AppCatalogoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/auditoria': {
       id: '/app/auditoria'
       path: '/auditoria'
@@ -421,6 +440,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppSectionRoute: typeof AppSectionRoute
   AppAuditoriaRoute: typeof AppAuditoriaRoute
+  AppCatalogoRoute: typeof AppCatalogoRoute
   AppMiPerfilRoute: typeof AppMiPerfilRoute
   AppRevisionesRoute: typeof AppRevisionesRoute
   AppUsuariosRoute: typeof AppUsuariosRoute
@@ -435,6 +455,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppSectionRoute: AppSectionRoute,
   AppAuditoriaRoute: AppAuditoriaRoute,
+  AppCatalogoRoute: AppCatalogoRoute,
   AppMiPerfilRoute: AppMiPerfilRoute,
   AppRevisionesRoute: AppRevisionesRoute,
   AppUsuariosRoute: AppUsuariosRoute,
