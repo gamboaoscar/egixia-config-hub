@@ -15,9 +15,11 @@ export type TipoCampo =
   | "url"
   | "select"
   | "radio_tarjetas"
+  | "checkbox_multiple"
   | "color"
   | "archivo"
-  | "tabla";
+  | "tabla"
+  | "info";
 
 /** Reglas de validación soportadas por el motor. */
 export interface ReglasValidacion {

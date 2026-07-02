@@ -20,6 +20,7 @@ import type {
 
 import { CampoInfo } from "./campo-info";
 import { CampoArchivo } from "./campo-archivo";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
   campo: CampoDefinicion;
@@ -43,6 +44,16 @@ export function CampoRenderer({
   onBlur,
 }: Props) {
   const inputId = `campo-${campo.key}`;
+  if (campo.tipo === "info") {
+    return (
+      <div className="rounded-xl border border-primary/20 bg-primary-soft/40 p-3 text-sm text-foreground">
+        <div className="font-medium">{campo.label}</div>
+        {campo.aviso && (
+          <p className="mt-1 text-xs text-muted-foreground">{campo.aviso}</p>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
@@ -194,6 +205,16 @@ function CampoControl({
         />
       );
 
+    case "checkbox_multiple":
+      return (
+        <CheckboxMultiple
+          opciones={campo.opciones ?? []}
+          valor={Array.isArray(valor) ? (valor as string[]) : []}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      );
+
     case "color":
       return (
         <SelectorColor
@@ -236,7 +257,66 @@ function CampoControl({
           onChange={onChange}
         />
       );
+
+    case "info":
+      return null;
   }
+}
+
+function CheckboxMultiple({
+  opciones,
+  valor,
+  disabled,
+  onChange,
+}: {
+  opciones: OpcionCampo[];
+  valor: string[];
+  disabled?: boolean;
+  onChange: (v: string[]) => void;
+}) {
+  const toggle = (v: string, checked: boolean) => {
+    const set = new Set(valor);
+    if (checked) set.add(v);
+    else set.delete(v);
+    onChange(Array.from(set));
+  };
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {opciones.map((o) => {
+        const seleccionada = valor.includes(o.valor);
+        return (
+          <label
+            key={o.valor}
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-3 transition",
+              "hover:border-primary/40",
+              disabled && "cursor-not-allowed opacity-60",
+              seleccionada
+                ? "border-primary ring-1 ring-primary/20 bg-primary-soft/30"
+                : "border-border",
+            )}
+          >
+            <Checkbox
+              checked={seleccionada}
+              disabled={disabled}
+              onCheckedChange={(c) => toggle(o.valor, c === true)}
+              className="mt-0.5"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-foreground">
+                {o.etiqueta}
+              </span>
+              {o.descripcion && (
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {o.descripcion}
+                </span>
+              )}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
 }
 
 function RadioTarjetas({

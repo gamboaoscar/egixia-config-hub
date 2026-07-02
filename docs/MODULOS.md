@@ -11,7 +11,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | ------------- | -------------- | ------------------------------------------------ |
 | `imagen`      | ✅ Completo    | `src/lib/form-engine/modulos/imagen.ts`          |
 | `sociedades`  | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`      |
-| `seguridad`   | 🚧 Demo        | `src/lib/form-engine/modulo-ejemplo.ts`          |
+| `seguridad`   | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`       |
 
 ---
 
@@ -160,4 +160,77 @@ ajuste cuando la imagen no cumple 200×200, y sube al bucket
 - `TablaDinamica` renderiza cada celda con el control apropiado y expone
   la guía por columna con el mismo popover "i" que los campos.
 - `calcularProgreso` maneja el caso especial de tablas con columnas
+
+---
+
+## Módulo `seguridad` — Seguridad
+
+Define la política de contraseñas del portal y los roles que estarán
+disponibles para usuarios internos y contactos de proveedores. Se
+organiza en 4 secciones.
+
+### Sección 1 — Política de contraseñas
+
+Todos los campos son numéricos y **requeridos**. El valor estándar
+recomendado por EGIXIA se muestra como `placeholder` y en la guía "i".
+
+| Campo             | Estándar | Detalle                                                          |
+| ----------------- | :------: | ---------------------------------------------------------------- |
+| `pass_dias`       |   180    | Periodo de cambio de contraseña (días).                          |
+| `pass_espera`     |    0     | Tiempo mínimo entre cambios (días). 0 = sin espera.              |
+| `pass_largo`      |    12    | Largo mínimo de la contraseña.                                   |
+| `pass_numeros`    |    1     | Mínimo de caracteres numéricos (0–9).                            |
+| `pass_mayusculas` |    1     | Mínimo de letras mayúsculas (A–Z).                               |
+| `pass_especiales` |    1     | Mínimo de caracteres especiales (!, @, #, $, %, …).              |
+| `pass_historial`  |    6     | Cantidad de contraseñas previas recordadas para impedir reúso.   |
+
+### Sección 2 — Roles internos
+
+Campo `roles_internos_seleccion` de tipo `checkbox_multiple`. Perfiles
+predefinidos disponibles para asignar a usuarios internos:
+
+Gestor de configuración · Gestor de contenido · Gestor de usuarios ·
+Gestor de proveedores · Gestor de riesgos · Gestor de datos maestros ·
+Gestor de solicitudes · Gestor de negociaciones · Gestor de
+evaluaciones · Colaborador de evaluaciones · Gestor de órdenes de
+compra · Gestor de contabilidad · Gestor de facturas · Gestor de
+pagos · Gestor de contratos · Gestor de soporte.
+
+Cada opción incluye una descripción breve visible en la tarjeta.
+
+### Sección 3 — Roles de proveedor
+
+Campo `roles_proveedor_seleccion` de tipo `checkbox_multiple`. Roles
+disponibles para los contactos de las empresas proveedoras:
+
+Contacto Principal · Contacto solicitudes · Contacto comercial ·
+Contacto pedidos · Contacto financiero · Contacto contabilidad.
+
+Aviso visible en el formulario: **cada proveedor puede asignar como
+máximo 5 de estos roles a sus contactos**. Este límite es informativo
+en la configuración y se aplica más adelante en el módulo de
+proveedores.
+
+### Sección 4 — Roles personalizados
+
+Nota informativa (campo tipo `info`, sin valor): se pueden habilitar
+hasta **3 roles personalizados adicionales**, que se solicitan por la
+mesa de servicio de EGIXIA indicando nombre y permisos.
+
+### Persistencia y progreso
+
+- Las selecciones se guardan en `proyecto_modulos.datos` bajo las
+  claves `roles_internos_seleccion` y `roles_proveedor_seleccion` como
+  arrays de strings.
+- El % de avance solo cuenta los **7 numéricos requeridos** de la
+  política; los checkbox y la nota informativa no penalizan el
+  progreso.
+
+### Extensiones del motor (Parte 9)
+
+- Nuevo tipo `checkbox_multiple`: selección múltiple de opciones,
+  guarda un `string[]` en `datos`.
+- Nuevo tipo `info`: campo puramente informativo, no cuenta para
+  validación ni progreso. Renderiza una tarjeta suave con el `label`
+  como título y el `aviso` como cuerpo.
   requeridas.

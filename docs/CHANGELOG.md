@@ -2,6 +2,25 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.10.0] — 2026-07-02
+
+### Añadido
+- **Módulo `seguridad` — Seguridad (Parte 9)**: definición completa en
+  `src/lib/form-engine/modulos/seguridad.ts` con 4 secciones: política
+  de contraseñas (7 numéricos requeridos con estándar EGIXIA como
+  placeholder/guía), roles internos (16 perfiles predefinidos), roles
+  de proveedor (6 opciones con aviso de máx. 5 por empresa) y nota
+  informativa sobre roles personalizados adicionales (mesa de servicio).
+- **Motor de formularios — nuevos tipos de campo**:
+  - `checkbox_multiple`: selección múltiple de opciones renderizada
+    como tarjetas con checkbox; persiste `string[]` en `datos`.
+  - `info`: campo puramente informativo (sin valor). No cuenta para
+    validación ni para el cálculo de progreso.
+- Registro del módulo en `src/lib/form-engine/modulo-ejemplo.ts` (se
+  eliminó la definición demo previa de `seguridad`).
+- **Documentación**: ficha completa del módulo `seguridad` en
+  `docs/MODULOS.md` y detalle de las extensiones del motor.
+
 ## [0.9.0] — 2026-07-02
 
 ### Añadido
