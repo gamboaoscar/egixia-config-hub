@@ -279,6 +279,17 @@ function DetalleProyecto() {
               <Download className="mr-1 h-4 w-4" />
               CSV
             </Button>
+            {profile?.rol === "admin" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                onClick={handleEliminarProyecto}
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                Eliminar
+              </Button>
+            )}
           </div>
         </div>
       </section>
