@@ -61,6 +61,14 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@theme inline {
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-sans);
+}
+
 :root {
   --radius: 0.625rem;
   /* EGIXIA palette (mapped from hex to oklch) */
