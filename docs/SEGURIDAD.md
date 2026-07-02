@@ -15,6 +15,42 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
   `validar_invitacion`).
 - **Sin secretos en el cliente ni en la documentación**.
 
+## Envío de correo
+
+- Toda la salida de correos pasa por la Edge Function
+  `supabase/functions/enviar-correo`. El frontend **nunca** habla con el
+  proveedor de correo ni conoce sus llaves.
+- Secretos requeridos en el proyecto Supabase (variables de la Function):
+  - `RESEND_API_KEY` — token del proveedor. Si falta, la Function opera
+    en modo **dry-run** (registra en logs y responde OK) para no bloquear
+    el flujo en desarrollo.
+  - `CORREO_FROM` — remitente autorizado, ej.
+    `EGIXIA <no-reply@egixia.com>`.
+  - `CORREO_WEBHOOK_SECRET` *(opcional)* — segundo secreto exigido en
+    el header `x-egixia-secret` para endurecer la invocación.
+- Autorización de la invocación: el servidor de la app llama con
+  `Authorization: Bearer <SERVICE_ROLE_KEY>` (nunca expuesto al
+  navegador). Con `CORREO_WEBHOOK_SECRET` se refuerza con un segundo
+  factor por header.
+- Trazabilidad: cada envío (o error) se registra en `public.auditoria`
+  con los destinatarios, asuntos y el status devuelto por la Function.
+  Los cuerpos HTML no se persisten para no duplicar información de
+  clientes.
+- Renderizado seguro: las plantillas escapan el HTML de todos los
+  valores dinámicos (`escaparHtml`) para evitar HTML injection.
+
+## Actas (PDF)
+
+- Bucket `actas` privado. Los PDF se sirven exclusivamente por URL
+  firmada emitida por `urlFirmadaActa` (7 días). Nunca se generan URLs
+  públicas.
+- La generación del PDF se hace server-side (`renderYSubirActa`) usando
+  `pdf-lib`, para evitar que un invitado pueda inyectar un acta que no
+  corresponda a los datos realmente guardados.
+- La previsualización (`previsualizarActa`) valida rol o membresía en
+  el proyecto antes de renderizar. El PDF se devuelve en base64 al
+  cliente y no se persiste.
+
 ## Archivos y Storage
 
 - **Todos los buckets son privados**: `logos-clientes`, `documentos`,

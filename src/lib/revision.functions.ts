@@ -8,6 +8,7 @@ import {
   campoVisible,
   valorLleno,
 } from "@/lib/form-engine/validacion";
+import type { TipoCorreo } from "@/lib/acta/plantillas-correo";
 
 /**
  * Servidor de transiciones del flujo de revisión por módulo (Sección B).
@@ -103,62 +104,103 @@ async function auditar(
 }
 
 /**
- * Encola una notificación por correo. Mientras no haya proveedor de
- * correo conectado, se persiste en `auditoria` como
- * `notificacion_pendiente` con la lista de destinatarios y el asunto.
+ * Notifica a los destinatarios del proyecto usando la plantilla
+ * correspondiente y la Edge Function `enviar-correo`. Toda la lógica
+ * vive en `acta/notificaciones.server.ts` (server-only).
  */
-async function notificar(
-  admin: AdminClient,
-  proyectoId: string,
-  moduloId: string,
-  asunto: string,
-  mensaje: string,
-) {
-  const { data } = await (admin as any).rpc("destinatarios_notificacion", {
-    _proyecto_id: proyectoId,
-  });
-  const destinatarios = (data ?? [])
-    .map((r: { destinatarios_notificacion?: string } | string) =>
-      typeof r === "string" ? r : r.destinatarios_notificacion,
-    )
-    .filter(Boolean);
-
-  await auditar(admin, "notificacion_pendiente", moduloId, {
-    proyecto_id: proyectoId,
-    asunto,
-    mensaje,
-    destinatarios,
+async function notificar(input: {
+  proyectoId: string;
+  moduloId: string;
+  moduloNombre: string;
+  tipo: TipoCorreo;
+  proyectoNombre: string;
+  empresa: string | null;
+  actorNombre: string;
+  actaVersion?: number;
+  actaUrl?: string;
+  observacionesCount?: number;
+}) {
+  const { notificarProyecto } = await import("@/lib/acta/notificaciones.server");
+  const urlAppPath = `/app/modulo/${input.moduloId}`;
+  const urlMiProyectoPath = `/mi-proyecto/modulo/${input.moduloId}`;
+  const contextoBase =
+    input.tipo === "acta_envio"
+      ? {
+          acta: {
+            proyecto: input.proyectoNombre,
+            empresa: input.empresa,
+            moduloNombre: input.moduloNombre,
+            version: input.actaVersion ?? 1,
+            autorNombre: input.actorNombre,
+            urlActa: input.actaUrl,
+          },
+        }
+      : input.tipo === "acta_devolucion"
+        ? {
+            observaciones: {
+              proyecto: input.proyectoNombre,
+              moduloNombre: input.moduloNombre,
+              cantidad: input.observacionesCount ?? 0,
+            },
+          }
+        : input.tipo === "acta_aprobacion"
+          ? {
+              aprobacion: {
+                proyecto: input.proyectoNombre,
+                moduloNombre: input.moduloNombre,
+              },
+            }
+          : {};
+  await notificarProyecto({
+    proyectoId: input.proyectoId,
+    moduloId: input.moduloId,
+    tipo: input.tipo,
+    contextoBase,
+    urlAppPath,
+    urlMiProyectoPath,
   });
 }
 
 /**
- * Genera una nueva versión de acta para el módulo (numera consecutivo).
- * Devuelve la nueva versión.
+ * Genera una nueva versión de acta (PDF real) para el módulo:
+ * renderiza el PDF con `pdf-lib`, lo sube al bucket privado `actas`
+ * y registra la versión en la tabla `actas`.
  */
 async function generarActa(
   admin: AdminClient,
   moduloId: string,
   actorId: string,
-): Promise<number> {
-  const { data: previa } = await admin
-    .from("actas")
-    .select("version")
-    .eq("proyecto_modulo_id", moduloId)
-    .order("version", { ascending: false })
-    .limit(1)
+): Promise<{ version: number; archivoUrl: string; urlFirmada: string | null }> {
+  void admin; // parámetro conservado por consistencia; usamos supabaseAdmin.
+  const { renderYSubirActa, urlFirmadaActa } = await import(
+    "@/lib/acta/acta.server"
+  );
+  const { version, archivoUrl } = await renderYSubirActa(moduloId, actorId);
+  const urlFirmada = await urlFirmadaActa(archivoUrl);
+  return { version, archivoUrl, urlFirmada };
+}
+
+/** Metadatos del proyecto y del autor usados al enviar/reenviar. */
+async function metadatosProyecto(admin: AdminClient, proyectoId: string) {
+  const { data } = await admin
+    .from("proyectos")
+    .select("nombre, empresa")
+    .eq("id", proyectoId)
     .maybeSingle();
-  const version = ((previa?.version as number | undefined) ?? 0) + 1;
-  // El PDF definitivo se genera en la Parte 11; aquí registramos la
-  // versión y una URL marcador que el generador reemplazará.
-  const url = `acta://modulo/${moduloId}/v${version}`;
-  const { error } = await admin.from("actas").insert({
-    proyecto_modulo_id: moduloId,
-    version,
-    archivo_url: url,
-    generada_por: actorId,
-  });
-  if (error) throw new Error("No se pudo generar el acta.");
-  return version;
+  return {
+    nombre: (data?.nombre as string | undefined) ?? "Proyecto",
+    empresa: (data?.empresa as string | null | undefined) ?? null,
+  };
+}
+
+async function nombreActor(admin: AdminClient, actorId: string) {
+  const { data } = await admin
+    .from("profiles")
+    .select("nombre, apellido, email")
+    .eq("id", actorId)
+    .maybeSingle();
+  const full = [data?.nombre, data?.apellido].filter(Boolean).join(" ");
+  return full || (data?.email as string | undefined) || "Usuario";
 }
 
 // ---------- Enviar a revisión (invitado) -----------------------------------
@@ -229,19 +271,29 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo enviar el módulo a revisión.");
 
-    const version = await generarActa(supabaseAdmin, modulo.id, userId);
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+    const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, "modulo_enviado_revision", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo enviado a revisión: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue enviado a revisión. Se generó el acta v${version}.`,
-    );
+    await notificar({
+      proyectoId: modulo.proyecto_id,
+      moduloId: modulo.id,
+      moduloNombre: definicion.nombre,
+      tipo: "acta_envio",
+      proyectoNombre: meta.nombre,
+      empresa: meta.empresa,
+      actorNombre,
+      actaVersion: version,
+      actaUrl: urlFirmada ?? undefined,
+    });
 
     return { ok: true, acta_version: version };
   });
@@ -281,13 +333,19 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo aprobado: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue aprobado por el equipo de EGIXIA.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_aprobacion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+      });
+    }
 
     return { ok: true };
   });
@@ -363,13 +421,20 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
         cantidad_observaciones: filas.length,
       },
     );
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo devuelto con observaciones: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue devuelto con ${filas.length} observación(es) para corrección.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_devolucion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+        observacionesCount: filas.length,
+      });
+    }
 
     return { ok: true, observaciones: filas.length };
   });
@@ -409,13 +474,20 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo reabierto: ${modulo.modulo_key}`,
-      `El módulo "${modulo.modulo_key}" fue reabierto por el equipo de EGIXIA para nuevas correcciones.`,
-    );
+    {
+      const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+      const actorNombre = await nombreActor(supabaseAdmin, userId);
+      await notificar({
+        proyectoId: modulo.proyecto_id,
+        moduloId: modulo.id,
+        moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+        tipo: "acta_devolucion",
+        proyectoNombre: meta.nombre,
+        empresa: meta.empresa,
+        actorNombre,
+        observacionesCount: 0,
+      });
+    }
 
     return { ok: true };
   });
@@ -485,19 +557,29 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo reenviar el módulo a revisión.");
 
-    const version = await generarActa(supabaseAdmin, modulo.id, userId);
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+    const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, "modulo_reenviado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar(
-      supabaseAdmin,
-      modulo.proyecto_id,
-      modulo.id,
-      `Módulo reenviado a revisión: ${modulo.modulo_key}`,
-      `El proveedor corrigió las observaciones del módulo "${modulo.modulo_key}" y lo reenvió a revisión. Se generó el acta v${version}.`,
-    );
+    await notificar({
+      proyectoId: modulo.proyecto_id,
+      moduloId: modulo.id,
+      moduloNombre: definicion.nombre,
+      tipo: "acta_envio",
+      proyectoNombre: meta.nombre,
+      empresa: meta.empresa,
+      actorNombre,
+      actaVersion: version,
+      actaUrl: urlFirmada ?? undefined,
+    });
 
     return { ok: true, acta_version: version };
   });

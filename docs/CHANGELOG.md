@@ -2,6 +2,41 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.12.0] — 2026-07-02
+
+### Añadido
+- **Actas por módulo (PDF real)**: `src/lib/acta/acta-pdf.ts` genera el
+  PDF con encabezado EGIXIA, metadatos (proyecto, empresa, módulo,
+  quién diligenció, fecha/hora, versión), tabla campo→valor y
+  declaración de conformidad. Funciona en cliente y servidor
+  (Worker/Edge).
+- **Persistencia del acta**: `src/lib/acta/acta.server.ts` sube el PDF
+  al bucket privado `actas` (path
+  `{proyecto_id}/{modulo_id}/acta-vN.pdf`) y registra la versión en
+  la tabla `actas`. Cada envío/reenvío a revisión crea la siguiente
+  versión.
+- **Previsualización y descarga (invitado)**:
+  `src/lib/acta.functions.ts` expone `previsualizarActa` (base64) y
+  `descargarActaFirmada` (URL firmada 7 días). El botón
+  "Previsualizar acta" aparece junto a "Enviar a revisión" en
+  `/mi-proyecto/modulo/{id}`.
+- **Plantillas de correo EGIXIA** (`src/lib/acta/plantillas-correo.ts`)
+  para invitación, envío/acta, devolución con observaciones y
+  aprobación. Layout calmado con banda primaria #0F2B8E y fondo suave.
+- **Edge Function `enviar-correo`** (`supabase/functions/enviar-correo`)
+  con soporte para Resend (`RESEND_API_KEY`, `CORREO_FROM`) y modo
+  *dry-run* cuando no hay proveedor configurado.
+- **Notificaciones automáticas**: `src/lib/acta/notificaciones.server.ts`
+  segmenta destinatarios (internos vs invitados), renderiza la
+  plantilla adecuada con el CTA a la ruta correcta de cada portal
+  (`/app/...` o `/mi-proyecto/...`) e invoca la Edge Function.
+
+### Cambiado
+- `src/lib/revision.functions.ts` reemplaza el marcador
+  `notificacion_pendiente` por notificaciones reales vía plantillas +
+  Edge Function, y el acta pasa de una URL marcador a un PDF
+  persistido en Storage.
+
 ## [0.11.0] — 2026-07-02
 
 ### Añadido
