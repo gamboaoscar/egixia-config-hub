@@ -9,9 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MiProyectoIndexRouteImport } from './routes/mi-proyecto.index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as MiProyectoMiPerfilRouteImport } from './routes/mi-proyecto.mi-perfil'
+import { Route as MiProyectoSectionRouteImport } from './routes/mi-proyecto.$section'
+import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
+import { Route as AppSectionRouteImport } from './routes/app.$section'
 
+const MiProyectoRoute = MiProyectoRouteImport.update({
+  id: '/mi-proyecto',
+  path: '/mi-proyecto',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -22,35 +34,118 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MiProyectoIndexRoute = MiProyectoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MiProyectoRoute,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const MiProyectoMiPerfilRoute = MiProyectoMiPerfilRouteImport.update({
+  id: '/mi-perfil',
+  path: '/mi-perfil',
+  getParentRoute: () => MiProyectoRoute,
+} as any)
+const MiProyectoSectionRoute = MiProyectoSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => MiProyectoRoute,
+} as any)
+const AppMiPerfilRoute = AppMiPerfilRouteImport.update({
+  id: '/mi-perfil',
+  path: '/mi-perfil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSectionRoute = AppSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
+  '/mi-proyecto': typeof MiProyectoRouteWithChildren
+  '/app/$section': typeof AppSectionRoute
+  '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/mi-proyecto/$section': typeof MiProyectoSectionRoute
+  '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
+  '/app/': typeof AppIndexRoute
+  '/mi-proyecto/': typeof MiProyectoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app/$section': typeof AppSectionRoute
+  '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/mi-proyecto/$section': typeof MiProyectoSectionRoute
+  '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
+  '/app': typeof AppIndexRoute
+  '/mi-proyecto': typeof MiProyectoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
+  '/mi-proyecto': typeof MiProyectoRouteWithChildren
+  '/app/$section': typeof AppSectionRoute
+  '/app/mi-perfil': typeof AppMiPerfilRoute
+  '/mi-proyecto/$section': typeof MiProyectoSectionRoute
+  '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
+  '/app/': typeof AppIndexRoute
+  '/mi-proyecto/': typeof MiProyectoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/mi-proyecto'
+    | '/app/$section'
+    | '/app/mi-perfil'
+    | '/mi-proyecto/$section'
+    | '/mi-proyecto/mi-perfil'
+    | '/app/'
+    | '/mi-proyecto/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app'
-  id: '__root__' | '/' | '/app'
+  to:
+    | '/'
+    | '/app/$section'
+    | '/app/mi-perfil'
+    | '/mi-proyecto/$section'
+    | '/mi-proyecto/mi-perfil'
+    | '/app'
+    | '/mi-proyecto'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/mi-proyecto'
+    | '/app/$section'
+    | '/app/mi-perfil'
+    | '/mi-proyecto/$section'
+    | '/mi-proyecto/mi-perfil'
+    | '/app/'
+    | '/mi-proyecto/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
+  AppRoute: typeof AppRouteWithChildren
+  MiProyectoRoute: typeof MiProyectoRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/mi-proyecto': {
+      id: '/mi-proyecto'
+      path: '/mi-proyecto'
+      fullPath: '/mi-proyecto'
+      preLoaderRoute: typeof MiProyectoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -65,12 +160,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mi-proyecto/': {
+      id: '/mi-proyecto/'
+      path: '/'
+      fullPath: '/mi-proyecto/'
+      preLoaderRoute: typeof MiProyectoIndexRouteImport
+      parentRoute: typeof MiProyectoRoute
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/mi-proyecto/mi-perfil': {
+      id: '/mi-proyecto/mi-perfil'
+      path: '/mi-perfil'
+      fullPath: '/mi-proyecto/mi-perfil'
+      preLoaderRoute: typeof MiProyectoMiPerfilRouteImport
+      parentRoute: typeof MiProyectoRoute
+    }
+    '/mi-proyecto/$section': {
+      id: '/mi-proyecto/$section'
+      path: '/$section'
+      fullPath: '/mi-proyecto/$section'
+      preLoaderRoute: typeof MiProyectoSectionRouteImport
+      parentRoute: typeof MiProyectoRoute
+    }
+    '/app/mi-perfil': {
+      id: '/app/mi-perfil'
+      path: '/mi-perfil'
+      fullPath: '/app/mi-perfil'
+      preLoaderRoute: typeof AppMiPerfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/$section': {
+      id: '/app/$section'
+      path: '/$section'
+      fullPath: '/app/$section'
+      preLoaderRoute: typeof AppSectionRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppSectionRoute: typeof AppSectionRoute
+  AppMiPerfilRoute: typeof AppMiPerfilRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppSectionRoute: AppSectionRoute,
+  AppMiPerfilRoute: AppMiPerfilRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface MiProyectoRouteChildren {
+  MiProyectoSectionRoute: typeof MiProyectoSectionRoute
+  MiProyectoMiPerfilRoute: typeof MiProyectoMiPerfilRoute
+  MiProyectoIndexRoute: typeof MiProyectoIndexRoute
+}
+
+const MiProyectoRouteChildren: MiProyectoRouteChildren = {
+  MiProyectoSectionRoute: MiProyectoSectionRoute,
+  MiProyectoMiPerfilRoute: MiProyectoMiPerfilRoute,
+  MiProyectoIndexRoute: MiProyectoIndexRoute,
+}
+
+const MiProyectoRouteWithChildren = MiProyectoRoute._addFileChildren(
+  MiProyectoRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
+  AppRoute: AppRouteWithChildren,
+  MiProyectoRoute: MiProyectoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
