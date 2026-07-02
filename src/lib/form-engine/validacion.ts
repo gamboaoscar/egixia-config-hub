@@ -97,6 +97,7 @@ export function validarModulo(
   for (const s of modulo.secciones) {
     for (const c of s.campos) {
       if (!campoActivo(c)) continue;
+      if (c.tipo === "info") continue;
       if (!campoVisible(c, datos)) continue;
       const msg = validarCampo(c, datos[c.key], exigirRequeridos);
       if (msg) errores[c.key] = msg;
@@ -116,7 +117,9 @@ export function calcularProgreso(
 ): number {
   const activos = modulo.secciones
     .flatMap((s) => s.campos)
-    .filter((c) => campoActivo(c) && campoVisible(c, datos));
+    .filter(
+      (c) => campoActivo(c) && c.tipo !== "info" && campoVisible(c, datos),
+    );
   const requeridos = activos.filter((c) => c.requerido);
   const usarRequeridos = requeridos.length > 0;
   const campos = usarRequeridos ? requeridos : activos;
