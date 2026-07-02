@@ -330,7 +330,7 @@ function RevisionModuloPage() {
       <FormularioModulo
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={definicionModulo(modulo.modulo_key)}
+        definicion={aplicarOverrides(definicionModulo(modulo.modulo_key), overrides)}
         datosIniciales={modoEdicion ? datosEdit : (modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}
