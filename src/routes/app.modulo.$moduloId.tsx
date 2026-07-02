@@ -29,6 +29,7 @@ import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import { aplicarOverrides, type CampoOverride } from "@/lib/form-engine/overrides";
 import {
   aprobarModulo,
   devolverModuloConObservaciones,
@@ -88,6 +89,7 @@ function RevisionModuloPage() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdit, setDatosEdit] = useState<Record<string, unknown>>({});
   const [guardando, setGuardando] = useState(false);
+  const [overrides, setOverrides] = useState<CampoOverride[]>([]);
 
   const cargar = async () => {
     setLoading(true);
@@ -110,6 +112,13 @@ function RevisionModuloPage() {
     setObservaciones((obs ?? []) as Observacion[]);
     setLoading(false);
     if (data) setDatosEdit((data.datos as Record<string, unknown>) ?? {});
+    if (data?.proyecto_id) {
+      const { data: ov } = await supabase
+        .from("catalogo_overrides")
+        .select("modulo_key, campo_key, activo, label, requerido, guia")
+        .eq("proyecto_id", data.proyecto_id);
+      setOverrides((ov ?? []) as unknown as CampoOverride[]);
+    }
   };
 
   useEffect(() => {
@@ -119,7 +128,7 @@ function RevisionModuloPage() {
 
   const campos = useMemo(() => {
     if (!modulo) return [] as { key: string; label: string; seccion: string }[];
-    const def = definicionModulo(modulo.modulo_key);
+    const def = aplicarOverrides(definicionModulo(modulo.modulo_key), overrides);
     const out: { key: string; label: string; seccion: string }[] = [];
     for (const s of def.secciones) {
       for (const c of s.campos) {
@@ -128,7 +137,7 @@ function RevisionModuloPage() {
       }
     }
     return out;
-  }, [modulo]);
+  }, [modulo, overrides]);
 
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
@@ -148,7 +157,7 @@ function RevisionModuloPage() {
     if (!modulo) return;
     setGuardando(true);
     try {
-      const def = definicionModulo(modulo.modulo_key);
+      const def = aplicarOverrides(definicionModulo(modulo.modulo_key), overrides);
       const progreso = calcularProgreso(def, datosEdit);
       await editar({
         data: { moduloId: modulo.id, datos: datosEdit, progreso },
