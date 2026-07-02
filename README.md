@@ -25,10 +25,13 @@ sociedades, dominios, políticas de seguridad, etc.).
 ```
 src/
   components/         Componentes reutilizables (incluye ui/ de shadcn)
-    app-sidebar.tsx   Sidebar colapsable de la aplicación
+    app-sidebar.tsx   Sidebar colapsable del área privada
   routes/             Rutas file-based de TanStack Router
-    __root.tsx        Layout raíz (sidebar + header + contenido)
-    index.tsx         Pantalla de bienvenida
+    __root.tsx        Layout raíz (providers globales)
+    index.tsx         Landing pública
+    login.tsx         Inicio de sesión (temporal)
+    app.tsx           Layout del área privada (sidebar + topbar)
+    app.index.tsx     Pantalla índice del área privada
   hooks/              Hooks compartidos
   lib/                Utilidades
   styles.css          Tokens de diseño (paleta EGIXIA) y Tailwind v4

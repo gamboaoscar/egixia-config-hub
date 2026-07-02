@@ -57,6 +57,39 @@ System font stack, para sentirse nativo en cualquier plataforma:
 - **Ayuda por campo**: ícono `i` a la derecha de la etiqueta, abre popover
   con instrucciones cortas y formato esperado.
 
+## Landing pública (`/`)
+
+La landing es la cara pública de EGIXIA. Debe transmitir confianza
+corporativa y estar libre de ruido visual. Estructura:
+
+1. **Topbar** — marca "EGIXIA" a la izquierda (texto, color `--primary`,
+   tipografía fuerte) y botón "Ingresar" (relleno primario) a la derecha
+   que navega a `/login`.
+2. **Hero** — fondo con degradado sutil de `--primary-soft` a
+   `--background`, mucho aire, título grande, subtítulo en
+   `--muted-foreground` y un CTA primario grande ("Acceder con mi
+   invitación"). Sin imágenes recargadas.
+3. **"¿Cómo funciona?"** — tres tarjetas blancas en fila (Ingresa,
+   Diligencia, Confirma), cada una con ícono simple en `--primary` sobre
+   `--primary-soft`, título corto y una línea de descripción.
+4. **Pie de página** — fondo `--primary-dark`, texto blanco. Sólo la
+   marca "EGIXIA · Portal de Proveedores" y la línea de copyright.
+
+## Layout privado (`/app`)
+
+Layout reutilizable para toda el área privada. Se compone de:
+
+- **Sidebar izquierdo colapsable** (~256 px expandido, ~64 px colapsado)
+  con fondo `--sidebar` (primario oscuro EGIXIA) y texto blanco. Arriba
+  la marca "EGIXIA Configurator" (reducida a un ícono al colapsar), en
+  el medio los ítems de navegación y abajo la zona de usuario (avatar +
+  nombre + correo) con la acción "Cerrar sesión". Estado persistido por
+  cookie.
+- **Topbar sticky** dentro del área de contenido: botón para
+  colapsar/expandir el sidebar y título de la sección actual.
+- **Área de contenido** con fondo `--background`, padding amplio y
+  scroll vertical.
+
 ## Idioma
 
 Español neutro LATAM en toda la interfaz.
