@@ -47,6 +47,53 @@ encabezado de módulo. Colores (Tailwind tokens, no hex directos):
 | `con_observaciones`   | ámbar (`amber-50/800`)       |
 | `aprobado`            | verde (`emerald-50/700`)     |
 
+## Campos del motor de formularios
+
+El motor renderiza cada **sección como una tarjeta** ("cuadrito") con
+título opcional y descripción, y dentro de ella un campo por fila con
+bastante aire alrededor. El azul EGIXIA solo aparece como acento:
+opción seleccionada, botón primario, ícono "i" en hover.
+
+### Tipos de campo
+
+- **texto / textarea / número / email / url** — inputs estándar de
+  shadcn; placeholders discretos, sin ejemplos ruidosos.
+- **select** — desplegable para listas cortas y valores conocidos.
+- **radio_tarjetas** — opciones de ancho completo como tarjetas
+  clickeables (título + descripción), una seleccionable. Se usa para
+  decisiones importantes que merecen contexto.
+- **color** — fichas con muestra de color + nombre + hex. La opción
+  seleccionada se resalta con borde y anillo azul.
+- **archivo** — área punteada con ícono de nube y botón "Seleccionar
+  archivo". La carga real se completa en la Parte 6.
+- **tabla** — tabla dinámica de filas con botón "Añadir fila" y
+  papelera por fila.
+
+### Botón de información
+
+Junto a la etiqueta de cada campo, un ícono **"i"** discreto abre un
+popover con la guía:
+
+- **Qué ingresar** (siempre).
+- **Formato** (opcional).
+- **Tamaño recomendado** — resaltado en fondo azul suave cuando
+  aplica (imágenes, PDFs).
+
+La guía **no** se muestra expandida por defecto: solo al pulsar el
+ícono. Así se evita saturar el formulario cuando el usuario ya sabe
+qué ingresar.
+
+### Requeridos y errores
+
+- Los campos requeridos muestran un asterisco `*` en color primario
+  junto a la etiqueta.
+- La validación de formato ocurre **en línea, debajo del campo**,
+  con tono amable y en español (p. ej. *"La dirección debe comenzar
+  con https://"*).
+- Las validaciones **no bloquean el autoguardado del borrador**. La
+  exigencia de campos requeridos completos ocurre solo al *Enviar a
+  revisión* (Parte 10).
+
 
 ## Paleta de colores
 
