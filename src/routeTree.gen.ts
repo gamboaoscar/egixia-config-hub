@@ -20,7 +20,9 @@ import { Route as MiProyectoMiPerfilRouteImport } from './routes/mi-proyecto.mi-
 import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
+import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
 import { Route as MiProyectoModuloModuloIdRouteImport } from './routes/mi-proyecto.modulo.$moduloId'
+import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nuevo'
 import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -78,12 +80,22 @@ const AppSectionRoute = AppSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProyectosIndexRoute = AppProyectosIndexRouteImport.update({
+  id: '/proyectos/',
+  path: '/proyectos/',
+  getParentRoute: () => AppRoute,
+} as any)
 const MiProyectoModuloModuloIdRoute =
   MiProyectoModuloModuloIdRouteImport.update({
     id: '/modulo/$moduloId',
     path: '/modulo/$moduloId',
     getParentRoute: () => MiProyectoRoute,
   } as any)
+const AppProyectosNuevoRoute = AppProyectosNuevoRouteImport.update({
+  id: '/proyectos/nuevo',
+  path: '/proyectos/nuevo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppModuloModuloIdRoute = AppModuloModuloIdRouteImport.update({
   id: '/modulo/$moduloId',
   path: '/modulo/$moduloId',
@@ -103,7 +115,9 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
+  '/app/proyectos/': typeof AppProyectosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -116,7 +130,9 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/mi-proyecto': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
+  '/app/proyectos': typeof AppProyectosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,7 +148,9 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
+  '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
   '/mi-proyecto/modulo/$moduloId': typeof MiProyectoModuloModuloIdRoute
+  '/app/proyectos/': typeof AppProyectosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,7 +167,9 @@ export interface FileRouteTypes {
     | '/app/'
     | '/mi-proyecto/'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
+    | '/app/proyectos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,7 +182,9 @@ export interface FileRouteTypes {
     | '/app'
     | '/mi-proyecto'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
+    | '/app/proyectos'
   id:
     | '__root__'
     | '/'
@@ -177,7 +199,9 @@ export interface FileRouteTypes {
     | '/app/'
     | '/mi-proyecto/'
     | '/app/modulo/$moduloId'
+    | '/app/proyectos/nuevo'
     | '/mi-proyecto/modulo/$moduloId'
+    | '/app/proyectos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -268,12 +292,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSectionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/proyectos/': {
+      id: '/app/proyectos/'
+      path: '/proyectos'
+      fullPath: '/app/proyectos/'
+      preLoaderRoute: typeof AppProyectosIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/mi-proyecto/modulo/$moduloId': {
       id: '/mi-proyecto/modulo/$moduloId'
       path: '/modulo/$moduloId'
       fullPath: '/mi-proyecto/modulo/$moduloId'
       preLoaderRoute: typeof MiProyectoModuloModuloIdRouteImport
       parentRoute: typeof MiProyectoRoute
+    }
+    '/app/proyectos/nuevo': {
+      id: '/app/proyectos/nuevo'
+      path: '/proyectos/nuevo'
+      fullPath: '/app/proyectos/nuevo'
+      preLoaderRoute: typeof AppProyectosNuevoRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/modulo/$moduloId': {
       id: '/app/modulo/$moduloId'
@@ -290,6 +328,8 @@ interface AppRouteChildren {
   AppMiPerfilRoute: typeof AppMiPerfilRoute
   AppIndexRoute: typeof AppIndexRoute
   AppModuloModuloIdRoute: typeof AppModuloModuloIdRoute
+  AppProyectosNuevoRoute: typeof AppProyectosNuevoRoute
+  AppProyectosIndexRoute: typeof AppProyectosIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -297,6 +337,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppMiPerfilRoute: AppMiPerfilRoute,
   AppIndexRoute: AppIndexRoute,
   AppModuloModuloIdRoute: AppModuloModuloIdRoute,
+  AppProyectosNuevoRoute: AppProyectosNuevoRoute,
+  AppProyectosIndexRoute: AppProyectosIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
