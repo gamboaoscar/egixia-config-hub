@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import {
   enviarModuloARevision,
   reenviarModulo,
 } from "@/lib/revision.functions";
+import { previsualizarActa } from "@/lib/acta.functions";
+import { base64ABytes } from "@/lib/acta/acta-pdf";
 
 export const Route = createFileRoute("/mi-proyecto/modulo/$moduloId")({
   component: ModuloPage,
@@ -39,8 +41,10 @@ function ModuloPage() {
   const modulo = modulos.find((m) => m.id === moduloId);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [previsualizando, setPrevisualizando] = useState(false);
   const enviar = useServerFn(enviarModuloARevision);
   const reenviar = useServerFn(reenviarModulo);
+  const previsualizar = useServerFn(previsualizarActa);
 
   useEffect(() => {
     if (!moduloId) return;
@@ -83,6 +87,25 @@ function ModuloPage() {
       modulo.estado === "en_diligenciamiento" ||
       modulo.estado === "con_observaciones");
   const esReenvio = modulo.estado === "con_observaciones";
+
+  const handlePrevisualizarActa = async () => {
+    setPrevisualizando(true);
+    try {
+      const res = await previsualizar({ data: { moduloId: modulo.id } });
+      const bytes = base64ABytes(res.base64);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener");
+      // Liberamos el objeto tras un momento razonable.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "No se pudo generar el acta.";
+      toast.error(msg);
+    } finally {
+      setPrevisualizando(false);
+    }
+  };
 
   const handleEnviar = async () => {
     setEnviando(true);
@@ -214,23 +237,38 @@ function ModuloPage() {
           Tus cambios se guardan automáticamente. Puedes cerrar sesión y volver
           cuando quieras.
         </p>
-        <Button
-          onClick={handleEnviar}
-          disabled={!puedeEnviar || enviando}
-          className="sm:w-auto"
-          title={
-            !puedeEnviar && !enviando
-              ? "Completa todos los campos requeridos para habilitar el envío."
-              : undefined
-          }
-        >
-          {enviando ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="mr-2 h-4 w-4" />
-          )}
-          {esReenvio ? "Reenviar tras corregir" : "Enviar a revisión"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            onClick={handlePrevisualizarActa}
+            disabled={previsualizando}
+            className="sm:w-auto"
+          >
+            {previsualizando ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            Previsualizar acta
+          </Button>
+          <Button
+            onClick={handleEnviar}
+            disabled={!puedeEnviar || enviando}
+            className="sm:w-auto"
+            title={
+              !puedeEnviar && !enviando
+                ? "Completa todos los campos requeridos para habilitar el envío."
+                : undefined
+            }
+          >
+            {enviando ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            {esReenvio ? "Reenviar tras corregir" : "Enviar a revisión"}
+          </Button>
+        </div>
       </div>
     </div>
   );
