@@ -2,6 +2,75 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.3.0] — 2026-07-02
+
+### Añadido
+
+- **Integración con Supabase** (auth + base de datos + storage) usando el
+  cliente ya presente en `src/integrations/supabase/`.
+- **Autenticación por email + contraseña**. Registro público
+  **deshabilitado**: al Configurator solo se entra por invitación.
+- **Tabla `profiles`** vinculada 1:1 con `auth.users` (mismo `id`):
+  `nombre`, `apellido`, `email` (no editable), `foto_perfil`, `cargo`,
+  `empresa`, `rol` (`admin` | `implementador` | `cliente`, por defecto
+  `cliente`), `estado` (`activo` | `inhabilitado`, por defecto `activo`),
+  `created_at`. Fila creada automáticamente al registrarse un usuario
+  mediante trigger.
+- **Trigger `profiles_guard_before_update`** que impide a los no-admin
+  modificar `email`, `rol` y `estado`.
+- **Función `has_role(rol)`** (`SECURITY DEFINER`) para verificaciones de
+  permisos desde RLS.
+- **Tabla `auditoria`**: `id`, `actor_id`, `accion`, `entidad`,
+  `entidad_id`, `detalle` (jsonb), `created_at`, con RLS que restringe
+  lectura a `admin`/`implementador`. Helper `registrar_auditoria(...)`
+  (`SECURITY DEFINER`) para inserción segura desde el resto de la app.
+- **Bucket privado `avatares`** en Storage con políticas que limitan
+  lectura/escritura a la carpeta `auth.uid()/…` del propio usuario.
+- **Usuario administrador inicial** `hilberth.lopezv@egixia.com` creado
+  con Edge Function `bootstrap-admin`. La contraseña definitiva se
+  establece desde `/login → ¿Olvidaste tu contraseña?`.
+- **`AuthProvider`** (`src/hooks/use-auth.tsx`) que expone sesión, perfil
+  y URL firmada del avatar; persiste la sesión al recargar y se
+  sincroniza con `onAuthStateChange`.
+- **`PrivateShell`** (`src/components/private-shell.tsx`): shell del área
+  privada con sidebar + topbar y guard de rol. Redirige a `/login` si no
+  hay sesión, aplica redirección por rol y bloquea el acceso cuando el
+  perfil está `inhabilitado`.
+- **Rutas protegidas**:
+  - `/app` (admin/implementador) con secciones stub `proyectos`,
+    `revisiones`, `invitaciones`, `usuarios`, `catalogo`, `auditoria`,
+    `configuracion`.
+  - `/mi-proyecto` (cliente) con sección stub `modulos`.
+  - `/app/mi-perfil` y `/mi-proyecto/mi-perfil` con la pantalla
+    **Mi perfil** compartida.
+- **Pantalla `/login`** con identidad EGIXIA, manejo de errores en
+  español (credenciales inválidas, cuenta inhabilitada, límite de
+  intentos, correo no confirmado) y enlace "¿Olvidaste tu contraseña?"
+  que abre un diálogo y dispara la recuperación de Supabase.
+- **Pantalla `/reset-password`** para completar el flujo de
+  recuperación (definir nueva contraseña).
+- **Pantalla "Mi perfil"** (`src/components/mi-perfil.tsx`): editar
+  nombre, apellido, cargo y empresa; ver correo en solo lectura; subir
+  avatar (PNG/JPG/WEBP, ≤ 2 MB); y solicitar por correo el cambio de
+  contraseña.
+- **Sidebar dinámico por rol** con avatar + nombre + rol del usuario
+  autenticado y botón "Cerrar sesión" funcional:
+  - cliente: Inicio · Mis módulos.
+  - implementador: Inicio · Proyectos · Revisiones pendientes ·
+    Invitaciones.
+  - admin: Inicio · Proyectos · Revisiones pendientes · Invitaciones ·
+    Usuarios · Catálogo de módulos · Auditoría · Configuración.
+
+### Seguridad
+
+- RLS activa en `profiles` y `auditoria`.
+- `has_role`, `handle_new_user` y `registrar_auditoria` con
+  `SECURITY DEFINER`, `search_path` fijado y acceso revocado a
+  `anon`/`public`.
+- Bucket `avatares` privado; el frontend usa URLs firmadas (1 h).
+- **HIBP** (Have I Been Pwned) activado para contraseñas.
+- Registro público de Supabase deshabilitado.
+
 ## [0.2.0] — 2026-07-02
 
 ### Añadido
