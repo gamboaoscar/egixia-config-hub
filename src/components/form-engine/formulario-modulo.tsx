@@ -1,5 +1,5 @@
 import { CampoRenderer } from "./campo-renderer";
-import { campoActivo } from "@/lib/form-engine/validacion";
+import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
 import type { DatosModulo, ModuloDefinicion } from "@/lib/form-engine/tipos";
 
@@ -33,7 +33,9 @@ export function FormularioModulo({
   return (
     <div className="space-y-6">
       {definicion.secciones.map((seccion) => {
-        const camposVisibles = seccion.campos.filter(campoActivo);
+        const camposVisibles = seccion.campos.filter(
+          (c) => campoActivo(c) && campoVisible(c, datos),
+        );
         if (camposVisibles.length === 0) return null;
         return (
           <section

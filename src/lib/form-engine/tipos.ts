@@ -95,6 +95,14 @@ export interface CampoDefinicion {
   /** Configuración del campo cuando `tipo === 'archivo'`. */
   archivo?: ConfigArchivo;
   /**
+   * Visibilidad condicional: el campo solo se renderiza (y solo cuenta
+   * para validación / progreso) cuando el valor del campo `campo` es
+   * igual a `igualA` (string) o está incluido en `igualA` (string[]).
+   */
+  mostrarSi?: { campo: string; igualA: string | string[] };
+  /** Aviso informativo suave que se muestra debajo del control. */
+  aviso?: string;
+  /**
    * Si `false`, el campo está desactivado por configuración del proyecto:
    * no se renderiza y no cuenta para el progreso. Por defecto: `true`.
    */

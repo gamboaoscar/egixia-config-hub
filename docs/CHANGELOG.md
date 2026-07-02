@@ -2,6 +2,31 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.8.0] — 2026-07-02
+
+### Añadido
+- **Módulo `imagen` — Imagen Corporativa (Parte 7)**: definición
+  declarativa completa en `src/lib/form-engine/modulos/imagen.ts`
+  cubriendo las 7 secciones del brief (color corporativo, logotipos,
+  imagen de fondo, documentos legales, pie de página en 4 columnas,
+  correo de salida y URLs del portal). Cada campo incluye guía
+  contextual (qué / formato / tamaño) y marca los requeridos.
+- **Visibilidad condicional (`mostrarSi`)**: nueva propiedad opcional
+  en `CampoDefinicion` (`{ campo, igualA }`). El motor la usa en
+  `formulario-modulo.tsx` para renderizar solo los campos aplicables
+  (p. ej. subcampos de SMTP cuando `correo_opcion === "smtp"`,
+  buzón EGIXIA cuando se elige la opción recomendada). `validarModulo`
+  y `calcularProgreso` ignoran los campos ocultos.
+- **Aviso suave por campo (`aviso`)**: bloque informativo ámbar debajo
+  del control (sin bloquear el guardado). Se usa para riesgos de SPAM
+  del SMTP propio y para recordar que el puerto 25 no se admite.
+- **Validaciones URL**: `url_produccion` y `url_calidad` usan
+  `url_https` con placeholders que muestran el formato esperado
+  (`https://[NombrePortalCliente-País].egixia.app` y
+  `https://www.egixia.net/[NombrePortalCliente-País]`).
+- **Documentación**: `docs/MODULOS.md` reescrito con la ficha
+  completa del módulo `imagen` y la guía para añadir nuevos módulos.
+
 ## [0.7.0] — 2026-07-02
 
 ### Añadido

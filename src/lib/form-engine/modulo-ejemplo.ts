@@ -10,70 +10,7 @@ import type { ModuloDefinicion } from "./tipos";
  * motor: uno con guía, uno requerido, y varios tipos distintos.
  */
 
-const DEMO_IMAGEN: ModuloDefinicion = {
-  key: "imagen",
-  nombre: "Imagen corporativa",
-  descripcion: "Datos básicos de identidad de tu empresa.",
-  secciones: [
-    {
-      key: "identidad",
-      titulo: "Identidad de la empresa",
-      descripcion: "Información visible en el portal de proveedores.",
-      campos: [
-        {
-          key: "nombre_comercial",
-          label: "Nombre comercial",
-          tipo: "texto",
-          requerido: true,
-          placeholder: "Ej. Distribuciones ACME",
-          guia: {
-            que: "El nombre con el que tus proveedores reconocen a la empresa.",
-            formato: "Texto corto, sin siglas legales (S.A.S., LTDA, etc.).",
-          },
-        },
-        {
-          key: "sitio_web",
-          label: "Sitio web oficial",
-          tipo: "url",
-          requerido: true,
-          guia: {
-            que: "Dirección pública del sitio web corporativo.",
-            formato: "URL completa comenzando con https://",
-          },
-        },
-        {
-          key: "color_marca",
-          label: "Color principal de marca",
-          tipo: "color",
-          opciones: [
-            { valor: "azul", etiqueta: "Azul corporativo", hex: "#0F2B8E" },
-            { valor: "verde", etiqueta: "Verde bosque", hex: "#0E7C4A" },
-            { valor: "grafito", etiqueta: "Grafito", hex: "#1F2937" },
-          ],
-          guia: {
-            que: "Selecciona el color dominante de tu marca.",
-          },
-        },
-        {
-          key: "logo",
-          label: "Logotipo principal",
-          tipo: "archivo",
-          archivo: {
-            bucket: "logos-clientes",
-            formatosPermitidos: ["image/png", "image/svg+xml", ".png", ".svg"],
-            tamanoMaxMB: 5,
-            dimensiones: { ancho: 400, alto: 110 },
-          },
-          guia: {
-            que: "Logotipo que aparecerá en el portal de proveedores.",
-            formato: "PNG con transparencia o SVG.",
-            tamano: "Se ajustará a 400×110 px. Máximo 5 MB.",
-          },
-        },
-      ],
-    },
-  ],
-};
+import { MODULO_IMAGEN } from "./modulos/imagen";
 
 const DEMO_SOCIEDADES: ModuloDefinicion = {
   key: "sociedades",
@@ -154,7 +91,7 @@ const DEMO_SEGURIDAD: ModuloDefinicion = {
 };
 
 const REGISTRO: Record<string, ModuloDefinicion> = {
-  imagen: DEMO_IMAGEN,
+  imagen: MODULO_IMAGEN,
   sociedades: DEMO_SOCIEDADES,
   seguridad: DEMO_SEGURIDAD,
 };

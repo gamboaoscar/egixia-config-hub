@@ -9,6 +9,18 @@ export function campoActivo(campo: CampoDefinicion): boolean {
   return campo.activo !== false;
 }
 
+/** ¿El campo es visible según su regla `mostrarSi` y los datos actuales? */
+export function campoVisible(
+  campo: CampoDefinicion,
+  datos: DatosModulo,
+): boolean {
+  if (!campo.mostrarSi) return true;
+  const v = datos[campo.mostrarSi.campo];
+  const esperado = campo.mostrarSi.igualA;
+  if (Array.isArray(esperado)) return typeof v === "string" && esperado.includes(v);
+  return v === esperado;
+}
+
 /** ¿El campo tiene un valor "no vacío"? */
 export function valorLleno(valor: unknown): boolean {
   if (valor === null || valor === undefined) return false;
@@ -85,6 +97,7 @@ export function validarModulo(
   for (const s of modulo.secciones) {
     for (const c of s.campos) {
       if (!campoActivo(c)) continue;
+      if (!campoVisible(c, datos)) continue;
       const msg = validarCampo(c, datos[c.key], exigirRequeridos);
       if (msg) errores[c.key] = msg;
     }
@@ -101,7 +114,9 @@ export function calcularProgreso(
   modulo: ModuloDefinicion,
   datos: DatosModulo,
 ): number {
-  const activos = modulo.secciones.flatMap((s) => s.campos).filter(campoActivo);
+  const activos = modulo.secciones
+    .flatMap((s) => s.campos)
+    .filter((c) => campoActivo(c) && campoVisible(c, datos));
   const requeridos = activos.filter((c) => c.requerido);
   const base = requeridos.length > 0 ? requeridos : activos;
   if (base.length === 0) return 0;
