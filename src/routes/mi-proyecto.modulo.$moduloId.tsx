@@ -38,7 +38,7 @@ interface Observacion {
 
 function ModuloPage() {
   const { moduloId } = Route.useParams();
-  const { modulos, loading, refreshModulos } = useMiProyecto();
+  const { modulos, loading, refreshModulos, overrides } = useMiProyecto();
   const modulo = modulos.find((m) => m.id === moduloId);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
