@@ -15,6 +15,45 @@
 `sin_iniciar` → `en_diligenciamiento` → `en_revision` →
 `con_observaciones` (opcional) → `aprobado`.
 
+## Transiciones (Parte 12)
+
+Todas las transiciones se ejecutan desde server functions en
+`src/lib/revision.functions.ts` usando `supabaseAdmin`, previa
+autorización por rol y membresía en el proyecto. Cada una registra
+una entrada en `auditoria` y encola una notificación por correo a los
+destinatarios devueltos por `destinatarios_notificacion(_proyecto_id)`.
+
+| Acción | Actor | Estado origen | Estado destino | Efectos |
+| --- | --- | --- | --- | --- |
+| `enviarModuloARevision` | invitado (o interno) | `sin_iniciar` · `en_diligenciamiento` · `con_observaciones` | `en_revision` | Setea `enviado_at`/`enviado_por`, genera acta `v = max+1`, notifica. |
+| `aprobarModulo` | admin · implementador | `en_revision` | `aprobado` | Setea `revisado_at`/`revisado_por`. Si todos los módulos quedan aprobados, el trigger `trg_autocompletar_proyecto` marca el proyecto como `completado`. |
+| `devolverModuloConObservaciones` | admin · implementador | `en_revision` | `con_observaciones` | Inserta N filas en `observaciones` (por campo) con `estado='abierta'`, rehabilita al invitado, notifica. |
+| `reabrirModulo` | admin · implementador | `aprobado` | `con_observaciones` | Permite volver a editar un módulo ya aprobado. |
+| `reenviarModulo` | invitado (o interno) | `con_observaciones` | `en_revision` | Marca todas las observaciones abiertas como `resuelta`, setea `enviado_at`, genera acta `v+1`, notifica. |
+
+### Requisitos previos
+
+- **Envío/reenvío**: el servidor revalida que todos los campos
+  requeridos, activos y visibles (`mostrarSi`) tengan valor no vacío.
+  El botón se habilita solo cuando `proyecto_modulos.progreso === 100`.
+- **RLS**: como el invitado no puede escribir `en_revision` ni tocar
+  `observaciones`, estas mutaciones **deben** pasar por las server
+  functions descritas — no hay ruta cliente-Supabase directa.
+
+### Acta y versiones
+
+Cada envío o reenvío genera una fila nueva en `actas` con
+`version = max(version) + 1` para el módulo. La URL del archivo es un
+marcador (`acta://modulo/{id}/vN`) que la Parte 11 sustituirá por el
+PDF real.
+
+### Notificaciones por correo
+
+Mientras no exista proveedor de correo conectado, cada transición se
+registra en `auditoria` con acción `notificacion_pendiente` y detalle
+`{ proyecto_id, asunto, mensaje, destinatarios }`. El helper `notificar`
+es el único punto a modificar cuando se integre Resend/Brevo.
+
 ### Regla de bloqueo por estado (invitado)
 
 Un usuario con rol `cliente`/`invitado` **solo puede editar** un módulo
