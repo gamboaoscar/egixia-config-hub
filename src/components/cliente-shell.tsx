@@ -1,5 +1,9 @@
 import { useEffect, type ReactNode } from "react";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  useMatches,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import {
   CalendarClock,
   CheckCircle2,
@@ -68,10 +72,38 @@ export function ClienteShell({ children }: Props) {
 }
 
 function ClienteTopbar() {
-  const { proyecto, modulos, saveStatus, lastSavedAt, loading } = useMiProyecto();
+  const {
+    proyectos,
+    modulos,
+    proyectoById,
+    modulosDeProyecto,
+    moduloById,
+    saveStatus,
+    lastSavedAt,
+    loading,
+  } = useMiProyecto();
+  const matches = useMatches();
+
+  // Derivamos el "proyecto activo" desde la ruta actual.
+  let proyectoActivoId: string | null = null;
+  for (const m of matches) {
+    const params = m.params as Record<string, string | undefined>;
+    if (params?.id) {
+      proyectoActivoId = params.id;
+      break;
+    }
+    if (params?.moduloId) {
+      proyectoActivoId = moduloById(params.moduloId)?.proyecto_id ?? null;
+      if (proyectoActivoId) break;
+    }
+  }
+  const proyecto = proyectoActivoId ? proyectoById(proyectoActivoId) ?? null : null;
+  const modulosContexto = proyectoActivoId
+    ? modulosDeProyecto(proyectoActivoId)
+    : modulos;
 
   // Fecha límite más próxima entre los módulos no aprobados.
-  const proximaFecha = modulos
+  const proximaFecha = modulosContexto
     .filter((m) => m.fecha_limite && m.estado !== "aprobado")
     .map((m) => m.fecha_limite as string)
     .sort()[0];
@@ -88,11 +120,19 @@ function ClienteTopbar() {
           <h1 className="truncate text-sm font-semibold text-foreground">
             {loading
               ? "Cargando…"
-              : proyecto?.nombre ?? "Sin proyecto asignado"}
+              : proyecto?.nombre ??
+                (proyectos.length === 0
+                  ? "Sin proyectos asignados"
+                  : "Portal del proveedor")}
           </h1>
           {proyecto?.empresa && (
             <div className="truncate text-xs text-muted-foreground">
               {proyecto.empresa}
+            </div>
+          )}
+          {!proyecto && proyectos.length > 0 && (
+            <div className="truncate text-xs text-muted-foreground">
+              {proyectos.length} proyecto{proyectos.length === 1 ? "" : "s"}
             </div>
           )}
         </div>
