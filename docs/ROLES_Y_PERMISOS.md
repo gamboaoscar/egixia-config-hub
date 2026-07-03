@@ -91,3 +91,19 @@ funciones — se guarda por `PrivateShell` + validación server-side.
 Las mutaciones sensibles se ejecutan en server functions
 (`src/lib/admin.functions.ts`) que verifican el rol del llamante contra
 `profiles.rol` antes de tocar la base o el servicio de Auth.
+
+## Doble capa de autorización en `/app`
+
+El acceso al área privada del equipo interno (`/app/*`) se protege en
+dos capas:
+
+1. **Servidor**: el `beforeLoad` de `src/routes/app.tsx` invoca
+   `exigirEquipoInterno` (`src/lib/rbac.functions.ts`), una server
+   function con `requireSupabaseAuth` que consulta `profiles.rol` y
+   lanza `redirect` si el usuario no es `admin`/`implementador`.
+2. **Cliente**: `PrivateShell` mantiene la lógica de UX (loader, toast
+   y redirección amigable). Un cliente que intente saltarse el redirect
+   del navegador es rechazado por el `beforeLoad` antes de renderizar.
+
+Los invitados siempre son redirigidos a `/mi-proyecto`, cuya UI
+depende de RLS: solo ven proyectos donde tienen membresía activa.
