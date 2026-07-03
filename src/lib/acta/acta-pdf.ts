@@ -561,7 +561,9 @@ function crearPDF(paginas: PaginaPDF[]): Uint8Array {
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
   );
   const boldFontId = agregarObjeto(
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+    // Usamos la misma fuente base para evitar diferencias de sustitución de
+    // Helvetica-Bold entre visores PDF en producción.
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
   );
 
   const pageIds: number[] = [];
