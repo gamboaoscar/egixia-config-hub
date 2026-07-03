@@ -1,5 +1,15 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CalendarClock } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  FileText,
+  Loader2,
+  Lock,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useMiProyecto } from "@/hooks/use-mi-proyecto";
@@ -10,6 +20,8 @@ import {
   diasHasta,
   type ModuloEstado,
 } from "@/lib/modulo-estado";
+import { esEditablePorInvitado } from "@/lib/modulo-estado";
+import { descargarActaFirmada } from "@/lib/acta.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
@@ -135,6 +147,25 @@ function ModuloCard({
   const dias = diasHasta(fechaLimite);
   const destacado = estado === "con_observaciones";
   const label = botonAccionModulo(estado);
+  const bloqueado = !esEditablePorInvitado(estado);
+  const descargar = useServerFn(descargarActaFirmada);
+  const [cargandoActa, setCargandoActa] = useState(false);
+
+  const handleVerActa = async () => {
+    setCargandoActa(true);
+    try {
+      const res = await descargar({ data: { moduloId: id } });
+      if (!res.url) {
+        toast.error("Aún no hay un acta generada para este módulo.");
+        return;
+      }
+      window.open(res.url, "_blank", "noopener");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo abrir el acta.");
+    } finally {
+      setCargandoActa(false);
+    }
+  };
 
   return (
     <div
@@ -188,21 +219,49 @@ function ModuloCard({
             </span>
           </div>
         )}
+
+        {bloqueado && (
+          <div className="mt-3 flex items-start gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-[11px] text-sky-800">
+            <Lock className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>
+              {estado === "aprobado"
+                ? "Ya aprobado por EGIXIA. No es editable."
+                : "En revisión por EGIXIA. No es editable mientras dure la revisión."}
+            </span>
+          </div>
+        )}
       </div>
 
-      <Button
-        asChild
-        variant={destacado ? "default" : "outline"}
-        className={cn(
-          "mt-5 w-full justify-between",
-          destacado && "bg-amber-600 hover:bg-amber-700",
-        )}
-      >
-        <Link to="/mi-proyecto/modulo/$moduloId" params={{ moduloId: id }}>
-          {label}
+      {bloqueado ? (
+        <Button
+          variant="outline"
+          className="mt-5 w-full justify-between"
+          onClick={handleVerActa}
+          disabled={cargandoActa}
+        >
+          {cargandoActa ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+          Ver acta
           <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Button>
+        </Button>
+      ) : (
+        <Button
+          asChild
+          variant={destacado ? "default" : "outline"}
+          className={cn(
+            "mt-5 w-full justify-between",
+            destacado && "bg-amber-600 hover:bg-amber-700",
+          )}
+        >
+          <Link to="/mi-proyecto/modulo/$moduloId" params={{ moduloId: id }}>
+            {label}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react";
 import { CampoRenderer } from "./campo-renderer";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
@@ -66,9 +66,14 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
     onProgreso?.(progreso);
   }, [progreso, onProgreso]);
 
+  // `faltantes` cambia de referencia en cada render aunque su contenido
+  // sea el mismo, así que dependemos de una clave serializada para no
+  // provocar bucles de setState en el padre.
+  const faltantesKey = useMemo(() => faltantes.join("|"), [faltantes]);
   useEffect(() => {
     onFaltantes?.(faltantes);
-  }, [faltantes, onFaltantes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [faltantesKey, onFaltantes]);
 
   useImperativeHandle(
     ref,
