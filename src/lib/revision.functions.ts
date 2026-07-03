@@ -91,6 +91,7 @@ async function esMiembroDelProyecto(
 /** Registra una entrada en auditoria (RPC ya existente). */
 async function auditar(
   admin: AdminClient,
+  actorId: string | null,
   accion: string,
   entidadId: string,
   detalle: Record<string, unknown>,
@@ -100,6 +101,7 @@ async function auditar(
     _entidad: "proyecto_modulo",
     _entidad_id: entidadId,
     _detalle: detalle,
+    _actor_id: actorId,
   });
 }
 
