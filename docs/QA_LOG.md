@@ -66,6 +66,35 @@
 
 - Ninguno (el intento de enviar invitación `qa.invitado.test@egixia.com` no persistió por falta de `proyecto_id`; no se creó ningún proyecto).
 
+## Correcciones aplicadas — pasada Implementador (2026-07-03)
+
+| # | Estado | Cambio |
+|---|---|---|
+| I1 | ✅ Corregido | **Escalada de privilegios en invitaciones.** `src/lib/admin.functions.ts` — `crearInvitacion` ahora consulta el rol del actor y rechaza con `"Sólo un administrador puede invitar a otros implementadores."` cuando un implementador intenta usar `rol_invitado = 'implementador'`. Además, en `src/routes/app.invitaciones.index.tsx` la opción "Implementador EGIXIA" del combobox se oculta si el usuario no es admin y se muestra un texto explicativo. |
+| I2 | ✅ Corregido | **Auditoría expuesta.** `src/routes/app.auditoria.tsx` envuelve la página con el nuevo componente `<AdminOnly>`, que redirige al `/app` a cualquier no-admin (con toast). |
+| I3 | ✅ Corregido | **Configuración expuesta.** `src/routes/app.configuracion.tsx` envuelto con `<AdminOnly>`. |
+| I4 | ✅ Corregido | **Catálogo escribible por implementador.** `src/routes/app.catalogo.tsx` envuelto con `<AdminOnly>`. |
+| I5 | ✅ Corregido | **Usuarios sólo soft-block.** `src/routes/app.usuarios.tsx` envuelto con `<AdminOnly>` → ahora el implementador es redirigido a `/app`; ya no ve el listado. |
+| I6 | ✅ Corregido | **"Mi perfil" no estaba en el menú.** `src/components/app-sidebar.tsx` — se añade el item "Mi perfil" al menú lateral, tanto para `implementador` como para `admin`, con el icono `UserRound`. El acceso desde la tarjeta de avatar del pie sigue disponible. |
+| I7 | ✅ Corregido | **Filtros incompletos en Proyectos.** `src/routes/app.proyectos.index.tsx` añade dos selects nuevos: **Empresa** (listado dinámico a partir de los proyectos cargados, con opción "Todas las empresas") y **Vencimiento** (Cualquier vencimiento / Atrasado / Próximos 7 días / Próximos 30 días / Sin fecha límite), aplicados en el mismo memo de filtrado. |
+| I8 | ✅ Corregido | **Emoji "tofu" en el saludo.** `src/routes/app.index.tsx` — el emoji 👋 (que renderiza como cuadrado en entornos sin fuente emoji, incluido el Chromium headless de la QA) se reemplaza por el icono `Hand` de Lucide alineado junto al texto. Rendering consistente en todos los entornos. |
+| I9 | ⚠️ Duplicado de #4 | Ya cubierto: el botón "Enviar" usa `disabled={sending}` mientras la promesa está en vuelo. |
+| I10 | ⏸ Bloqueado por I5/#5 originales | Los flujos end-to-end de invitación aceptada, revisión aprobar/devolver, desvincular invitado y activar/desactivar campos siguen requiriendo entrega de correo real (dominio verificado) y al menos un proyecto con módulos y respuestas. Se probarán en cuanto se configure el dominio. |
+| I11–I12 | ✅ Sin cambios | Comportamientos correctos ya verificados en la pasada admin. |
+| I13 | ⏸ Bloqueado por dominio | Heredado del hallazgo #5 admin: los correos siguen llegando en inglés y a spam mientras no haya dominio verificado. |
+
+### Notas técnicas
+
+- **`AdminOnly` (nuevo)**: `src/components/admin-only.tsx` — guard cliente que, mientras `useAuth()` está cargando, muestra un `Loader2` para evitar el "flash" del contenido, y redirige a `/app` con `toast.error` cuando `profile.rol !== 'admin'`. Se aplica encima de `PrivateShell`, por lo que el chrome (sidebar/topbar) sigue visible con el título correcto.
+- **Defensa en profundidad en invitaciones**: la restricción se aplica en **cliente** (UI oculta la opción) y **servidor** (`crearInvitacion` la rechaza), de forma que aunque alguien invoque el server fn con curl o desde consola, el rol implementador queda vedado a los no-admin.
+- **Filtro por empresa** en Proyectos se construye a partir del listado ya cargado en memoria; no hace consultas extra a la base.
+
+### Resumen post-corrección (pasada implementador)
+
+- Corregidos: **8** hallazgos (I1 Crítico, I2/I3/I4 Altos, I5/I6/I7 Medios, I8 Bajo).
+- Bloqueados por infraestructura: **2** (I10 flujos e2e; I13 correos en español). Se resuelven al verificar dominio de correo.
+- Duplicados/informativos: **3** (I9, I11, I12).
+
 ## Cobertura no ejecutada / bloqueada
 
 - **Aceptar invitación end-to-end (paso 6 del plan):** bloqueado por hallazgo #5 (correos no llegan / llegan en inglés a spam). Necesita el dominio de correo verificado para completarse.

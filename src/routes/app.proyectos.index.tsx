@@ -35,11 +35,21 @@ const ESTADOS = [
   { v: "cerrado", l: "Cerrado" },
 ];
 
+const VENCE = [
+  { v: "all", l: "Cualquier vencimiento" },
+  { v: "atrasado", l: "Atrasado" },
+  { v: "7", l: "Próximos 7 días" },
+  { v: "30", l: "Próximos 30 días" },
+  { v: "sin", l: "Sin fecha límite" },
+];
+
 function ProyectosLista() {
   const [rows, setRows] = useState<Fila[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState("all");
+  const [empresa, setEmpresa] = useState("all");
+  const [vence, setVence] = useState("all");
 
   useEffect(() => {
     supabase
@@ -55,17 +65,13 @@ function ProyectosLista() {
       });
   }, []);
 
-  const filtradas = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (estado !== "all" && r.estado !== estado) return false;
-      if (term) {
-        const hay = `${r.nombre} ${r.empresa}`.toLowerCase();
-        if (!hay.includes(term)) return false;
-      }
-      return true;
+  const empresas = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      if (r.empresa) set.add(r.empresa);
     });
-  }, [rows, q, estado]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "es"));
+  }, [rows]);
 
   const proximaFecha = (r: Fila) => {
     const fechas = r.proyecto_modulos
@@ -74,6 +80,35 @@ function ProyectosLista() {
     if (fechas.length === 0) return null;
     return fechas.sort()[0];
   };
+
+  const filtradas = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return rows.filter((r) => {
+      if (estado !== "all" && r.estado !== estado) return false;
+      if (empresa !== "all" && r.empresa !== empresa) return false;
+      if (vence !== "all") {
+        const pf = proximaFecha(r);
+        if (vence === "sin") {
+          if (pf) return false;
+        } else if (!pf) {
+          return false;
+        } else {
+          const d = new Date(pf + "T00:00:00");
+          const dias = Math.round((d.getTime() - hoy.getTime()) / 86400000);
+          if (vence === "atrasado" && dias >= 0) return false;
+          if (vence === "7" && (dias < 0 || dias > 7)) return false;
+          if (vence === "30" && (dias < 0 || dias > 30)) return false;
+        }
+      }
+      if (term) {
+        const hay = `${r.nombre} ${r.empresa}`.toLowerCase();
+        if (!hay.includes(term)) return false;
+      }
+      return true;
+    });
+  }, [rows, q, estado, empresa, vence]);
 
   const avanceProm = (r: Fila) => {
     if (r.proyecto_modulos.length === 0) return 0;
@@ -100,7 +135,7 @@ function ProyectosLista() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -118,6 +153,31 @@ function ProyectosLista() {
             {ESTADOS.map((e) => (
               <SelectItem key={e.v} value={e.v}>
                 {e.l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={empresa} onValueChange={setEmpresa}>
+          <SelectTrigger className="sm:w-56">
+            <SelectValue placeholder="Todas las empresas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las empresas</SelectItem>
+            {empresas.map((e) => (
+              <SelectItem key={e} value={e}>
+                {e}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={vence} onValueChange={setVence}>
+          <SelectTrigger className="sm:w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {VENCE.map((v) => (
+              <SelectItem key={v.v} value={v.v}>
+                {v.l}
               </SelectItem>
             ))}
           </SelectContent>

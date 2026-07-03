@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AdminOnly } from "@/components/admin-only";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Mail, Search, ShieldAlert, Trash2, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +18,15 @@ import {
   eliminarUsuario,
 } from "@/lib/admin.functions";
 
-export const Route = createFileRoute("/app/usuarios")({ component: UsuariosPage });
+export const Route = createFileRoute("/app/usuarios")({ component: UsuariosGuarded });
+
+function UsuariosGuarded() {
+  return (
+    <AdminOnly>
+      <UsuariosPage />
+    </AdminOnly>
+  );
+}
 
 interface Perfil {
   id: string;

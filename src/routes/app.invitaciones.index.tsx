@@ -20,6 +20,7 @@ import {
   reenviarInvitacion,
   revocarInvitacion,
 } from "@/lib/admin.functions";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/app/invitaciones/")({
   component: Invitaciones,
@@ -43,6 +44,8 @@ interface Proy {
 }
 
 function Invitaciones() {
+  const { profile } = useAuth();
+  const esAdmin = profile?.rol === "admin";
   const crear = useServerFn(crearInvitacion);
   const reenviar = useServerFn(reenviarInvitacion);
   const revocar = useServerFn(revocarInvitacion);
@@ -151,15 +154,23 @@ function Invitaciones() {
             <Select
               value={rol}
               onValueChange={(v) => setRol(v as "implementador" | "invitado")}
+              disabled={!esAdmin}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="invitado">Invitado (cliente)</SelectItem>
-                <SelectItem value="implementador">Implementador EGIXIA</SelectItem>
+                {esAdmin && (
+                  <SelectItem value="implementador">Implementador EGIXIA</SelectItem>
+                )}
               </SelectContent>
             </Select>
+            {!esAdmin && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Sólo un administrador puede invitar implementadores.
+              </p>
+            )}
           </div>
           <div>
             <Label className="text-xs">Proyecto</Label>

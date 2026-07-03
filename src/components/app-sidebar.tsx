@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Settings,
   LogOut,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -47,6 +48,7 @@ const menusPorRol: Record<Rol, NavItem[]> = {
     { title: "Proyectos", url: "/app/proyectos", icon: FolderKanban },
     { title: "Revisiones pendientes", url: "/app/revisiones", icon: ClipboardCheck },
     { title: "Invitaciones", url: "/app/invitaciones", icon: Mail },
+    { title: "Mi perfil", url: "/app/mi-perfil", icon: UserRound },
   ],
   admin: [
     { title: "Inicio", url: "/app", icon: LayoutDashboard },
@@ -57,6 +59,7 @@ const menusPorRol: Record<Rol, NavItem[]> = {
     { title: "Catálogo de módulos", url: "/app/catalogo", icon: BookMarked },
     { title: "Auditoría", url: "/app/auditoria", icon: ShieldCheck },
     { title: "Configuración", url: "/app/configuracion", icon: Settings },
+    { title: "Mi perfil", url: "/app/mi-perfil", icon: UserRound },
   ],
 };
 
