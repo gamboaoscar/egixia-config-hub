@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/rea
 
 import { PrivateShell } from "@/components/private-shell";
 import { exigirEquipoInterno } from "@/lib/rbac.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
@@ -9,6 +10,12 @@ export const Route = createFileRoute("/app")({
     meta: [{ title: "Área privada · EGIXIA Configurator" }],
   }),
   beforeLoad: async () => {
+    // Verifica sesión en el cliente antes de invocar el server fn protegido;
+    // así evitamos un 401 cuando la sesión aún no está hidratada.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      throw redirect({ to: "/login", search: { next: "/app" } });
+    }
     try {
       await exigirEquipoInterno();
     } catch (err) {
