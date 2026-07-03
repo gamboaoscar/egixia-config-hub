@@ -160,4 +160,18 @@ privados: nunca se exponen URLs públicas.
   (canvas cover), subida y firma de URL.
 - `src/components/form-engine/campo-archivo.tsx` — UI: dropzone,
   panel de ajuste con sliders, tarjeta de archivo cargado con botones
+
+## Autorización de rutas y RBAC
+
+- `src/lib/rbac.functions.ts` — server function
+  `exigirEquipoInterno`, protegida por `requireSupabaseAuth`. La
+  invoca el `beforeLoad` de `src/routes/app.tsx` para bloquear la
+  entrada de invitados al área interna.
+- `src/lib/admin.functions.ts` — server functions administrativas;
+  cada mutación autoriza al llamante (`exigirInterno` /
+  `exigirAdmin`) antes de tocar la base o Supabase Auth y registra
+  la acción en `auditoria`.
+- Función DB `comparten_proyecto(a, b)` — helper `SECURITY DEFINER`
+  utilizado por las políticas RLS de `profiles` para permitir que
+  los miembros de un mismo proyecto se vean entre sí.
   "Reemplazar" / "Quitar" y etiqueta *"Ajustado a 400×110 px"*.

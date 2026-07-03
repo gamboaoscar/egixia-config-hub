@@ -2,6 +2,49 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.3] — 2026-07-03 — Endurecimiento de seguridad (3ª pasada)
+
+Tercera ronda de hallazgos del escáner de seguridad.
+
+### Seguridad
+- **`bootstrap-admin` con autenticación obligatoria**: la Edge Function
+  exige el header `x-bootstrap-secret` comparado en tiempo constante
+  contra el secreto `BOOTSTRAP_SECRET`. El correo del admin ya no está
+  hardcodeado y se lee desde `BOOTSTRAP_ADMIN_EMAIL`. Sin ambos
+  secretos responde `503 not_configured`.
+- **`enviar-correo` con secreto obligatorio**: `CORREO_WEBHOOK_SECRET`
+  pasa de opcional a requerido. La validación del header
+  `x-egixia-secret` usa comparación en tiempo constante. Sin secreto
+  la Function responde `503 not_configured`.
+- **Guardia server-side en `/app`**: nuevo `beforeLoad` en
+  `src/routes/app.tsx` que invoca la server function
+  `exigirEquipoInterno` (`src/lib/rbac.functions.ts`) usando
+  `requireSupabaseAuth`. Los clientes son redirigidos a
+  `/mi-proyecto` antes de renderizar el layout privado, además del
+  control de UI existente en `PrivateShell`.
+- **RLS de `invitaciones` para el invitado**: se reemplazó `inv_select`
+  por dos políticas — `inv_select_admin` (rol `admin`) e
+  `inv_select_invitado` (usuario autenticado cuyo `email` del JWT
+  coincide con la invitación, `estado = 'pendiente'` y `expira_at > now()`).
+  Se elimina así el acceso al rol `public` sobre la tabla.
+- **RLS de `profiles` para pares del proyecto**: nueva función
+  `SECURITY DEFINER` `comparten_proyecto(a,b)` y política
+  `profiles_select_own_or_privileged` extendida para permitir que
+  miembros con membresía activa en un mismo proyecto se vean entre sí.
+
+### Documentación
+- `docs/SEGURIDAD.md`: nuevas secciones "Bootstrap de administrador",
+  actualización de "Envío de correo" y de la política de
+  `invitaciones`; matriz RLS actualizada para `profiles`.
+- `docs/ROLES_Y_PERMISOS.md`: doble capa cliente + server en `/app`.
+- `docs/ARQUITECTURA.md`: mención de `rbac.functions.ts` y
+  `comparten_proyecto`.
+
+### Acciones manuales pendientes del usuario
+- Configurar los secretos `BOOTSTRAP_SECRET`, `BOOTSTRAP_ADMIN_EMAIL`
+  y `CORREO_WEBHOOK_SECRET` en el backend, o las funciones
+  responderán `503`.
+
 ## [1.0.2] — 2026-07-02 — Endurecimiento de seguridad (2ª pasada)
 
 Segunda ronda de hallazgos del escáner de seguridad, aplicada sobre
