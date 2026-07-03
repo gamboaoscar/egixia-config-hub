@@ -330,7 +330,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       .single();
     if (error || !inv) throw new Error("No se pudo crear la invitación.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, inv.id, {
+    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: data.email,
       token,
       expira,
@@ -373,7 +373,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       .eq("id", inv.id);
     if (error) throw new Error("No se pudo reenviar.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, inv.id, {
+    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: inv.email as string,
       token,
       expira,
