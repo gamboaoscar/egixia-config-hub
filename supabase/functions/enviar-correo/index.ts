@@ -34,12 +34,16 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
-  // Segundo secreto opcional
+  // Autenticación obligatoria: solo el backend de EGIXIA (server functions)
+  // puede invocar esta función. Se exige un secreto compartido; si no está
+  // configurado, la función queda deshabilitada por seguridad.
   const secret = Deno.env.get("CORREO_WEBHOOK_SECRET");
-  if (secret) {
-    const hdr = req.headers.get("x-egixia-secret");
-    if (hdr !== secret) return json({ ok: false, error: "unauthorized" }, 401);
-  }
+  if (!secret) return json({ ok: false, error: "not_configured" }, 503);
+  const hdr = req.headers.get("x-egixia-secret") ?? "";
+  if (hdr.length !== secret.length) return json({ ok: false, error: "unauthorized" }, 401);
+  let diff = 0;
+  for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ hdr.charCodeAt(i);
+  if (diff !== 0) return json({ ok: false, error: "unauthorized" }, 401);
 
   let payload: { mensajes?: Mensaje[] };
   try {

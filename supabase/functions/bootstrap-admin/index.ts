@@ -4,16 +4,41 @@
 // La contraseña nunca se persiste ni se devuelve.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const ADMIN_EMAIL = "hilberth.lopezv@egixia.com";
-
 function strongPassword(): string {
   const bytes = new Uint8Array(48);
   crypto.getRandomValues(bytes);
   return btoa(String.fromCharCode(...bytes)) + "!Aa9";
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
   try {
+    // Autenticación obligatoria: requiere un secreto compartido en el header
+    // `x-bootstrap-secret`, y el correo del admin viene por secreto también.
+    const secret = Deno.env.get("BOOTSTRAP_SECRET");
+    const ADMIN_EMAIL = Deno.env.get("BOOTSTRAP_ADMIN_EMAIL");
+    if (!secret || !ADMIN_EMAIL) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "not_configured" }),
+        { status: 503, headers: { "content-type": "application/json" } },
+      );
+    }
+    const hdr = req.headers.get("x-bootstrap-secret");
+    if (!hdr || hdr.length !== secret.length) {
+      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    // Comparación en tiempo constante
+    let diff = 0;
+    for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ hdr.charCodeAt(i);
+    if (diff !== 0) {
+      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,

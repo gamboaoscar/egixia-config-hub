@@ -1,11 +1,24 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 
 import { PrivateShell } from "@/components/private-shell";
+import { exigirEquipoInterno } from "@/lib/rbac.functions";
 
 export const Route = createFileRoute("/app")({
+  ssr: false,
   head: () => ({
     meta: [{ title: "Área privada · EGIXIA Configurator" }],
   }),
+  beforeLoad: async () => {
+    try {
+      await exigirEquipoInterno();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "forbidden") {
+        throw redirect({ to: "/mi-proyecto" });
+      }
+      throw redirect({ to: "/login", search: { next: "/app" } });
+    }
+  },
   component: AppLayout,
 });
 
