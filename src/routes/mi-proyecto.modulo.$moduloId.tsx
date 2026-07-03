@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -46,9 +46,11 @@ function ModuloPage() {
   const { moduloId } = Route.useParams();
   const { moduloById, loading, refreshModulos, overridesDeProyecto } = useMiProyecto();
   const modulo = moduloById(moduloId);
+  const navigate = useNavigate();
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [previsualizando, setPrevisualizando] = useState(false);
+  const [progresoLive, setProgresoLive] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("acta.pdf");
   const previewUrlRef = useRef<string | null>(null);
@@ -160,6 +162,10 @@ function ModuloPage() {
       }
       await refreshModulos();
       setObservaciones([]);
+      navigate({
+        to: "/mi-proyecto/proyectos/$id",
+        params: { id: modulo.proyecto_id },
+      });
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "No se pudo enviar el módulo.";
@@ -170,7 +176,7 @@ function ModuloPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <div>
         <Button
           asChild
@@ -276,6 +282,7 @@ function ModuloPage() {
         )}
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}
+        onProgreso={setProgresoLive}
       />
 
       {/* Acciones */}
@@ -341,6 +348,25 @@ function ModuloPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {!soloLectura && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Avance del módulo
+            </span>
+            <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${progresoLive ?? modulo.progreso}%` }}
+              />
+            </div>
+            <span className="min-w-[3ch] text-right text-sm font-semibold text-foreground">
+              {progresoLive ?? modulo.progreso}%
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
