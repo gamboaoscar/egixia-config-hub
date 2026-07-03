@@ -317,6 +317,30 @@ function ModuloPage() {
           </Button>
         </div>
       </div>
+
+      <Dialog open={previewUrl !== null} onOpenChange={cerrarPreview}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+          <DialogHeader className="flex-row items-center justify-between gap-2 space-y-0">
+            <DialogTitle>Vista previa del acta</DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDescargarPreview}
+              className="mr-8"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </Button>
+          </DialogHeader>
+          {previewUrl ? (
+            <iframe
+              src={previewUrl}
+              title="Acta"
+              className="flex-1 w-full rounded-md border border-border bg-white"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
