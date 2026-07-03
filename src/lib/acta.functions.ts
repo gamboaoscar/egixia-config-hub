@@ -106,7 +106,7 @@ export const descargarActaFirmada = createServerFn({ method: "POST" })
       if (!mem) throw new Error("No tienes acceso a este proyecto.");
     }
 
-    const { ultimaActa, urlFirmadaActa } = await import(
+    const { ultimaActa, descargarBytesActa } = await import(
       "@/lib/acta/acta.server"
     );
     let acta = await ultimaActa(data.moduloId);
@@ -130,12 +130,18 @@ export const descargarActaFirmada = createServerFn({ method: "POST" })
           acta = { version, archivoUrl };
         } catch (err) {
           console.error("[descargarActaFirmada] auto-regen falló", err);
-          return { url: null, version: null };
+          return { base64: null, version: null, filename: null };
         }
       } else {
-        return { url: null, version: null };
+        return { base64: null, version: null, filename: null };
       }
     }
-    const url = await urlFirmadaActa(acta.archivoUrl);
-    return { url, version: acta.version };
+    const bytes = await descargarBytesActa(acta.archivoUrl);
+    if (!bytes) return { base64: null, version: null, filename: null };
+    const { bytesABase64 } = await import("@/lib/acta/acta-pdf");
+    return {
+      base64: bytesABase64(bytes),
+      version: acta.version,
+      filename: `acta-${data.moduloId}-v${acta.version}.pdf`,
+    };
   });

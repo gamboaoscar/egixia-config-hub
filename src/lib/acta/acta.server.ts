@@ -137,6 +137,25 @@ export async function urlFirmadaActa(archivoUrl: string): Promise<string | null>
   return data.signedUrl;
 }
 
+/**
+ * Descarga los bytes crudos del acta desde el bucket privado. Se usa
+ * para servir el PDF same-origin (evita URLs de Storage bloqueadas por
+ * ad-blockers y sesiones cruzadas).
+ */
+export async function descargarBytesActa(
+  archivoUrl: string,
+): Promise<Uint8Array | null> {
+  if (!archivoUrl) return null;
+  const [bucket, ...resto] = archivoUrl.split("/");
+  if (bucket !== BUCKET_ACTAS || resto.length === 0) return null;
+  const path = resto.join("/");
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET_ACTAS)
+    .download(path);
+  if (error || !data) return null;
+  return new Uint8Array(await data.arrayBuffer());
+}
+
 /** Ruta última acta persistida para un módulo (o null). */
 export async function ultimaActa(
   moduloId: string,
