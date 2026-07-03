@@ -54,22 +54,61 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
         .eq("id", claimed.id);
     };
 
-    // 2. Crear el usuario en Auth.
-    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email: claimed.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { nombre: data.nombre, apellido: data.apellido },
-    });
-    if (createErr || !created?.user) {
-      await rollback();
-      throw new Error(
-        createErr?.message?.toLowerCase().includes("already")
-          ? "Ya existe una cuenta con este correo. Inicia sesión."
-          : "No se pudo crear la cuenta. Inténtalo de nuevo.",
+    // 2. Asegurar la cuenta en Auth. El usuario puede ya existir porque
+    // la invitación se envió con `inviteUserByEmail` (que crea el usuario)
+    // o con `resetPasswordForEmail` (usuarios que ya existían). En ambos
+    // casos aquí solo tenemos que fijar la contraseña y confirmar el email.
+    let userId: string | null = null;
+    const { data: lookup } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", claimed.email)
+      .maybeSingle();
+    if (lookup?.id) userId = lookup.id as string;
+
+    if (!userId) {
+      // Buscar en Auth por email (paginado; primer intento).
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
+      const match = list?.users.find(
+        (u) => (u.email || "").toLowerCase() === claimed.email.toLowerCase(),
       );
+      if (match) userId = match.id;
     }
-    const userId = created.user.id;
+
+    if (userId) {
+      const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        {
+          password: data.password,
+          email_confirm: true,
+          user_metadata: { nombre: data.nombre, apellido: data.apellido },
+        },
+      );
+      if (updErr) {
+        await rollback();
+        throw new Error("No se pudo establecer la contraseña.");
+      }
+    } else {
+      const { data: created, error: createErr } =
+        await supabaseAdmin.auth.admin.createUser({
+          email: claimed.email,
+          password: data.password,
+          email_confirm: true,
+          user_metadata: { nombre: data.nombre, apellido: data.apellido },
+        });
+      if (createErr || !created?.user) {
+        await rollback();
+        throw new Error(
+          createErr?.message?.toLowerCase().includes("already")
+            ? "Ya existe una cuenta con este correo. Inicia sesión."
+            : "No se pudo crear la cuenta. Inténtalo de nuevo.",
+        );
+      }
+      userId = created.user.id;
+    }
 
     // 3. Actualizar/crear el perfil con el rol correcto de la invitación.
     const rolPerfil = claimed.rol_invitado === "implementador" ? "implementador" : "cliente";
@@ -84,23 +123,25 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
         estado: "activo",
       });
     if (profileErr) {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
       await rollback();
       throw new Error("No se pudo crear el perfil del usuario.");
     }
 
     // 4. Si la invitación es de proyecto, vincular como miembro.
     if (claimed.proyecto_id) {
+      // upsert por (proyecto_id, profile_id) por si ya existía la fila.
       const { error: memberErr } = await supabaseAdmin
         .from("proyecto_miembros")
-        .insert({
-          proyecto_id: claimed.proyecto_id,
-          profile_id: userId,
-          rol_en_proyecto: claimed.rol_invitado,
-          estado: "activo",
-        });
+        .upsert(
+          {
+            proyecto_id: claimed.proyecto_id,
+            profile_id: userId,
+            rol_en_proyecto: claimed.rol_invitado,
+            estado: "activo",
+          },
+          { onConflict: "proyecto_id,profile_id" },
+        );
       if (memberErr) {
-        await supabaseAdmin.auth.admin.deleteUser(userId);
         await rollback();
         throw new Error("No se pudo vincular al usuario con el proyecto.");
       }

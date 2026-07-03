@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -222,6 +223,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       token,
       expira,
       proyectoId: data.proyecto_id || null,
+      rolInvitado: data.rol_invitado,
     });
 
     await auditar(supabaseAdmin, "invitacion_creada", "invitaciones", inv.id, {
@@ -245,7 +247,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invitaciones")
-      .select("id, email, estado, proyecto_id")
+      .select("id, email, estado, proyecto_id, rol_invitado")
       .eq("id", data.id)
       .maybeSingle();
     if (!inv) throw new Error("Invitación no encontrada.");
@@ -264,6 +266,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       token,
       expira,
       proyectoId: (inv.proyecto_id as string | null) ?? null,
+      rolInvitado: inv.rol_invitado as "implementador" | "invitado",
     });
 
     await auditar(supabaseAdmin, "invitacion_reenviada", "invitaciones", inv.id, {
@@ -297,9 +300,14 @@ export const revocarInvitacion = createServerFn({ method: "POST" })
 async function enviarInvitacionCorreo(
   admin: Cliente,
   invitacionId: string,
-  input: { email: string; token: string; expira: Date; proyectoId: string | null },
+  input: {
+    email: string;
+    token: string;
+    expira: Date;
+    proyectoId: string | null;
+    rolInvitado: "implementador" | "invitado";
+  },
 ) {
-  void admin;
   let empresa = "tu empresa";
   let nombreProyecto: string | undefined;
   if (input.proyectoId) {
@@ -313,28 +321,82 @@ async function enviarInvitacionCorreo(
       nombreProyecto = data.nombre as string;
     }
   }
-  const base = (
+  const base = urlBaseDelPortal();
+  const urlRegistro = `${base}/invitacion/${input.token}`;
+
+  // Reutilizamos el motor de correo integrado del backend (el mismo que
+  // envía los correos de "Olvidé mi contraseña"). Si el usuario aún no
+  // existe en Auth lo invitamos; si ya existe, disparamos un enlace de
+  // recuperación apuntando a la misma página de aceptación.
+  const meta = {
+    egixia_token: input.token,
+    rol_invitado: input.rolInvitado,
+    proyecto_id: input.proyectoId,
+    proyecto_nombre: nombreProyecto ?? null,
+    empresa,
+  };
+
+  const { error: invErr } = await admin.auth.admin.inviteUserByEmail(
+    input.email,
+    { redirectTo: urlRegistro, data: meta },
+  );
+
+  if (invErr) {
+    const msg = (invErr.message || "").toLowerCase();
+    const yaExiste =
+      msg.includes("already") ||
+      msg.includes("registered") ||
+      msg.includes("exists");
+    if (yaExiste) {
+      // Usuario ya tiene cuenta: mandamos un enlace de recuperación que
+      // aterriza igualmente en /invitacion/{token} con sesión activa.
+      const { error: resetErr } = await admin.auth.resetPasswordForEmail(
+        input.email,
+        { redirectTo: urlRegistro },
+      );
+      if (resetErr) {
+        throw new Error(
+          `No se pudo enviar el correo de invitación: ${resetErr.message}`,
+        );
+      }
+    } else {
+      throw new Error(
+        `No se pudo enviar el correo de invitación: ${invErr.message}`,
+      );
+    }
+  }
+
+  await admin.from("auditoria").insert({
+    accion: "invitacion_correo_enviado",
+    entidad: "invitaciones",
+    entidad_id: invitacionId,
+    detalle: {
+      destinatario: input.email,
+      url: urlRegistro,
+      expira_at: input.expira.toISOString(),
+    },
+  });
+}
+
+function urlBaseDelPortal(): string {
+  // Preferencia: origin del request (funciona en preview y en publicado).
+  try {
+    const origin =
+      getRequestHeader("origin") ||
+      (() => {
+        const h = getRequestHeader("host");
+        const proto = getRequestHeader("x-forwarded-proto") || "https";
+        return h ? `${proto}://${h}` : "";
+      })();
+    if (origin) return origin.replace(/\/$/, "");
+  } catch {
+    /* fuera de contexto request */
+  }
+  const fromEnv =
     process.env.PUBLIC_SITE_URL ||
     process.env.SITE_URL ||
-    "https://portal.egixia.com"
-  ).replace(/\/$/, "");
-  const urlRegistro = `${base}/invitacion/${input.token}`;
-  const expiraTexto = input.expira.toLocaleDateString("es-CO", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const { notificarInvitacion } = await import(
-    "@/lib/acta/notificaciones.server"
-  );
-  await notificarInvitacion({
-    invitacionId,
-    destinatario: input.email,
-    empresa,
-    nombreProyecto,
-    urlRegistro,
-    expiraTexto,
-  });
+    "https://egixia-config-hub.lovable.app";
+  return fromEnv.replace(/\/$/, "");
 }
 
 // ---------- Miembros de proyecto ------------------------------------------
