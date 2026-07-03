@@ -28,7 +28,14 @@ import {
   reenviarModulo,
 } from "@/lib/revision.functions";
 import { previsualizarActa } from "@/lib/acta.functions";
-import { base64ABytes } from "@/lib/acta/acta-pdf";
+
+/** Decodifica base64 → Uint8Array sin importar pdf-lib en el cliente. */
+function base64ABytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
 
 export const Route = createFileRoute("/mi-proyecto/modulo/$moduloId")({
   component: ModuloPage,
