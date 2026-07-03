@@ -1,41 +1,42 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarClock, Inbox } from "lucide-react";
+import {
+  ArrowRight,
+  ClipboardCheck,
+  FolderKanban,
+  AlarmClock,
+  CheckCircle2,
+  Hand,
+  Inbox,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useMiProyecto } from "@/hooks/use-mi-proyecto";
-import { EstadoPastilla } from "@/components/estado-pastilla";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
-import {
-  botonAccionModulo,
-  diasHasta,
-  type ModuloEstado,
-} from "@/lib/modulo-estado";
-import { cn } from "@/lib/utils";
+import { diasHasta } from "@/lib/modulo-estado";
 
 export const Route = createFileRoute("/mi-proyecto/")({
-  component: MiProyectoIndex,
+  component: MiProyectoInicio,
 });
 
-function MiProyectoIndex() {
+function MiProyectoInicio() {
   const { profile } = useAuth();
-  const { proyecto, modulos, loading } = useMiProyecto();
+  const { proyectos, modulos, modulosDeProyecto, loading } = useMiProyecto();
 
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl">
-        <SkeletonDashboard />
+        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
   }
 
-  if (!proyecto) {
+  if (proyectos.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center shadow-sm">
           <Inbox className="mx-auto h-10 w-10 text-primary" />
           <h2 className="mt-4 text-xl font-semibold text-foreground">
-            Aún no tienes un proyecto asignado
+            Aún no tienes proyectos asignados
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Cuando el equipo de EGIXIA te vincule a un proyecto, aparecerá aquí.
@@ -46,210 +47,197 @@ function MiProyectoIndex() {
   }
 
   const pendientes = modulos.filter((m) => m.estado !== "aprobado").length;
-  const conObservaciones = modulos.filter((m) => m.estado === "con_observaciones").length;
-  const avanceGeneral =
-    modulos.length === 0
-      ? 0
-      : Math.round(
-          modulos.reduce((acc, m) => acc + (m.progreso ?? 0), 0) / modulos.length,
-        );
-
-  const mensajeSiguiente =
-    conObservaciones > 0
-      ? `Tienes ${conObservaciones} módulo${conObservaciones === 1 ? "" : "s"} con observaciones por corregir.`
-      : pendientes === 0
-        ? "¡Excelente! Ya completaste todos los módulos asignados."
-        : `Te falta${pendientes === 1 ? "" : "n"} completar ${pendientes} módulo${pendientes === 1 ? "" : "s"}.`;
+  const conObs = modulos.filter((m) => m.estado === "con_observaciones").length;
+  const aprobados = modulos.filter((m) => m.estado === "aprobado").length;
+  const proximos = modulos
+    .filter(
+      (m) =>
+        m.fecha_limite &&
+        m.estado !== "aprobado" &&
+        (diasHasta(m.fecha_limite) ?? 999) <= 7,
+    )
+    .sort((a, b) => (a.fecha_limite! < b.fecha_limite! ? -1 : 1))
+    .slice(0, 5);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* Encabezado */}
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-              Portal de proveedor
-            </span>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-              Hola{profile?.nombre ? `, ${profile.nombre}` : ""}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{proyecto.nombre}</span>{" "}
-              · {proyecto.empresa}
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">{mensajeSiguiente}</p>
-          </div>
-          <ProgresoAnillo valor={avanceGeneral} />
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div>
+        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <span>Hola{profile?.nombre ? `, ${profile.nombre}` : ""}</span>
+          <Hand aria-hidden className="h-5 w-5 text-primary" strokeWidth={2.2} />
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Este es el resumen de los proyectos donde EGIXIA te ha invitado.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric
+          icon={FolderKanban}
+          label="Proyectos"
+          value={proyectos.length}
+          hint="Donde participas"
+        />
+        <Metric
+          icon={ClipboardCheck}
+          label="Módulos pendientes"
+          value={pendientes}
+          hint="Por diligenciar o corregir"
+          accent
+        />
+        <Metric
+          icon={AlarmClock}
+          label="Con observaciones"
+          value={conObs}
+          hint="Requieren tu atención"
+        />
+        <Metric
+          icon={CheckCircle2}
+          label="Aprobados"
+          value={aprobados}
+          hint="Módulos completados"
+        />
+      </div>
+
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Mis proyectos
+          </h3>
+          <Link
+            to="/mi-proyecto/proyectos"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Ver todos
+          </Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {proyectos.slice(0, 4).map((p) => {
+            const mods = modulosDeProyecto(p.id);
+            const avance =
+              mods.length === 0
+                ? 0
+                : Math.round(
+                    mods.reduce((a, m) => a + (m.progreso ?? 0), 0) / mods.length,
+                  );
+            return (
+              <Link
+                key={p.id}
+                to="/mi-proyecto/proyectos/$id"
+                params={{ id: p.id }}
+                className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 transition hover:border-primary/40"
+              >
+                <FolderKanban className="h-4 w-4 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {p.nombre}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {p.empresa} · {mods.length} módulo
+                    {mods.length === 1 ? "" : "s"}
+                  </p>
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${avance}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-sm font-semibold text-foreground">
+                    {avance}%
+                  </div>
+                  <ArrowRight className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      {/* Módulos */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Tus módulos
-          </h3>
-          <span className="text-xs text-muted-foreground">
-            {modulos.length} en total
-          </span>
-        </div>
-
-        {modulos.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-            Aún no hay módulos asignados a este proyecto.
-          </div>
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Próximos a vencer
+        </h3>
+        {proximos.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No tienes módulos que venzan en los próximos 7 días.
+          </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {modulos.map((m) => (
-              <ModuloCard
-                key={m.id}
-                id={m.id}
-                moduloKey={m.modulo_key}
-                estado={m.estado}
-                progreso={m.progreso}
-                fechaLimite={m.fecha_limite}
-              />
-            ))}
-          </div>
+          <ul className="mt-4 space-y-2">
+            {proximos.map((m) => {
+              const cat = moduloCatalogo(m.modulo_key);
+              const dias = diasHasta(m.fecha_limite!);
+              return (
+                <li key={m.id}>
+                  <Link
+                    to="/mi-proyecto/modulo/$moduloId"
+                    params={{ moduloId: m.id }}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 transition hover:border-primary/40"
+                  >
+                    <cat.icon className="h-4 w-4 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {cat.nombre}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {m.progreso}% avance
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        dias !== null && dias < 0
+                          ? "bg-red-100 text-red-700"
+                          : dias !== null && dias <= 3
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-primary-soft text-primary"
+                      }`}
+                    >
+                      {dias === null
+                        ? ""
+                        : dias < 0
+                          ? `vencido ${Math.abs(dias)} d.`
+                          : dias === 0
+                            ? "hoy"
+                            : `en ${dias} d.`}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
     </div>
   );
 }
 
-function ModuloCard({
-  id,
-  moduloKey,
-  estado,
-  progreso,
-  fechaLimite,
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  accent,
 }: {
-  id: string;
-  moduloKey: string;
-  estado: ModuloEstado;
-  progreso: number;
-  fechaLimite: string | null;
+  icon: typeof FolderKanban;
+  label: string;
+  value: number | string;
+  hint: string;
+  accent?: boolean;
 }) {
-  const cat = moduloCatalogo(moduloKey);
-  const Icon = cat.icon;
-  const dias = diasHasta(fechaLimite);
-  const destacado = estado === "con_observaciones";
-  const label = botonAccionModulo(estado);
-
   return (
     <div
-      className={cn(
-        "flex h-full flex-col justify-between rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md",
-        destacado ? "border-amber-300 ring-1 ring-amber-200" : "border-border",
-      )}
+      className={`rounded-2xl border p-5 shadow-sm ${
+        accent ? "border-primary/30 bg-primary-soft" : "border-border bg-card"
+      }`}
     >
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-            <Icon className="h-5 w-5" />
-          </div>
-          <EstadoPastilla estado={estado} />
-        </div>
-        <h4 className="mt-3 text-base font-semibold text-foreground">{cat.nombre}</h4>
-        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-          {cat.descripcion}
-        </p>
-
-        <div className="mt-4">
-          <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span>Avance</span>
-            <span className="font-medium text-foreground">{progreso}%</span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progreso}%` }}
-            />
-          </div>
-        </div>
-
-        {fechaLimite && (
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CalendarClock className="h-3.5 w-3.5" />
-            <span>
-              {new Date(fechaLimite + "T00:00:00").toLocaleDateString("es", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-              {dias !== null &&
-                (dias < 0
-                  ? " · vencido"
-                  : dias <= 3
-                    ? ` · faltan ${dias}d`
-                    : "")}
-            </span>
-          </div>
-        )}
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {label}
       </div>
-
-      <Button
-        asChild
-        variant={destacado ? "default" : "outline"}
-        className={cn("mt-5 w-full justify-between", destacado && "bg-amber-600 hover:bg-amber-700")}
-      >
-        <Link to="/mi-proyecto/modulo/$moduloId" params={{ moduloId: id }}>
-          {label}
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Button>
+      <div className="mt-2 text-3xl font-semibold text-foreground">{value}</div>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }
 
-function ProgresoAnillo({ valor }: { valor: number }) {
-  const r = 34;
-  const c = 2 * Math.PI * r;
-  const off = c - (Math.max(0, Math.min(100, valor)) / 100) * c;
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative h-24 w-24">
-        <svg viewBox="0 0 80 80" className="h-24 w-24 -rotate-90">
-          <circle
-            cx="40"
-            cy="40"
-            r={r}
-            strokeWidth="8"
-            className="fill-none stroke-muted"
-          />
-          <circle
-            cx="40"
-            cy="40"
-            r={r}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={off}
-            className="fill-none stroke-primary transition-all"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-foreground">
-          {valor}%
-        </div>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        Avance
-        <br />
-        general
-      </div>
-    </div>
-  );
-}
-
-function SkeletonDashboard() {
-  return (
-    <div className="space-y-6">
-      <div className="h-40 animate-pulse rounded-2xl bg-muted" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-56 animate-pulse rounded-2xl bg-muted" />
-        ))}
-      </div>
-    </div>
-  );
-}

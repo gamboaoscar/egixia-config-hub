@@ -1,0 +1,247 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, CalendarClock } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { useMiProyecto } from "@/hooks/use-mi-proyecto";
+import { EstadoPastilla } from "@/components/estado-pastilla";
+import { moduloCatalogo } from "@/lib/modulos-catalogo";
+import {
+  botonAccionModulo,
+  diasHasta,
+  type ModuloEstado,
+} from "@/lib/modulo-estado";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
+  component: MiProyectoDetalle,
+});
+
+function MiProyectoDetalle() {
+  const { id } = Route.useParams();
+  const { proyectoById, modulosDeProyecto, loading } = useMiProyecto();
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+
+  const proyecto = proyectoById(id);
+  if (!proyecto) throw notFound();
+
+  const modulos = modulosDeProyecto(id);
+  const pendientes = modulos.filter((m) => m.estado !== "aprobado").length;
+  const conObservaciones = modulos.filter(
+    (m) => m.estado === "con_observaciones",
+  ).length;
+  const avanceGeneral =
+    modulos.length === 0
+      ? 0
+      : Math.round(
+          modulos.reduce((acc, m) => acc + (m.progreso ?? 0), 0) /
+            modulos.length,
+        );
+
+  const mensajeSiguiente =
+    conObservaciones > 0
+      ? `Tienes ${conObservaciones} módulo${conObservaciones === 1 ? "" : "s"} con observaciones por corregir.`
+      : pendientes === 0
+        ? "¡Excelente! Ya completaste todos los módulos de este proyecto."
+        : `Te falta${pendientes === 1 ? "" : "n"} completar ${pendientes} módulo${pendientes === 1 ? "" : "s"}.`;
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground"
+        >
+          <Link to="/mi-proyecto/proyectos">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Volver a mis proyectos
+          </Link>
+        </Button>
+      </div>
+
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+              {proyecto.empresa}
+            </span>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+              {proyecto.nombre}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {mensajeSiguiente}
+            </p>
+          </div>
+          <ProgresoAnillo valor={avanceGeneral} />
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Módulos
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {modulos.length} en total
+          </span>
+        </div>
+
+        {modulos.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+            Aún no hay módulos asignados a este proyecto.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {modulos.map((m) => (
+              <ModuloCard
+                key={m.id}
+                id={m.id}
+                moduloKey={m.modulo_key}
+                estado={m.estado}
+                progreso={m.progreso}
+                fechaLimite={m.fecha_limite}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ModuloCard({
+  id,
+  moduloKey,
+  estado,
+  progreso,
+  fechaLimite,
+}: {
+  id: string;
+  moduloKey: string;
+  estado: ModuloEstado;
+  progreso: number;
+  fechaLimite: string | null;
+}) {
+  const cat = moduloCatalogo(moduloKey);
+  const Icon = cat.icon;
+  const dias = diasHasta(fechaLimite);
+  const destacado = estado === "con_observaciones";
+  const label = botonAccionModulo(estado);
+
+  return (
+    <div
+      className={cn(
+        "flex h-full flex-col justify-between rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md",
+        destacado ? "border-amber-300 ring-1 ring-amber-200" : "border-border",
+      )}
+    >
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+            <Icon className="h-5 w-5" />
+          </div>
+          <EstadoPastilla estado={estado} />
+        </div>
+        <h4 className="mt-3 text-base font-semibold text-foreground">
+          {cat.nombre}
+        </h4>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+          {cat.descripcion}
+        </p>
+
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Avance</span>
+            <span className="font-medium text-foreground">{progreso}%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${progreso}%` }}
+            />
+          </div>
+        </div>
+
+        {fechaLimite && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CalendarClock className="h-3.5 w-3.5" />
+            <span>
+              {new Date(fechaLimite + "T00:00:00").toLocaleDateString("es", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+              {dias !== null &&
+                (dias < 0
+                  ? " · vencido"
+                  : dias <= 3
+                    ? ` · faltan ${dias}d`
+                    : "")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <Button
+        asChild
+        variant={destacado ? "default" : "outline"}
+        className={cn(
+          "mt-5 w-full justify-between",
+          destacado && "bg-amber-600 hover:bg-amber-700",
+        )}
+      >
+        <Link to="/mi-proyecto/modulo/$moduloId" params={{ moduloId: id }}>
+          {label}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function ProgresoAnillo({ valor }: { valor: number }) {
+  const r = 34;
+  const c = 2 * Math.PI * r;
+  const off = c - (Math.max(0, Math.min(100, valor)) / 100) * c;
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative h-24 w-24">
+        <svg viewBox="0 0 80 80" className="h-24 w-24 -rotate-90">
+          <circle
+            cx="40"
+            cy="40"
+            r={r}
+            strokeWidth="8"
+            className="fill-none stroke-muted"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={r}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={off}
+            className="fill-none stroke-primary transition-all"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-foreground">
+          {valor}%
+        </div>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Avance
+        <br />
+        general
+      </div>
+    </div>
+  );
+}
