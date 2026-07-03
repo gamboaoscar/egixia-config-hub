@@ -199,13 +199,11 @@ function DetalleProyecto() {
     setDescargando(mid);
     try {
       const res = await descargarActa({ data: { moduloId: mid } });
-      // res esperado: { base64, filename } o url
-      const r = res as { url?: string | null };
-      if (r.url) {
-        window.open(r.url, "_blank");
-      } else {
+      if (!res.base64) {
         toast.error("Aún no hay acta persistida para este módulo.");
+        return;
       }
+      abrirPdfBlob(res.base64, res.filename);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo descargar el acta.");
     } finally {
