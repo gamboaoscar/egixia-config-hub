@@ -38,8 +38,8 @@ interface Observacion {
 
 function ModuloPage() {
   const { moduloId } = Route.useParams();
-  const { modulos, loading, refreshModulos, overrides } = useMiProyecto();
-  const modulo = modulos.find((m) => m.id === moduloId);
+  const { moduloById, loading, refreshModulos, overridesDeProyecto } = useMiProyecto();
+  const modulo = moduloById(moduloId);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [previsualizando, setPrevisualizando] = useState(false);
@@ -72,6 +72,7 @@ function ModuloPage() {
     throw notFound();
   }
 
+  const overrides = overridesDeProyecto(modulo.proyecto_id);
   const cat = moduloCatalogo(modulo.modulo_key);
   const Icon = cat.icon;
 
@@ -142,9 +143,12 @@ function ModuloPage() {
           size="sm"
           className="-ml-2 text-muted-foreground"
         >
-          <Link to="/mi-proyecto">
+          <Link
+            to="/mi-proyecto/proyectos/$id"
+            params={{ id: modulo.proyecto_id }}
+          >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Volver al inicio
+            Volver al proyecto
           </Link>
         </Button>
       </div>
