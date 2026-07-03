@@ -39,6 +39,7 @@ async function exigirInterno(admin: Cliente, userId: string) {
 
 async function auditar(
   admin: Cliente,
+  actorId: string | null,
   accion: string,
   entidad: string,
   entidadId: string,
@@ -49,6 +50,7 @@ async function auditar(
     _entidad: entidad,
     _entidad_id: entidadId,
     _detalle: detalle,
+    _actor_id: actorId,
   });
 }
 
