@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -46,9 +46,11 @@ function ModuloPage() {
   const { moduloId } = Route.useParams();
   const { moduloById, loading, refreshModulos, overridesDeProyecto } = useMiProyecto();
   const modulo = moduloById(moduloId);
+  const navigate = useNavigate();
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [previsualizando, setPrevisualizando] = useState(false);
+  const [progresoLive, setProgresoLive] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("acta.pdf");
   const previewUrlRef = useRef<string | null>(null);
@@ -160,6 +162,10 @@ function ModuloPage() {
       }
       await refreshModulos();
       setObservaciones([]);
+      navigate({
+        to: "/mi-proyecto/proyectos/$id",
+        params: { id: modulo.proyecto_id },
+      });
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "No se pudo enviar el módulo.";
