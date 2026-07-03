@@ -65,12 +65,14 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const refreshProyectos = useCallback(async () => {
+    console.log("[mi-proyecto] refreshProyectos start; profile?", !!profile, profile?.rol);
     if (!profile) return;
     // RLS: el invitado solo verá los proyectos donde es miembro activo.
     const { data, error } = await supabase
       .from("proyectos")
       .select("id, nombre, empresa, estado")
       .order("created_at", { ascending: false });
+    console.log("[mi-proyecto] refreshProyectos done; rows=", data?.length, "err=", error?.message);
     if (error) {
       console.error("[mi-proyecto] error cargando proyectos", error);
       setProyectos([]);
