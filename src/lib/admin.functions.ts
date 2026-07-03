@@ -411,6 +411,7 @@ export const revocarInvitacion = createServerFn({ method: "POST" })
 
 async function enviarInvitacionCorreo(
   admin: Cliente,
+  actorId: string | null,
   invitacionId: string,
   input: {
     email: string;
@@ -479,6 +480,7 @@ async function enviarInvitacionCorreo(
   }
 
   await admin.from("auditoria").insert({
+    actor_id: actorId,
     accion: "invitacion_correo_enviado",
     entidad: "invitaciones",
     entidad_id: invitacionId,
