@@ -176,7 +176,7 @@ function ModuloPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 pb-24">
       <div>
         <Button
           asChild
@@ -282,6 +282,7 @@ function ModuloPage() {
         )}
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}
+        onProgreso={setProgresoLive}
       />
 
       {/* Acciones */}
@@ -347,6 +348,25 @@ function ModuloPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {!soloLectura && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Avance del módulo
+            </span>
+            <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${progresoLive ?? modulo.progreso}%` }}
+              />
+            </div>
+            <span className="min-w-[3ch] text-right text-sm font-semibold text-foreground">
+              {progresoLive ?? modulo.progreso}%
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
