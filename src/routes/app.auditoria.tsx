@@ -30,12 +30,38 @@ function AuditoriaPage() {
 
   const cargar = async () => {
     setLoading(true);
-    const { data } = await supabase
+    // No hay una FK declarada entre `auditoria.actor_id` y `profiles.id`
+    // (ambas apuntan a `auth.users`), así que PostgREST no permite hacer
+    // embed en una sola consulta. Traemos los registros y hacemos la
+    // correspondencia con los perfiles en el cliente.
+    const { data: auditoria } = await supabase
       .from("auditoria")
-      .select("id, actor_id, accion, entidad, entidad_id, detalle, created_at, profiles:actor_id(nombre, apellido, email)")
+      .select("id, actor_id, accion, entidad, entidad_id, detalle, created_at")
       .order("created_at", { ascending: false })
       .limit(1000);
-    setRows((data ?? []) as unknown as Row[]);
+    const base = (auditoria ?? []) as Array<Omit<Row, "profiles">>;
+    const ids = Array.from(
+      new Set(base.map((r) => r.actor_id).filter((v): v is string => !!v)),
+    );
+    let mapa: Record<string, Row["profiles"]> = {};
+    if (ids.length > 0) {
+      const { data: perfiles } = await supabase
+        .from("profiles")
+        .select("id, nombre, apellido, email")
+        .in("id", ids);
+      mapa = Object.fromEntries(
+        (perfiles ?? []).map((p) => [
+          p.id,
+          { nombre: p.nombre ?? "", apellido: p.apellido ?? "", email: p.email ?? "" },
+        ]),
+      );
+    }
+    setRows(
+      base.map((r) => ({
+        ...r,
+        profiles: r.actor_id ? (mapa[r.actor_id] ?? null) : null,
+      })),
+    );
     setLoading(false);
   };
   useEffect(() => { void cargar(); }, []);
