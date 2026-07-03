@@ -21,6 +21,17 @@ Diligencia únicamente los formularios de su propio proyecto. Puede guardar y
 continuar más tarde, y confirmar al finalizar. Nunca ve auditoría ni
 vistas internas.
 
+Un mismo `cliente`/invitado puede tener membresía activa en varios
+proyectos. Su sidebar muestra *Inicio* y *Proyectos* (misma estructura
+que el equipo interno) y accede a cada proyecto en
+`/mi-proyecto/proyectos/$id`, con avance general por proyecto en el
+listado y avance por módulo en el detalle. En la home, la sección
+"Próximos a vencer" incluye el nombre del proyecto junto al módulo,
+porque el mismo módulo puede repetirse entre proyectos.
+
+El `implementador` también puede editar los módulos de los proyectos
+de los invitados (con auditoría), no solo consultarlos.
+
 ## Redirección tras iniciar sesión
 
 | Rol             | Destino inicial |
