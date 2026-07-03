@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -388,16 +389,46 @@ function SelectorColor({
   disabled?: boolean;
   onChange: (v: string) => void;
 }) {
+  const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+  const esPresetSel = valor
+    ? opciones.some((o) => o.valor.toLowerCase() === valor.toLowerCase())
+    : false;
+  const personalizadoActivo = !!valor && !esPresetSel;
+  const [modoPersonalizado, setModoPersonalizado] = useState(personalizadoActivo);
+  const [hexInput, setHexInput] = useState(
+    personalizadoActivo ? (valor as string) : "#000000",
+  );
+  const hexValido = HEX_RE.test(hexInput);
+
+  const activarPersonalizado = () => {
+    setModoPersonalizado(true);
+    if (personalizadoActivo && valor) {
+      setHexInput(valor);
+    } else if (hexValido) {
+      onChange(hexInput.toUpperCase());
+    }
+  };
+
+  const commitHex = (v: string) => {
+    const trimmed = v.trim();
+    setHexInput(trimmed);
+    if (HEX_RE.test(trimmed)) onChange(trimmed.toUpperCase());
+  };
+
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {opciones.map((o) => {
-        const seleccionada = valor === o.valor;
+    <div className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {opciones.map((o) => {
+          const seleccionada = !modoPersonalizado && valor === o.valor;
         return (
           <button
             key={o.valor}
             type="button"
             disabled={disabled}
-            onClick={() => onChange(o.valor)}
+            onClick={() => {
+              setModoPersonalizado(false);
+              onChange(o.valor);
+            }}
             className={cn(
               "flex items-center gap-3 rounded-xl border bg-card p-3 text-left transition",
               "disabled:cursor-not-allowed disabled:opacity-60",
@@ -422,7 +453,79 @@ function SelectorColor({
             </span>
           </button>
         );
-      })}
+        })}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={activarPersonalizado}
+          className={cn(
+            "flex items-center gap-3 rounded-xl border bg-card p-3 text-left transition",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+            modoPersonalizado
+              ? "border-primary ring-2 ring-primary/20"
+              : "border-dashed border-border hover:border-primary/40",
+          )}
+          aria-pressed={modoPersonalizado}
+        >
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/60"
+            style={{
+              background:
+                "conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444)",
+            }}
+            aria-hidden
+          >
+            <Plus className="h-4 w-4 text-white drop-shadow" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-foreground">
+              Color personalizado
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Solicita un color a medida
+            </span>
+          </span>
+        </button>
+      </div>
+
+      {modoPersonalizado && (
+        <div className="rounded-xl border border-border bg-muted/40 p-3">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Color personalizado
+          </Label>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              type="color"
+              disabled={disabled}
+              value={hexValido ? hexInput : "#000000"}
+              onChange={(e) => commitHex(e.target.value)}
+              className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-border bg-background p-1"
+              aria-label="Selector de color"
+            />
+            <Input
+              value={hexInput}
+              disabled={disabled}
+              onChange={(e) => commitHex(e.target.value)}
+              placeholder="#123ABC"
+              maxLength={7}
+              className="max-w-[10rem] uppercase"
+            />
+            <span
+              className="h-10 flex-1 rounded-lg border border-border/60"
+              style={{ backgroundColor: hexValido ? hexInput : "transparent" }}
+              aria-hidden
+            />
+          </div>
+          {!hexValido && (
+            <p className="mt-2 text-xs text-amber-700">
+              Ingresa un color en formato HEX de 6 dígitos, ej. #1A2B3C.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            El equipo de EGIXIA validará el color solicitado durante la revisión.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
