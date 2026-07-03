@@ -278,7 +278,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
-    await auditar(supabaseAdmin, "modulo_enviado_revision", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_enviado_revision", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
@@ -329,7 +329,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo aprobar el módulo.");
 
-    await auditar(supabaseAdmin, "modulo_aprobado", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_aprobado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
@@ -470,7 +470,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo reabrir el módulo.");
 
-    await auditar(supabaseAdmin, "modulo_reabierto", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_reabierto", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
@@ -564,7 +564,7 @@ export const reenviarModulo = createServerFn({ method: "POST" })
     );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
-    await auditar(supabaseAdmin, "modulo_reenviado", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_reenviado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,

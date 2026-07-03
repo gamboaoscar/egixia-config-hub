@@ -117,7 +117,7 @@ export const crearProyecto = createServerFn({ method: "POST" })
       throw new Error("No se pudieron asignar los módulos.");
     }
 
-    await auditar(supabaseAdmin, "proyecto_creado", "proyecto", proy.id, {
+    await auditar(supabaseAdmin, userId, "proyecto_creado", "proyecto", proy.id, {
       nombre: data.nombre,
       empresa: data.empresa,
       modulos: data.modulos.map((m) => m.modulo_key),
@@ -168,7 +168,7 @@ export const editarDatosModulo = createServerFn({ method: "POST" })
       }
     }
 
-    await auditar(supabaseAdmin, "modulo_editado_admin", "proyecto_modulo", data.moduloId, {
+    await auditar(supabaseAdmin, userId, "modulo_editado_admin", "proyecto_modulo", data.moduloId, {
       proyecto_id: prev.proyecto_id,
       modulo_key: prev.modulo_key,
       campos_modificados: cambios,
@@ -335,7 +335,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       rolInvitado: data.rol_invitado,
     });
 
-    await auditar(supabaseAdmin, "invitacion_creada", "invitaciones", inv.id, {
+    await auditar(supabaseAdmin, userId, "invitacion_creada", "invitaciones", inv.id, {
       email: data.email,
       rol_invitado: data.rol_invitado,
       proyecto_id: data.proyecto_id || null,
@@ -378,7 +378,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       rolInvitado: inv.rol_invitado as "implementador" | "invitado",
     });
 
-    await auditar(supabaseAdmin, "invitacion_reenviada", "invitaciones", inv.id, {
+    await auditar(supabaseAdmin, userId, "invitacion_reenviada", "invitaciones", inv.id, {
       email: inv.email,
     });
 
@@ -402,7 +402,7 @@ export const revocarInvitacion = createServerFn({ method: "POST" })
       .eq("estado", "pendiente");
     if (error) throw new Error("No se pudo revocar.");
 
-    await auditar(supabaseAdmin, "invitacion_revocada", "invitaciones", data.id, {});
+    await auditar(supabaseAdmin, userId, "invitacion_revocada", "invitaciones", data.id, {});
     return { ok: true };
   });
 
@@ -577,7 +577,7 @@ export const desvincularMiembro = createServerFn({ method: "POST" })
       .eq("id", data.miembroId);
     if (error) throw new Error("No se pudo desvincular.");
 
-    await auditar(supabaseAdmin, "miembro_desvinculado", "proyecto_miembro", data.miembroId, {
+    await auditar(supabaseAdmin, userId, "miembro_desvinculado", "proyecto_miembro", data.miembroId, {
       proyecto_id: prev.proyecto_id,
       profile_id: prev.profile_id,
       rol_en_proyecto: prev.rol_en_proyecto,
@@ -644,7 +644,7 @@ export const cambiarRolUsuario = createServerFn({ method: "POST" })
       .update({ rol: data.rol })
       .eq("id", data.profileId);
     if (error) throw new Error("No se pudo cambiar el rol.");
-    await auditar(supabaseAdmin, "usuario_rol_cambiado", "profile", data.profileId, {
+    await auditar(supabaseAdmin, userId, "usuario_rol_cambiado", "profile", data.profileId, {
       rol: data.rol,
     });
     return { ok: true };
@@ -672,7 +672,7 @@ export const eliminarUsuario = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.profileId);
     if (error) throw new Error("No se pudo eliminar la cuenta.");
 
-    await auditar(supabaseAdmin, "usuario_eliminado", "profile", data.profileId, {
+    await auditar(supabaseAdmin, userId, "usuario_eliminado", "profile", data.profileId, {
       email: p?.email ?? null,
       rol: p?.rol ?? null,
     });
@@ -704,7 +704,7 @@ export const eliminarProyecto = createServerFn({ method: "POST" })
       .eq("id", data.proyectoId);
     if (error) throw new Error("No se pudo eliminar el proyecto.");
 
-    await auditar(supabaseAdmin, "proyecto_eliminado", "proyecto", data.proyectoId, {
+    await auditar(supabaseAdmin, userId, "proyecto_eliminado", "proyecto", data.proyectoId, {
       nombre: p.nombre,
       empresa: p.empresa,
     });
