@@ -51,12 +51,24 @@ function InvitacionPage() {
         const row = await validarInvitacion({ data: { token } });
         if (!active) return;
         if (!row) {
+          toast.error(
+            "Esta invitación ya no es válida o expiró. Contacta a EGIXIA para recibir una nueva.",
+          );
           setErrorMsg("Esta invitación no es válida, ya fue utilizada o expiró.");
+          setTimeout(() => {
+            if (active) navigate({ to: "/" });
+          }, 1200);
         } else {
           setInvitacion(row as ValidacionOk);
         }
       } catch {
-        if (active) setErrorMsg("No pudimos validar tu invitación. Inténtalo más tarde.");
+        if (active) {
+          toast.error("No pudimos validar tu invitación. Inténtalo más tarde.");
+          setErrorMsg("No pudimos validar tu invitación. Inténtalo más tarde.");
+          setTimeout(() => {
+            if (active) navigate({ to: "/" });
+          }, 1200);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -64,7 +76,7 @@ function InvitacionPage() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
