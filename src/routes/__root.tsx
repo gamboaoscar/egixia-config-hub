@@ -96,9 +96,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "EGIXIA Configurator" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "EGIXIA Configurator" },
-      { name: "twitter:description", content: "Portal de onboarding de EGIXIA: configura tu Portal de Proveedores de forma guiada." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7267bb6c-0d91-4176-8d88-c5400c5ab0c5/id-preview-039aab99--9bf4e600-9447-41e5-a3d8-d575e146b361.lovable.app-1783030031264.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7267bb6c-0d91-4176-8d88-c5400c5ab0c5/id-preview-039aab99--9bf4e600-9447-41e5-a3d8-d575e146b361.lovable.app-1783030031264.png" },
+      { name: "twitter:description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f3bc1d25-c1d6-430e-9372-532ba29c0d77" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f3bc1d25-c1d6-430e-9372-532ba29c0d77" },
+      { name: "description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
+      { property: "og:description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
     ],
     links: [
       {
