@@ -57,23 +57,34 @@ function NuevoProyecto() {
     setModulos((m) => ({ ...m, [k]: { ...m[k], ...patch } }));
 
   const submit = async () => {
-    if (nombre.trim().length < 2 || empresa.trim().length < 2) {
-      toast.error("Completa nombre y empresa.");
+    if (nombre.trim().length < 2) {
+      toast.error("Escribe el nombre del proyecto.");
       return;
     }
-    const seleccionados = (Object.keys(modulos) as ModuloKey[])
-      .filter((k) => modulos[k].activo)
-      .map((k) => ({
-        modulo_key: k,
-        fecha_limite: modulos[k].fecha_limite || null,
-        comportamiento_vencimiento: modulos[k].fecha_limite
-          ? modulos[k].comportamiento
-          : null,
-      }));
-    if (seleccionados.length === 0) {
+    if (empresa.trim().length < 2) {
+      toast.error("Indica la empresa del proyecto.");
+      return;
+    }
+    const activos = (Object.keys(modulos) as ModuloKey[]).filter(
+      (k) => modulos[k].activo,
+    );
+    if (activos.length === 0) {
       toast.error("Selecciona al menos un módulo.");
       return;
     }
+    const sinFecha = activos.filter((k) => !modulos[k].fecha_limite);
+    if (sinFecha.length > 0) {
+      const nombres = sinFecha
+        .map((k) => MODULOS_CATALOGO[k].nombre)
+        .join(", ");
+      toast.error(`Define la fecha límite para: ${nombres}.`);
+      return;
+    }
+    const seleccionados = activos.map((k) => ({
+      modulo_key: k,
+      fecha_limite: modulos[k].fecha_limite,
+      comportamiento_vencimiento: modulos[k].comportamiento,
+    }));
     setSaving(true);
     try {
       const res = await crear({
