@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { AdminOnly } from "@/components/admin-only";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { guardarConfiguracion } from "@/lib/admin.functions";
 
-export const Route = createFileRoute("/app/configuracion")({ component: ConfiguracionPage });
+export const Route = createFileRoute("/app/configuracion")({ component: ConfiguracionGuarded });
+
+function ConfiguracionGuarded() {
+  return (
+    <AdminOnly>
+      <ConfiguracionPage />
+    </AdminOnly>
+  );
+}
 
 interface ConfigRow { clave: string; valor: Record<string, unknown> }
 
