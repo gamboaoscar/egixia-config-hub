@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LogIn, ClipboardList, CheckCircle2 } from "lucide-react";
+import { LogIn, ClipboardList, CheckCircle2, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,7 +51,7 @@ function LandingPage() {
             "linear-gradient(180deg, var(--primary-soft) 0%, var(--background) 100%)",
         }}
       >
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-6 py-24 text-center sm:py-32">
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-20 pb-12 text-center sm:pt-28 sm:pb-16">
           <span className="inline-flex items-center rounded-full border border-primary/20 bg-card px-3 py-1 text-xs font-medium text-primary shadow-sm">
             EGIXIA Configurator
           </span>
@@ -70,11 +70,19 @@ function LandingPage() {
               Acceder con mi invitación
             </Link>
           </div>
+          <a
+            href="#como-funciona"
+            aria-label="Ver cómo funciona"
+            className="mt-12 flex flex-col items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary"
+          >
+            <span>¿Cómo funciona?</span>
+            <ChevronDown className="h-5 w-5 animate-bounce" />
+          </a>
         </div>
       </section>
 
       {/* Cómo funciona */}
-      <section className="mx-auto w-full max-w-6xl px-6 py-20">
+      <section id="como-funciona" className="mx-auto w-full max-w-6xl scroll-mt-16 px-6 pt-12 pb-20 sm:pt-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             ¿Cómo funciona?
