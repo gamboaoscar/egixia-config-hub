@@ -47,7 +47,10 @@ export function CampoRenderer({
   const inputId = `campo-${campo.key}`;
   if (campo.tipo === "info") {
     return (
-      <div className="rounded-xl border border-primary/20 bg-primary-soft/40 p-3 text-sm text-foreground">
+      <div
+        data-campo-key={campo.key}
+        className="rounded-xl border border-primary/20 bg-primary-soft/40 p-3 text-sm text-foreground"
+      >
         <div className="font-medium">{campo.label}</div>
         {campo.aviso && (
           <p className="mt-1 text-xs text-muted-foreground">{campo.aviso}</p>
@@ -56,7 +59,7 @@ export function CampoRenderer({
     );
   }
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-campo-key={campo.key}>
       <div className="flex items-center gap-1.5">
         <Label
           htmlFor={inputId}
@@ -66,6 +69,11 @@ export function CampoRenderer({
           {campo.requerido && (
             <span className="ml-0.5 text-primary" aria-label="requerido">
               *
+            </span>
+          )}
+          {!campo.requerido && (
+            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              (opcional)
             </span>
           )}
         </Label>
