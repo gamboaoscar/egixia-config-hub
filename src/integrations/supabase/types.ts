@@ -516,6 +516,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      comparten_proyecto: { Args: { _a: string; _b: string }; Returns: boolean }
       destinatarios_notificacion: {
         Args: { _proyecto_id: string }
         Returns: string[]
