@@ -47,8 +47,8 @@ function NuevoProyecto() {
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [modulos, setModulos] = useState<Record<ModuloKey, ModuloForm>>({
-    imagen: { activo: true, fecha_limite: "", comportamiento: "solo_avisar" },
-    sociedades: { activo: true, fecha_limite: "", comportamiento: "solo_avisar" },
+    imagen: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
+    sociedades: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     seguridad: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
   });
   const [saving, setSaving] = useState(false);
@@ -185,7 +185,6 @@ function NuevoProyecto() {
                       <Select
                         value={m.comportamiento}
                         onValueChange={(v) => set(k, { comportamiento: v as Comp })}
-                        disabled={!m.fecha_limite}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
