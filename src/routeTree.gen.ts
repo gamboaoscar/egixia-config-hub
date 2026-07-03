@@ -19,6 +19,7 @@ import { Route as MiProyectoIndexRouteImport } from './routes/mi-proyecto.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as MiProyectoMiPerfilRouteImport } from './routes/mi-proyecto.mi-perfil'
 import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
+import { Route as GuiasPortalDeProveedoresRouteImport } from './routes/guias.portal-de-proveedores'
 import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
 import { Route as AppRevisionesRouteImport } from './routes/app.revisiones'
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
@@ -83,6 +84,12 @@ const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
   path: '/invitacion/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuiasPortalDeProveedoresRoute =
+  GuiasPortalDeProveedoresRouteImport.update({
+    id: '/guias/portal-de-proveedores',
+    path: '/guias/portal-de-proveedores',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppUsuariosRoute = AppUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -164,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
+  '/guias/portal-de-proveedores': typeof GuiasPortalDeProveedoresRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
@@ -187,6 +195,7 @@ export interface FileRoutesByTo {
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
+  '/guias/portal-de-proveedores': typeof GuiasPortalDeProveedoresRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app': typeof AppIndexRoute
@@ -213,6 +222,7 @@ export interface FileRoutesById {
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
   '/app/usuarios': typeof AppUsuariosRoute
+  '/guias/portal-de-proveedores': typeof GuiasPortalDeProveedoresRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
+    | '/guias/portal-de-proveedores'
     | '/invitacion/$token'
     | '/mi-proyecto/mi-perfil'
     | '/app/'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
+    | '/guias/portal-de-proveedores'
     | '/invitacion/$token'
     | '/mi-proyecto/mi-perfil'
     | '/app'
@@ -288,6 +300,7 @@ export interface FileRouteTypes {
     | '/app/mi-perfil'
     | '/app/revisiones'
     | '/app/usuarios'
+    | '/guias/portal-de-proveedores'
     | '/invitacion/$token'
     | '/mi-proyecto/mi-perfil'
     | '/app/'
@@ -307,6 +320,7 @@ export interface RootRouteChildren {
   MiProyectoRoute: typeof MiProyectoRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  GuiasPortalDeProveedoresRoute: typeof GuiasPortalDeProveedoresRoute
   InvitacionTokenRoute: typeof InvitacionTokenRoute
 }
 
@@ -380,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/invitacion/$token'
       fullPath: '/invitacion/$token'
       preLoaderRoute: typeof InvitacionTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guias/portal-de-proveedores': {
+      id: '/guias/portal-de-proveedores'
+      path: '/guias/portal-de-proveedores'
+      fullPath: '/guias/portal-de-proveedores'
+      preLoaderRoute: typeof GuiasPortalDeProveedoresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/usuarios': {
@@ -533,6 +554,7 @@ const rootRouteChildren: RootRouteChildren = {
   MiProyectoRoute: MiProyectoRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  GuiasPortalDeProveedoresRoute: GuiasPortalDeProveedoresRoute,
   InvitacionTokenRoute: InvitacionTokenRoute,
 }
 export const routeTree = rootRouteImport

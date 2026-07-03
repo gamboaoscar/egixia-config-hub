@@ -135,8 +135,11 @@ function LandingPage() {
           <div className="text-sm font-medium">
             EGIXIA · Portal de Proveedores
           </div>
-          <div className="text-xs text-primary-foreground/90">
-            © 2026 EGIXIA. Todos los derechos reservados.
+          <div className="flex items-center gap-4 text-xs text-primary-foreground/90">
+            <Link to="/guias/portal-de-proveedores" className="hover:underline">
+              Guía: cómo implementar un Portal de Proveedores
+            </Link>
+            <span>© 2026 EGIXIA. Todos los derechos reservados.</span>
           </div>
         </div>
       </footer>
