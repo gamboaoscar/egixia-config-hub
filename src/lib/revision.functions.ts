@@ -91,6 +91,7 @@ async function esMiembroDelProyecto(
 /** Registra una entrada en auditoria (RPC ya existente). */
 async function auditar(
   admin: AdminClient,
+  actorId: string | null,
   accion: string,
   entidadId: string,
   detalle: Record<string, unknown>,
@@ -100,6 +101,7 @@ async function auditar(
     _entidad: "proyecto_modulo",
     _entidad_id: entidadId,
     _detalle: detalle,
+    _actor_id: actorId,
   });
 }
 
@@ -116,6 +118,7 @@ async function notificar(input: {
   proyectoNombre: string;
   empresa: string | null;
   actorNombre: string;
+  actorId?: string | null;
   actaVersion?: number;
   actaUrl?: string;
   observacionesCount?: number;
@@ -158,6 +161,7 @@ async function notificar(input: {
     contextoBase,
     urlAppPath,
     urlMiProyectoPath,
+    actorId: input.actorId ?? null,
   });
 }
 
@@ -278,13 +282,14 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
-    await auditar(supabaseAdmin, "modulo_enviado_revision", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_enviado_revision", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
     await notificar({
       proyectoId: modulo.proyecto_id,
+      actorId: userId,
       moduloId: modulo.id,
       moduloNombre: definicion.nombre,
       tipo: "acta_envio",
@@ -329,7 +334,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo aprobar el módulo.");
 
-    await auditar(supabaseAdmin, "modulo_aprobado", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_aprobado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
@@ -338,6 +343,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_aprobacion",
@@ -413,6 +419,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
 
     await auditar(
       supabaseAdmin,
+      userId,
       "modulo_devuelto_con_observaciones",
       modulo.id,
       {
@@ -426,6 +433,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_devolucion",
@@ -470,7 +478,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo reabrir el módulo.");
 
-    await auditar(supabaseAdmin, "modulo_reabierto", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_reabierto", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
@@ -479,6 +487,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_devolucion",
@@ -564,13 +573,14 @@ export const reenviarModulo = createServerFn({ method: "POST" })
     );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
-    await auditar(supabaseAdmin, "modulo_reenviado", modulo.id, {
+    await auditar(supabaseAdmin, userId, "modulo_reenviado", modulo.id, {
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
     await notificar({
       proyectoId: modulo.proyecto_id,
+      actorId: userId,
       moduloId: modulo.id,
       moduloNombre: definicion.nombre,
       tipo: "acta_envio",
