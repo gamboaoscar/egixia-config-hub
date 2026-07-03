@@ -70,7 +70,12 @@ interface Mensaje {
   text: string;
 }
 
-async function enviarBatch(mensajes: Mensaje[], accion: string, entidadId: string) {
+async function enviarBatch(
+  mensajes: Mensaje[],
+  accion: string,
+  entidadId: string,
+  actorId: string | null = null,
+) {
   if (mensajes.length === 0) return;
   const url = `${process.env.SUPABASE_URL}/functions/v1/enviar-correo`;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -95,6 +100,7 @@ async function enviarBatch(mensajes: Mensaje[], accion: string, entidadId: strin
         edge_status: r.status,
         edge_body: body,
       },
+      _actor_id: actorId,
     });
   } catch (err) {
     await supabaseAdmin.rpc("registrar_auditoria", {
@@ -105,6 +111,7 @@ async function enviarBatch(mensajes: Mensaje[], accion: string, entidadId: strin
         destinatarios: mensajes.map((m) => m.to),
         error: (err as Error).message,
       },
+      _actor_id: actorId,
     });
   }
 }
@@ -123,6 +130,7 @@ export async function notificarProyecto(input: {
   contextoBase: ContextoCorreo;
   urlAppPath?: string;
   urlMiProyectoPath?: string;
+  actorId?: string | null;
 }) {
   const dest = await destinatariosProyecto(input.proyectoId);
   const b = baseUrl();
@@ -160,7 +168,12 @@ export async function notificarProyecto(input: {
     construir(dest.invitados, ctx);
   }
 
-  await enviarBatch(mensajes, "notificacion_correo_enviada", input.moduloId);
+  await enviarBatch(
+    mensajes,
+    "notificacion_correo_enviada",
+    input.moduloId,
+    input.actorId ?? null,
+  );
 }
 
 /**
@@ -174,6 +187,7 @@ export async function notificarInvitacion(input: {
   nombreProyecto?: string;
   urlRegistro: string;
   expiraTexto?: string;
+  actorId?: string | null;
 }) {
   const rendered = renderCorreo("invitacion", {
     invitacion: {
@@ -192,5 +206,6 @@ export async function notificarInvitacion(input: {
     }],
     "notificacion_invitacion_enviada",
     input.invitacionId,
+    input.actorId ?? null,
   );
 }
