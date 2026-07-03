@@ -48,3 +48,16 @@
 - Severidad **Medio**: 3 (toast duplicado en Nuevo proyecto; bloqueo QA en Usuarios y Catálogo por #5/#2).
 - Severidad **Bajo**: 2 (botón "Enviar" reclicable durante el envío; warning de hidratación en `<body>`).
 - Severidad **Bloqueo de QA**: 1 (flujo de revisión no verificado).
+
+## Correcciones aplicadas (2026-07-03, misma fecha)
+
+| # | Estado | Cambio |
+|---|---|---|
+| 1 | ✅ Corregido | `src/routes/app.auditoria.tsx` — se reemplaza el embed `profiles:actor_id(...)` (que fallaba con `PGRST200` porque no existe FK entre `auditoria.actor_id` y `profiles.id`) por dos consultas: primero `auditoria`, luego `profiles` filtrando por los `actor_id` distintos, y unión en cliente. La tabla ahora lista los registros (verificado: 13 filas, sin 4xx). |
+| 2 | ✅ Corregido | `src/routes/app.proyectos.nuevo.tsx` — validación separada para nombre, empresa, al menos un módulo activo, **y fecha límite obligatoria para cada módulo activo**, con mensaje que nombra los módulos sin fecha. Etiqueta "Fecha límite (opcional)" pasa a "Fecha límite". |
+| 3 | ⚠️ Descartado | Falso positivo del script de QA — el toast se lee dos veces porque `sonner` etiqueta el mismo elemento con `role="alert"` **y** `data-sonner-toast`. No hay duplicación real en UI. |
+| 4 | ✅ Verificado | Botón "Enviar" en Invitaciones ya usa `disabled={sending}` mientras la promesa está en vuelo — no se creó doble invitación en la prueba y el backend deduplica por token. Sin cambio de código. |
+| 5 | ⏸ Bloqueado por dominio | Requiere dominio de correo verificado para: (a) enviar desde `no-reply@egixia.*` en lugar del remitente compartido, y (b) generar plantillas custom en español para invitación / recuperación. Ya se mostró el diálogo "Configurar dominio de correo"; al completarlo, activo `email_domain--scaffold_auth_email_templates` y las plantillas quedan en español. |
+| 6–15 | ✅ Sin cambios | Comportamientos correctos confirmados. |
+| 16 | ✅ Corregido | `src/routes/__root.tsx` — `<body>` ahora lleva `suppressHydrationWarning` para tolerar atributos inyectados por extensiones (Bitwarden y similares). |
+| — | 🧹 Limpieza | Eliminado el proyecto de prueba `QA Test Proyecto` (`1cff3bd3-…`) que había quedado sin módulos. |
