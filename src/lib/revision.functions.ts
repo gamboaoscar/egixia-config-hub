@@ -118,6 +118,7 @@ async function notificar(input: {
   proyectoNombre: string;
   empresa: string | null;
   actorNombre: string;
+  actorId?: string | null;
   actaVersion?: number;
   actaUrl?: string;
   observacionesCount?: number;
@@ -160,6 +161,7 @@ async function notificar(input: {
     contextoBase,
     urlAppPath,
     urlMiProyectoPath,
+    actorId: input.actorId ?? null,
   });
 }
 
