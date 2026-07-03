@@ -8,8 +8,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminOnly } from "@/components/admin-only";
 
-export const Route = createFileRoute("/app/auditoria")({ component: AuditoriaPage });
+export const Route = createFileRoute("/app/auditoria")({ component: AuditoriaGuarded });
+
+function AuditoriaGuarded() {
+  return (
+    <AdminOnly>
+      <AuditoriaPage />
+    </AdminOnly>
+  );
+}
 
 interface Row {
   id: string;
