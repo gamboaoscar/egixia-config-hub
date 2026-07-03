@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { CampoRenderer } from "./campo-renderer";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
@@ -11,6 +12,8 @@ interface Props {
   soloLectura?: boolean;
   /** Si se define, no autopersiste; emite cambios al padre. */
   onCambio?: (datos: DatosModulo) => void;
+  /** Reporta el % de progreso calculado en tiempo real. */
+  onProgreso?: (progreso: number) => void;
 }
 
 /**
@@ -25,14 +28,19 @@ export function FormularioModulo({
   datosIniciales,
   soloLectura,
   onCambio,
+  onProgreso,
 }: Props) {
-  const { datos, errores, tocados, setValor, marcarTocado } = useFormModulo({
+  const { datos, errores, tocados, setValor, marcarTocado, progreso } = useFormModulo({
     moduloId,
     definicion,
     datosIniciales,
     soloLectura,
     onCambio,
   });
+
+  useEffect(() => {
+    onProgreso?.(progreso);
+  }, [progreso, onProgreso]);
 
   return (
     <div className="space-y-6">
