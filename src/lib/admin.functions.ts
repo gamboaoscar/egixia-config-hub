@@ -200,6 +200,17 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       throw new Error("Una invitación de invitado requiere un proyecto.");
     }
 
+    // Sólo un admin puede invitar a alguien como implementador.
+    // Un implementador sólo puede invitar clientes/invitados a proyectos.
+    if (data.rol_invitado === "implementador") {
+      const rolActor = await rolDe(supabaseAdmin, userId);
+      if (rolActor !== "admin") {
+        throw new Error(
+          "Sólo un administrador puede invitar a otros implementadores.",
+        );
+      }
+    }
+
     const token = tokenRandom();
     const expira = new Date(Date.now() + data.dias_validez * 24 * 3600 * 1000);
 
