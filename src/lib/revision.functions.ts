@@ -413,6 +413,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
 
     await auditar(
       supabaseAdmin,
+      userId,
       "modulo_devuelto_con_observaciones",
       modulo.id,
       {

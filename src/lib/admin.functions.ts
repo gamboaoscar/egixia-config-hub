@@ -257,6 +257,7 @@ export const actualizarConfigModulo = createServerFn({ method: "POST" })
 
     await auditar(
       supabaseAdmin,
+      userId,
       "modulo_config_actualizada",
       "proyecto_modulo",
       data.moduloId,
@@ -540,6 +541,7 @@ export const actualizarMiembroEstado = createServerFn({ method: "POST" })
 
     await auditar(
       supabaseAdmin,
+      userId,
       data.estado === "inhabilitado"
         ? "miembro_inhabilitado"
         : "miembro_activado",
@@ -615,6 +617,7 @@ export const cambiarEstadoUsuario = createServerFn({ method: "POST" })
     if (error) throw new Error("No se pudo actualizar el usuario.");
     await auditar(
       supabaseAdmin,
+      userId,
       data.estado === "inhabilitado" ? "usuario_inhabilitado" : "usuario_activado",
       "profile",
       data.profileId,
@@ -758,6 +761,7 @@ export const guardarOverrideCampo = createServerFn({ method: "POST" })
 
     await auditar(
       supabaseAdmin,
+      userId,
       "catalogo_override_guardado",
       "catalogo_override",
       `${data.proyectoId}:${data.moduloKey}:${data.campoKey}`,
@@ -792,6 +796,7 @@ export const guardarConfiguracion = createServerFn({ method: "POST" })
     if (error) throw new Error("No se pudo guardar la configuración.");
     await auditar(
       supabaseAdmin,
+      userId,
       "configuracion_actualizada",
       "configuracion_sistema",
       data.clave,
