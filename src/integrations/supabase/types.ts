@@ -532,6 +532,15 @@ export type Database = {
         Args: { _proyecto_id: string; _uid: string }
         Returns: boolean
       }
+      profile_privileged_unchanged: {
+        Args: {
+          _id: string
+          _new_email: string
+          _new_estado: Database["public"]["Enums"]["user_estado"]
+          _new_rol: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       puede_editar_modulo: {
         Args: { _modulo_id: string; _uid: string }
         Returns: boolean
