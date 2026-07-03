@@ -177,6 +177,104 @@ export const editarDatosModulo = createServerFn({ method: "POST" })
     return { ok: true, cambios };
   });
 
+// ---------- Configuración del módulo (fecha límite, comportamiento, estado)
+
+const estadoModuloEnum = z.enum([
+  "sin_iniciar",
+  "en_diligenciamiento",
+  "en_revision",
+  "con_observaciones",
+  "aprobado",
+]);
+
+const configModuloSchema = z
+  .object({
+    moduloId: z.string().uuid(),
+    fecha_limite: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+      .nullable()
+      .optional(),
+    comportamiento_vencimiento: comportamientoEnum.nullable().optional(),
+    estado: estadoModuloEnum.optional(),
+  })
+  .refine(
+    (v) =>
+      v.fecha_limite !== undefined ||
+      v.comportamiento_vencimiento !== undefined ||
+      v.estado !== undefined,
+    { message: "Nada que actualizar." },
+  );
+
+function hoyIsoLocal(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export const actualizarConfigModulo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => configModuloSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+
+    const { data: prev } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .select(
+        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento",
+      )
+      .eq("id", data.moduloId)
+      .maybeSingle();
+    if (!prev) throw new Error("Módulo no encontrado.");
+
+    const upd: Record<string, unknown> = {};
+    if (data.fecha_limite !== undefined) {
+      if (data.fecha_limite && data.fecha_limite < hoyIsoLocal()) {
+        throw new Error(
+          "La fecha límite no puede ser anterior a la fecha actual.",
+        );
+      }
+      upd.fecha_limite = data.fecha_limite;
+    }
+    if (data.comportamiento_vencimiento !== undefined) {
+      upd.comportamiento_vencimiento = data.comportamiento_vencimiento;
+    }
+    if (data.estado !== undefined) {
+      upd.estado = data.estado;
+    }
+
+    const { error } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .update(upd as never)
+      .eq("id", data.moduloId);
+    if (error) throw new Error("No se pudo actualizar el módulo.");
+
+    await auditar(
+      supabaseAdmin,
+      "modulo_config_actualizada",
+      "proyecto_modulo",
+      data.moduloId,
+      {
+        proyecto_id: prev.proyecto_id,
+        modulo_key: prev.modulo_key,
+        cambios: upd,
+        anterior: {
+          estado: prev.estado,
+          fecha_limite: prev.fecha_limite,
+          comportamiento_vencimiento: prev.comportamiento_vencimiento,
+        },
+      },
+    );
+
+    return { ok: true };
+  });
+
 // ---------- Invitaciones ---------------------------------------------------
 
 const crearInvSchema = z.object({
