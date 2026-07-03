@@ -598,6 +598,7 @@ function RevisionModuloPage() {
         </p>
       )}
       <FormularioModulo
+        ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
         definicion={aplicarOverrides(definicionModulo(modulo.modulo_key), overrides)}
@@ -605,6 +606,70 @@ function RevisionModuloPage() {
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}
       />
+
+      {/* Acciones de flujo (previsualizar y enviar a revisión) — disponibles para admin/implementador */}
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Acta y envío
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Puedes previsualizar el acta con los datos actuales o enviar el
+              módulo a revisión en nombre del invitado. Si estás editando,
+              guardaremos primero tus cambios.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={handlePrevisualizar}
+              disabled={previsualizando}
+            >
+              {previsualizando ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              Previsualizar acta
+            </Button>
+            {estadoPermiteEnviar && (
+              <Button onClick={handleEnviarRevision} disabled={enviando}>
+                {enviando ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                {esReenvio ? "Reenviar a revisión" : "Enviar a revisión"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <Dialog open={previewUrl !== null} onOpenChange={cerrarPreview}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+          <DialogHeader className="flex-row items-center justify-between gap-2 space-y-0">
+            <DialogTitle>Vista previa del acta</DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDescargarPreview}
+              className="mr-8"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </Button>
+          </DialogHeader>
+          {previewUrl ? (
+            <iframe
+              src={previewUrl}
+              title="Acta"
+              className="flex-1 w-full rounded-md border border-border bg-white"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       {/* Panel de decisión */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
