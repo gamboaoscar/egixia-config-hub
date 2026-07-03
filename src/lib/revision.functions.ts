@@ -265,6 +265,15 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     }
 
     const ahora = new Date().toISOString();
+    // Generamos y persistimos el acta ANTES de cambiar el estado, para
+    // que un fallo del PDF no deje el módulo marcado como enviado sin
+    // acta asociada.
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+
     const { error: updErr } = await supabaseAdmin
       .from("proyecto_modulos")
       .update({
@@ -274,12 +283,6 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo enviar el módulo a revisión.");
-
-    const { version, urlFirmada } = await generarActa(
-      supabaseAdmin,
-      modulo.id,
-      userId,
-    );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, userId, "modulo_enviado_revision", modulo.id, {
@@ -556,6 +559,12 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       .eq("estado", "abierta");
     if (obsErr) throw new Error("No se pudieron marcar las observaciones como resueltas.");
 
+    const { version, urlFirmada } = await generarActa(
+      supabaseAdmin,
+      modulo.id,
+      userId,
+    );
+
     const { error: updErr } = await supabaseAdmin
       .from("proyecto_modulos")
       .update({
@@ -565,12 +574,6 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       })
       .eq("id", modulo.id);
     if (updErr) throw new Error("No se pudo reenviar el módulo a revisión.");
-
-    const { version, urlFirmada } = await generarActa(
-      supabaseAdmin,
-      modulo.id,
-      userId,
-    );
     const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
     const actorNombre = await nombreActor(supabaseAdmin, userId);
     await auditar(supabaseAdmin, userId, "modulo_reenviado", modulo.id, {
