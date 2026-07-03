@@ -11,8 +11,13 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
   Level Security activo.
 - **`SECURITY DEFINER` acotado**: las funciones sensibles son
   `SECURITY DEFINER` con `search_path = public` y `EXECUTE` revocado a
-  `anon` salvo cuando el flujo lo requiere (por ejemplo,
-  `validar_invitacion`).
+  `PUBLIC`, `anon` y `authenticated`. Solo `service_role` conserva
+  `EXECUTE`; las políticas RLS pueden invocarlas sin necesidad de
+  otorgar el privilegio al usuario final (`has_role`,
+  `is_project_member`, `comparten_proyecto`,
+  `destinatarios_notificacion`, `validar_invitacion`,
+  `registrar_auditoria`). Los flujos que antes llamaban a RPCs desde
+  el cliente (p. ej. `validar_invitacion`) pasan por server functions.
 - **Sin secretos en el cliente ni en la documentación**.
 
 ## Envío de correo

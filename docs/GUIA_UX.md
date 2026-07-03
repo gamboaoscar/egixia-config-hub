@@ -28,11 +28,35 @@ el estilo "cuadritos" con azul EGIXIA como acento:
   - *Comenzar* (sin iniciar) · *Continuar* (en diligenciamiento) ·
     *Ver* (en revisión/aprobado) · *Corregir observaciones*
     (destacado en ámbar).
-- **Sidebar** con *Inicio* y un ítem por módulo asignado (ícono,
-  pastilla y %). En estado colapsado se muestra solo el ícono, con la
-  información completa en el tooltip.
+- **Sidebar** con *Inicio* y *Proyectos* (misma estructura que el
+  equipo interno). Se evita listar cada módulo en la barra lateral
+  porque el catálogo crecerá por encima de 15 módulos y saturaría el
+  menú. La gestión de módulos vive dentro del detalle del proyecto.
 - **Topbar** con nombre del proyecto, pastilla de fecha límite más
   próxima e indicador de guardado.
+
+### Multiproyecto del invitado
+
+Un invitado puede pertenecer a varios proyectos. `/mi-proyecto/proyectos`
+lista los proyectos con su avance general; `/mi-proyecto/proyectos/$id`
+abre el detalle con el avance por módulo y los botones contextuales
+de siempre. En la home, los ítems de *Próximos a vencer* incluyen el
+nombre del proyecto porque un mismo módulo puede aparecer en
+proyectos distintos.
+
+### Diligenciamiento de módulos
+
+- **Barra de progreso fija en la parte inferior** mientras se llena
+  el formulario, alimentada por el callback `onProgreso` del motor
+  de formularios.
+- **Envío a revisión**: al enviar, el usuario vuelve al detalle del
+  proyecto (`/mi-proyecto/proyectos/$id`) para continuar con el
+  siguiente módulo.
+- **Previsualización del acta** en un `Dialog` inline con `iframe`
+  embebido y botón *Descargar PDF*, para evitar bloqueos de popups y
+  de blob URLs por extensiones del navegador.
+- **Color corporativo**: en Imagen Corporativa el cliente elige entre
+  la paleta predefinida o solicita un **color personalizado**.
 
 ### Pastillas de estado
 
