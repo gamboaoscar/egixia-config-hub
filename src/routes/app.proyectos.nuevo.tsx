@@ -172,7 +172,7 @@ function NuevoProyecto() {
                 {m.activo && (
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <Label className="text-xs">Fecha límite (opcional)</Label>
+                      <Label className="text-xs">Fecha límite</Label>
                       <Input
                         type="date"
                         value={m.fecha_limite}
