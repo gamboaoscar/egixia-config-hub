@@ -20,7 +20,7 @@ import { EstadoPastilla } from "@/components/estado-pastilla";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { descargarActaFirmada } from "@/lib/acta.functions";
-import { abrirPdfBlob } from "@/lib/acta/abrir-pdf";
+import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import {
   actualizarMiembroEstado,
   desvincularMiembro,
@@ -204,7 +204,7 @@ function DetalleProyecto() {
         toast.error("Aún no hay acta persistida para este módulo.");
         return;
       }
-      abrirPdfBlob(res.base64, res.filename);
+      descargarPdfBlob(res.base64, res.filename);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo descargar el acta.");
     } finally {
@@ -342,7 +342,7 @@ function DetalleProyecto() {
                         ) : (
                           <FileText className="mr-1 h-4 w-4" />
                         )}
-                        Acta v{actasM[0].version}
+                        Descargar acta v{actasM[0].version}
                       </Button>
                     )}
                   </div>
