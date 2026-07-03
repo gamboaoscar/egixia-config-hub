@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
   CheckCircle2,
+  Download,
+  FileText,
   Loader2,
   MessageSquareWarning,
   Pencil,
   Plus,
   RotateCcw,
   Save,
+  Send,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -20,6 +23,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,7 +36,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EstadoPastilla } from "@/components/estado-pastilla";
-import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
+import {
+  FormularioModulo,
+  type FormularioModuloHandle,
+} from "@/components/form-engine/formulario-modulo";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
@@ -36,9 +48,20 @@ import {
   aprobarModulo,
   devolverModuloConObservaciones,
   reabrirModulo,
+  enviarModuloARevision,
+  reenviarModulo,
 } from "@/lib/revision.functions";
 import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
+import { previsualizarActa } from "@/lib/acta.functions";
 import { calcularProgreso } from "@/lib/form-engine/validacion";
+
+/** Decodifica base64 → Uint8Array sin importar pdf-lib en el cliente. */
+function base64ABytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
 
 export const Route = createFileRoute("/app/modulo/$moduloId")({
   component: RevisionModuloPage,
@@ -96,6 +119,9 @@ function RevisionModuloPage() {
   const reabrir = useServerFn(reabrirModulo);
   const editar = useServerFn(editarDatosModulo);
   const actualizarConfig = useServerFn(actualizarConfigModulo);
+  const enviar = useServerFn(enviarModuloARevision);
+  const reenviar = useServerFn(reenviarModulo);
+  const previsualizar = useServerFn(previsualizarActa);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdit, setDatosEdit] = useState<Record<string, unknown>>({});
   const [guardando, setGuardando] = useState(false);
@@ -104,6 +130,18 @@ function RevisionModuloPage() {
   const [cfgComp, setCfgComp] = useState<string>("solo_avisar");
   const [cfgEstado, setCfgEstado] = useState<string>("sin_iniciar");
   const [guardandoCfg, setGuardandoCfg] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [previsualizando, setPrevisualizando] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>("acta.pdf");
+  const previewUrlRef = useRef<string | null>(null);
+  const formRef = useRef<FormularioModuloHandle>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   const hoyStr = (() => {
     const d = new Date();
@@ -178,6 +216,11 @@ function RevisionModuloPage() {
   const puedeAprobar = modulo.estado === "en_revision";
   const puedeDevolver = modulo.estado === "en_revision";
   const puedeReabrir = modulo.estado === "aprobado";
+  const estadoPermiteEnviar =
+    modulo.estado === "sin_iniciar" ||
+    modulo.estado === "en_diligenciamiento" ||
+    modulo.estado === "con_observaciones";
+  const esReenvio = modulo.estado === "con_observaciones";
 
   const handleGuardarEdicion = async () => {
     if (!modulo) return;
@@ -277,6 +320,95 @@ function RevisionModuloPage() {
       toast.error(e instanceof Error ? e.message : "No se pudo actualizar.");
     } finally {
       setGuardandoCfg(false);
+    }
+  };
+
+  const guardarSiEditando = async (): Promise<boolean> => {
+    if (!modoEdicion) return true;
+    try {
+      const def = aplicarOverrides(definicionModulo(modulo.modulo_key), overrides);
+      const progreso = calcularProgreso(def, datosEdit);
+      await editar({ data: { moduloId: modulo.id, datos: datosEdit, progreso } });
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+      return false;
+    }
+  };
+
+  const irAlPrimerFaltante = (): boolean => {
+    if (!modoEdicion) return false;
+    const faltantes = formRef.current?.mostrarFaltantes() ?? [];
+    if (faltantes.length > 0) {
+      toast.error(
+        `Faltan ${faltantes.length} campo(s) obligatorio(s). Te llevamos al primero.`,
+      );
+      return true;
+    }
+    return false;
+  };
+
+  const handlePrevisualizar = async () => {
+    if (irAlPrimerFaltante()) return;
+    if (!(await guardarSiEditando())) return;
+    setPrevisualizando(true);
+    try {
+      const res = await previsualizar({ data: { moduloId: modulo.id } });
+      const bytes = base64ABytes(res.base64);
+      const buf = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([buf], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+      setPreviewFilename(res.filename ?? `acta-v${res.version}.pdf`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo generar el acta.");
+    } finally {
+      setPrevisualizando(false);
+    }
+  };
+
+  const handleDescargarPreview = () => {
+    if (!previewUrl) return;
+    const a = document.createElement("a");
+    a.href = previewUrl;
+    a.download = previewFilename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const cerrarPreview = (open: boolean) => {
+    if (open) return;
+    setPreviewUrl(null);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  };
+
+  const handleEnviarRevision = async () => {
+    if (irAlPrimerFaltante()) return;
+    if (!(await guardarSiEditando())) return;
+    setEnviando(true);
+    try {
+      if (esReenvio) {
+        await reenviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo reenviado a revisión.");
+      } else {
+        await enviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo enviado a revisión.");
+      }
+      setModoEdicion(false);
+      await cargar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo enviar.");
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -466,6 +598,7 @@ function RevisionModuloPage() {
         </p>
       )}
       <FormularioModulo
+        ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
         definicion={aplicarOverrides(definicionModulo(modulo.modulo_key), overrides)}
@@ -473,6 +606,70 @@ function RevisionModuloPage() {
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}
       />
+
+      {/* Acciones de flujo (previsualizar y enviar a revisión) — disponibles para admin/implementador */}
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Acta y envío
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Puedes previsualizar el acta con los datos actuales o enviar el
+              módulo a revisión en nombre del invitado. Si estás editando,
+              guardaremos primero tus cambios.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={handlePrevisualizar}
+              disabled={previsualizando}
+            >
+              {previsualizando ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              Previsualizar acta
+            </Button>
+            {estadoPermiteEnviar && (
+              <Button onClick={handleEnviarRevision} disabled={enviando}>
+                {enviando ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                {esReenvio ? "Reenviar a revisión" : "Enviar a revisión"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <Dialog open={previewUrl !== null} onOpenChange={cerrarPreview}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+          <DialogHeader className="flex-row items-center justify-between gap-2 space-y-0">
+            <DialogTitle>Vista previa del acta</DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDescargarPreview}
+              className="mr-8"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </Button>
+          </DialogHeader>
+          {previewUrl ? (
+            <iframe
+              src={previewUrl}
+              title="Acta"
+              className="flex-1 w-full rounded-md border border-border bg-white"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       {/* Panel de decisión */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
