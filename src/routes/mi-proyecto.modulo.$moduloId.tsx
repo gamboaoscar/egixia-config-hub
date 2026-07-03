@@ -20,7 +20,10 @@ import { useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { supabase } from "@/integrations/supabase/client";
-import { FormularioModulo } from "@/components/form-engine/formulario-modulo";
+import {
+  FormularioModulo,
+  type FormularioModuloHandle,
+} from "@/components/form-engine/formulario-modulo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { aplicarOverrides } from "@/lib/form-engine/overrides";
 import {
@@ -61,6 +64,8 @@ function ModuloPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("acta.pdf");
   const previewUrlRef = useRef<string | null>(null);
+  const formRef = useRef<FormularioModuloHandle>(null);
+  const [faltantesLive, setFaltantesLive] = useState<string[]>([]);
   const enviar = useServerFn(enviarModuloARevision);
   const reenviar = useServerFn(reenviarModulo);
   const previsualizar = useServerFn(previsualizarActa);
@@ -106,15 +111,27 @@ function ModuloPage() {
     modulo.comportamiento_vencimiento,
   );
   const soloLectura = bloqueadoPorEstado || bloqueadoPorVencimiento;
-  const puedeEnviar =
-    !soloLectura &&
-    modulo.progreso >= 100 &&
-    (modulo.estado === "sin_iniciar" ||
-      modulo.estado === "en_diligenciamiento" ||
-      modulo.estado === "con_observaciones");
+  const estadoPermiteEnviar =
+    modulo.estado === "sin_iniciar" ||
+    modulo.estado === "en_diligenciamiento" ||
+    modulo.estado === "con_observaciones";
+  const enviableAhora =
+    !soloLectura && estadoPermiteEnviar && faltantesLive.length === 0;
   const esReenvio = modulo.estado === "con_observaciones";
 
+  const irAlPrimerFaltante = (): boolean => {
+    const faltantes = formRef.current?.mostrarFaltantes() ?? [];
+    if (faltantes.length > 0) {
+      toast.error(
+        `Te faltan ${faltantes.length} campo(s) obligatorio(s). Te llevamos al primero.`,
+      );
+      return true;
+    }
+    return false;
+  };
+
   const handlePrevisualizarActa = async () => {
+    if (irAlPrimerFaltante()) return;
     setPrevisualizando(true);
     try {
       const res = await previsualizar({ data: { moduloId: modulo.id } });
@@ -158,6 +175,11 @@ function ModuloPage() {
   };
 
   const handleEnviar = async () => {
+    if (irAlPrimerFaltante()) return;
+    if (!estadoPermiteEnviar) {
+      toast.error("Este módulo no está en un estado que permita enviarlo.");
+      return;
+    }
     setEnviando(true);
     try {
       if (esReenvio) {
@@ -281,6 +303,7 @@ function ModuloPage() {
 
       {/* Formulario dinámico (motor de la Parte 5) */}
       <FormularioModulo
+        ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
         definicion={aplicarOverrides(
@@ -290,6 +313,7 @@ function ModuloPage() {
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}
         onProgreso={setProgresoLive}
+        onFaltantes={setFaltantesLive}
       />
 
       {/* Acciones */}
@@ -314,11 +338,11 @@ function ModuloPage() {
           </Button>
           <Button
             onClick={handleEnviar}
-            disabled={!puedeEnviar || enviando}
+            disabled={enviando || soloLectura || !estadoPermiteEnviar}
             className="sm:w-auto"
             title={
-              !puedeEnviar && !enviando
-                ? "Completa todos los campos requeridos para habilitar el envío."
+              !enviableAhora && !enviando
+                ? "Al enviar te llevaremos al primer campo obligatorio que falte."
                 : undefined
             }
           >
