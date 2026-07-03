@@ -73,7 +73,7 @@ function LandingPage() {
           <a
             href="#como-funciona"
             aria-label="Ver cómo funciona"
-            className="mt-12 flex flex-col items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary"
+            className="mt-6 flex flex-col items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary"
           >
             <span>¿Cómo funciona?</span>
             <ChevronDown className="h-5 w-5 animate-bounce" />
@@ -82,7 +82,7 @@ function LandingPage() {
       </section>
 
       {/* Cómo funciona */}
-      <section id="como-funciona" className="mx-auto w-full max-w-6xl scroll-mt-16 px-6 pt-12 pb-20 sm:pt-16">
+      <section id="como-funciona" className="mx-auto w-full max-w-6xl scroll-mt-16 px-6 pt-6 pb-20 sm:pt-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             ¿Cómo funciona?
