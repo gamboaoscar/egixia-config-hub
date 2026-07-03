@@ -46,6 +46,10 @@ function NuevoProyecto() {
   const crear = useServerFn(crearProyecto);
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
+  const hoyStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
   const [modulos, setModulos] = useState<Record<ModuloKey, ModuloForm>>({
     imagen: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     sociedades: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
@@ -78,6 +82,18 @@ function NuevoProyecto() {
         .map((k) => MODULOS_CATALOGO[k].nombre)
         .join(", ");
       toast.error(`Define la fecha límite para: ${nombres}.`);
+      return;
+    }
+    const fechaPasada = activos.filter(
+      (k) => modulos[k].fecha_limite < hoyStr,
+    );
+    if (fechaPasada.length > 0) {
+      const nombres = fechaPasada
+        .map((k) => MODULOS_CATALOGO[k].nombre)
+        .join(", ");
+      toast.error(
+        `La fecha límite no puede ser anterior a hoy. Revisa: ${nombres}.`,
+      );
       return;
     }
     const seleccionados = activos.map((k) => ({
@@ -175,10 +191,16 @@ function NuevoProyecto() {
                       <Label className="text-xs">Fecha límite</Label>
                       <Input
                         type="date"
+                        min={hoyStr}
                         value={m.fecha_limite}
                         onChange={(e) => set(k, { fecha_limite: e.target.value })}
                         className="mt-1"
                       />
+                      {m.fecha_limite && m.fecha_limite < hoyStr && (
+                        <p className="mt-1 text-xs text-red-600">
+                          La fecha no puede ser anterior a hoy.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-xs">Al vencer</Label>
