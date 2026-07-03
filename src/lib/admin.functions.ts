@@ -223,6 +223,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       token,
       expira,
       proyectoId: data.proyecto_id || null,
+      rolInvitado: data.rol_invitado,
     });
 
     await auditar(supabaseAdmin, "invitacion_creada", "invitaciones", inv.id, {
@@ -246,7 +247,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invitaciones")
-      .select("id, email, estado, proyecto_id")
+      .select("id, email, estado, proyecto_id, rol_invitado")
       .eq("id", data.id)
       .maybeSingle();
     if (!inv) throw new Error("Invitación no encontrada.");
@@ -265,6 +266,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       token,
       expira,
       proyectoId: (inv.proyecto_id as string | null) ?? null,
+      rolInvitado: inv.rol_invitado as "implementador" | "invitado",
     });
 
     await auditar(supabaseAdmin, "invitacion_reenviada", "invitaciones", inv.id, {
@@ -298,7 +300,13 @@ export const revocarInvitacion = createServerFn({ method: "POST" })
 async function enviarInvitacionCorreo(
   admin: Cliente,
   invitacionId: string,
-  input: { email: string; token: string; expira: Date; proyectoId: string | null },
+  input: {
+    email: string;
+    token: string;
+    expira: Date;
+    proyectoId: string | null;
+    rolInvitado: "implementador" | "invitado";
+  },
 ) {
   let empresa = "tu empresa";
   let nombreProyecto: string | undefined;
@@ -322,7 +330,7 @@ async function enviarInvitacionCorreo(
   // recuperación apuntando a la misma página de aceptación.
   const meta = {
     egixia_token: input.token,
-    rol_invitado: nombreProyecto ? "invitado" : "implementador",
+    rol_invitado: input.rolInvitado,
     proyecto_id: input.proyectoId,
     proyecto_nombre: nombreProyecto ?? null,
     empresa,
