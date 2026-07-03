@@ -26,18 +26,36 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
     el flujo en desarrollo.
   - `CORREO_FROM` — remitente autorizado, ej.
     `EGIXIA <no-reply@egixia.com>`.
-  - `CORREO_WEBHOOK_SECRET` *(opcional)* — segundo secreto exigido en
-    el header `x-egixia-secret` para endurecer la invocación.
+  - `CORREO_WEBHOOK_SECRET` **obligatorio** — secreto exigido en el
+    header `x-egixia-secret`. Si no está configurado, la Function
+    responde `503 not_configured` y no envía ningún correo.
 - Autorización de la invocación: el servidor de la app llama con
   `Authorization: Bearer <SERVICE_ROLE_KEY>` (nunca expuesto al
-  navegador). Con `CORREO_WEBHOOK_SECRET` se refuerza con un segundo
-  factor por header.
+  navegador) **y** con `x-egixia-secret: <CORREO_WEBHOOK_SECRET>`.
+  La comparación del header se hace en tiempo constante para evitar
+  ataques por temporización.
 - Trazabilidad: cada envío (o error) se registra en `public.auditoria`
   con los destinatarios, asuntos y el status devuelto por la Function.
   Los cuerpos HTML no se persisten para no duplicar información de
   clientes.
 - Renderizado seguro: las plantillas escapan el HTML de todos los
   valores dinámicos (`escaparHtml`) para evitar HTML injection.
+
+## Bootstrap de administrador
+
+- La Edge Function `supabase/functions/bootstrap-admin` sirve para
+  crear la cuenta inicial de administrador en un entorno nuevo.
+- Requiere **dos secretos**:
+  - `BOOTSTRAP_SECRET` — comparado en tiempo constante contra el
+    header `x-bootstrap-secret` de la petición.
+  - `BOOTSTRAP_ADMIN_EMAIL` — correo del admin a crear. El código
+    fuente ya no contiene ningún correo real.
+- Sin ambos secretos configurados, la Function responde
+  `503 not_configured`. Con secreto pero sin header válido responde
+  `401 unauthorized`. Esto evita que un caller anónimo pueda
+  confirmar o recrear la cuenta de admin.
+- La contraseña generada nunca se persiste ni se devuelve: el admin
+  usa "¿Olvidaste tu contraseña?" desde `/login`.
 
 ## Actas (PDF)
 
@@ -97,11 +115,15 @@ EGIXIA Configurator. Complementa `ROLES_Y_PERMISOS.md` y
   (`src/lib/invitaciones.functions.ts`), que usa el cliente admin y
   devuelve al navegador solo los datos mínimos (email, rol, proyecto,
   expiración). La aceptación pasa por `aceptarInvitacion`.
-- **Token invisible para implementadores**: la política `inv_select`
-  restringe la lectura de `invitaciones` a `admin`. Los
-  implementadores gestionan la cola (crear / reenviar / revocar)
-  exclusivamente a través de server functions que no exponen el
-  token en claro.
+- **Token invisible para implementadores**: la lectura directa de
+  `invitaciones` se controla con dos políticas RLS
+  (`inv_select_admin` e `inv_select_invitado`). Los implementadores
+  gestionan la cola (crear / reenviar / revocar) exclusivamente a
+  través de server functions que no exponen el token en claro.
+- **Lectura del invitado**: `inv_select_invitado` permite a un usuario
+  autenticado ver únicamente su propia invitación cuando el `email`
+  del JWT coincide, la invitación está `pendiente` y no ha expirado.
+  Ya no existe ninguna política sobre el rol `public`.
 
 ## Buckets privados
 
@@ -126,11 +148,12 @@ del primer segmento del path y se usa en las políticas de
 | `proyectos`         | Internos / miembros del proyecto | Admin / implementador                                  | Solo admin            |
 | `proyecto_miembros` | Internos / propias membresías    | Admin / implementador                                  | Admin / implementador |
 | `proyecto_modulos`  | Internos / miembros              | Internos siempre; invitado solo en estados editables   | Admin / implementador |
-| `invitaciones`      | Admin / implementador            | Admin / implementador                                  | Solo admin            |
+| `invitaciones`      | Admin / invitado (su fila)       | Admin / implementador                                  | Solo admin            |
 | `observaciones`     | Internos / miembros              | Admin / implementador                                  | Solo admin            |
 | `actas`             | Internos / miembros              | Admin / implementador                                  | Solo admin            |
 | `archivos`          | Internos / miembros              | Internos siempre; invitado si puede editar el módulo   | Admin / implementador |
 | `auditoria`         | Admin / implementador            | Vía helper `registrar_auditoria`                       | —                     |
+| `profiles`          | Uno mismo / internos / pares de proyecto | Uno mismo (campos no privilegiados) / admin    | Solo admin            |
 
 ## Blindaje de `profiles`
 
@@ -140,6 +163,29 @@ bloquea a nivel de base cualquier intento de un usuario no-admin de
 modificar `rol`, `estado` o `email` en su propia fila. Esto ofrece
 defensa en profundidad frente a un cliente comprometido que intente
 escalar privilegios saltándose el `WITH CHECK` del cliente.
+
+La política `profiles_select_own_or_privileged` fue extendida para
+permitir que miembros con membresía activa en el mismo proyecto se
+vean entre sí, mediante la función `SECURITY DEFINER`
+`comparten_proyecto(a, b)` (revocada para `PUBLIC`, `EXECUTE` para
+`authenticated`). Esto habilita la colaboración entre invitados de
+un mismo proyecto sin exponer al resto de la organización.
+
+## Doble capa de autorización en `/app`
+
+El layout privado del equipo interno (`src/routes/app.tsx`) combina:
+
+1. **`beforeLoad` server-side**: invoca la server function
+   `exigirEquipoInterno` (`src/lib/rbac.functions.ts`) protegida por
+   `requireSupabaseAuth`. Verifica el rol del llamante contra
+   `profiles` y lanza `redirect` a `/mi-proyecto` si no es
+   `admin`/`implementador`, o a `/login` si no hay sesión.
+2. **`PrivateShell` client-side**: mantiene la lógica de UX (loader,
+   redirección por rol, mensajes) sobre la comprobación server-side.
+
+Todas las mutaciones sensibles siguen pasando por server functions
+con `requireSupabaseAuth` + `exigirInterno`/`exigirAdmin`, y las
+lecturas están cubiertas por RLS.
 
 ## Escrituras en Storage
 
