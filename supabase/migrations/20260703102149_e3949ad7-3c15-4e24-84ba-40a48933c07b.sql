@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.comparten_proyecto(uuid, uuid) FROM authenticated, anon, public;
