@@ -40,11 +40,11 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface MiProyectoContextValue {
   loading: boolean;
   proyectos: ProyectoLite[];
-  proyecto: ProyectoLite | null;
   modulos: ProyectoModulo[];
+  proyectoById: (id: string) => ProyectoLite | undefined;
+  modulosDeProyecto: (proyectoId: string) => ProyectoModulo[];
+  overridesDeProyecto: (proyectoId: string) => CampoOverride[];
   moduloById: (id: string) => ProyectoModulo | undefined;
-  overrides: CampoOverride[];
-  cambiarProyecto: (id: string) => void;
   refreshModulos: () => Promise<void>;
   saveStatus: SaveStatus;
   lastSavedAt: Date | null;
@@ -58,9 +58,10 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   const { profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [proyectos, setProyectos] = useState<ProyectoLite[]>([]);
-  const [proyectoId, setProyectoId] = useState<string | null>(null);
   const [modulos, setModulos] = useState<ProyectoModulo[]>([]);
-  const [overrides, setOverrides] = useState<CampoOverride[]>([]);
+  const [overrides, setOverrides] = useState<
+    Array<CampoOverride & { proyecto_id: string }>
+  >([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
@@ -76,16 +77,11 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       setProyectos([]);
       return;
     }
-    const rows = (data ?? []) as ProyectoLite[];
-    setProyectos(rows);
-    setProyectoId((prev) => {
-      if (prev && rows.some((r) => r.id === prev)) return prev;
-      return rows[0]?.id ?? null;
-    });
+    setProyectos((data ?? []) as ProyectoLite[]);
   }, [profile]);
 
   const refreshModulos = useCallback(async () => {
-    if (!proyectoId) {
+    if (!profile) {
       setModulos([]);
       return;
     }
@@ -94,7 +90,6 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       .select(
         "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento, datos, progreso, updated_at",
       )
-      .eq("proyecto_id", proyectoId)
       .order("modulo_key");
     if (error) {
       console.error("[mi-proyecto] error cargando módulos", error);
@@ -102,36 +97,44 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       return;
     }
     setModulos((data ?? []) as ProyectoModulo[]);
-  }, [proyectoId]);
+  }, [profile]);
 
   const refreshOverrides = useCallback(async () => {
-    if (!proyectoId) { setOverrides([]); return; }
+    if (!profile) { setOverrides([]); return; }
     const { data } = await supabase
       .from("catalogo_overrides")
-      .select("modulo_key, campo_key, activo, label, requerido, guia")
-      .eq("proyecto_id", proyectoId);
-    setOverrides((data ?? []) as unknown as CampoOverride[]);
-  }, [proyectoId]);
+      .select("proyecto_id, modulo_key, campo_key, activo, label, requerido, guia");
+    setOverrides(
+      (data ?? []) as unknown as Array<CampoOverride & { proyecto_id: string }>,
+    );
+  }, [profile]);
 
   useEffect(() => {
     if (authLoading) return;
     setLoading(true);
-    refreshProyectos().finally(() => setLoading(false));
-  }, [authLoading, refreshProyectos]);
-
-  useEffect(() => {
-    if (!proyectoId) return;
-    refreshModulos();
-    refreshOverrides();
-  }, [proyectoId, refreshModulos, refreshOverrides]);
-
-  const cambiarProyecto = useCallback((id: string) => {
-    setProyectoId(id);
-  }, []);
+    Promise.all([refreshProyectos(), refreshModulos(), refreshOverrides()]).finally(
+      () => setLoading(false),
+    );
+  }, [authLoading, refreshProyectos, refreshModulos, refreshOverrides]);
 
   const moduloById = useCallback(
     (id: string) => modulos.find((m) => m.id === id),
     [modulos],
+  );
+  const proyectoById = useCallback(
+    (id: string) => proyectos.find((p) => p.id === id),
+    [proyectos],
+  );
+  const modulosDeProyecto = useCallback(
+    (id: string) => modulos.filter((m) => m.proyecto_id === id),
+    [modulos],
+  );
+  const overridesDeProyecto = useCallback(
+    (id: string) =>
+      overrides
+        .filter((o) => o.proyecto_id === id)
+        .map(({ proyecto_id: _p, ...rest }) => rest as CampoOverride),
+    [overrides],
   );
 
   const markSaved = useCallback(() => {
@@ -143,11 +146,11 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
     () => ({
       loading,
       proyectos,
-      proyecto: proyectos.find((p) => p.id === proyectoId) ?? null,
       modulos,
+      proyectoById,
+      modulosDeProyecto,
+      overridesDeProyecto,
       moduloById,
-      overrides,
-      cambiarProyecto,
       refreshModulos,
       saveStatus,
       lastSavedAt,
@@ -157,11 +160,11 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
     [
       loading,
       proyectos,
-      proyectoId,
       modulos,
+      proyectoById,
+      modulosDeProyecto,
+      overridesDeProyecto,
       moduloById,
-      overrides,
-      cambiarProyecto,
       refreshModulos,
       saveStatus,
       lastSavedAt,
