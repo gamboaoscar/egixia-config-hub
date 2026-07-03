@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EstadoPastilla } from "@/components/estado-pastilla";
 import {
   VencimientoBanner,
@@ -43,6 +49,9 @@ function ModuloPage() {
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [previsualizando, setPrevisualizando] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>("acta.pdf");
+  const previewUrlRef = useRef<string | null>(null);
   const enviar = useServerFn(enviarModuloARevision);
   const reenviar = useServerFn(reenviarModulo);
   const previsualizar = useServerFn(previsualizarActa);
@@ -63,6 +72,12 @@ function ModuloPage() {
         setObservaciones((data ?? []) as Observacion[]);
       });
   }, [moduloId]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
@@ -101,15 +116,35 @@ function ModuloPage() {
       ) as ArrayBuffer;
       const blob = new Blob([buf], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener");
-      // Liberamos el objeto tras un momento razonable.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+      setPreviewFilename(res.filename ?? `acta-v${res.version}.pdf`);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "No se pudo generar el acta.";
       toast.error(msg);
     } finally {
       setPrevisualizando(false);
+    }
+  };
+
+  const handleDescargarPreview = () => {
+    if (!previewUrl) return;
+    const a = document.createElement("a");
+    a.href = previewUrl;
+    a.download = previewFilename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const cerrarPreview = (open: boolean) => {
+    if (open) return;
+    setPreviewUrl(null);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
   };
 
