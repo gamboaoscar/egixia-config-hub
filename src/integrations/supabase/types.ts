@@ -536,15 +536,26 @@ export type Database = {
         Args: { _modulo_id: string; _uid: string }
         Returns: boolean
       }
-      registrar_auditoria: {
-        Args: {
-          _accion: string
-          _detalle: Json
-          _entidad: string
-          _entidad_id: string
-        }
-        Returns: string
-      }
+      registrar_auditoria:
+        | {
+            Args: {
+              _accion: string
+              _detalle: Json
+              _entidad: string
+              _entidad_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _accion: string
+              _actor_id?: string
+              _detalle: Json
+              _entidad: string
+              _entidad_id: string
+            }
+            Returns: string
+          }
       storage_proyecto_from_path: { Args: { _name: string }; Returns: string }
       validar_invitacion: {
         Args: { _token: string }
