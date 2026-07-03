@@ -67,6 +67,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   const refreshProyectos = useCallback(async () => {
     console.log("[mi-proyecto] refreshProyectos start; profile?", !!profile, profile?.rol);
     if (!profile) return;
+    console.log("[mi-proyecto] before proyectos query");
     // RLS: el invitado solo verá los proyectos donde es miembro activo.
     const { data, error } = await supabase
       .from("proyectos")
