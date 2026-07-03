@@ -342,7 +342,7 @@ function DetalleProyecto() {
                         ) : (
                           <FileText className="mr-1 h-4 w-4" />
                         )}
-                        Acta v{actasM[0].version}
+                        Descargar acta v{actasM[0].version}
                       </Button>
                     )}
                   </div>
