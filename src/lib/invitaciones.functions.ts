@@ -139,7 +139,7 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
             rol_en_proyecto: claimed.rol_invitado,
             estado: "activo",
           },
-          { onConflict: "proyecto_id,profile_id" },
+          { onConflict: "proyecto_id,profile_id,rol_en_proyecto" },
         );
       if (memberErr) {
         await rollback();
