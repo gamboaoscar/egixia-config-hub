@@ -2,6 +2,29 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.5] — 2026-07-03 — Fix login tras endurecimiento de RLS helpers
+
+### Corregido
+- **Login se quedaba cargando** con
+  `permission denied for function has_role`. La migración anterior
+  revocó `EXECUTE` a `authenticated` sobre las funciones
+  `SECURITY DEFINER` de `public`, pero Postgres verifica `EXECUTE`
+  sobre el rol del *caller* incluso cuando la función es invocada
+  desde una política RLS, por lo que todo `SELECT` sobre `profiles`
+  fallaba. Se restaura `EXECUTE` a `authenticated` sobre
+  `has_role`, `is_project_member`, `comparten_proyecto`,
+  `destinatarios_notificacion` y `registrar_auditoria`.
+- `validar_invitacion` permanece server-only (solo `service_role`).
+
+### Seguridad
+- La memoria de seguridad documenta que los warnings
+  `0029_authenticated_security_definer_function_executable` /
+  `SUPA_authenticated_security_definer_function_executable` sobre
+  estas 5 funciones son falsos positivos para este proyecto: son
+  requeridas por las políticas RLS. Riesgo compensado por
+  `search_path=public`, validaciones internas y RLS en las tablas
+  destino.
+
 ## [1.0.4] — 2026-07-03 — UX del invitado, formularios y seguridad (4ª pasada)
 
 Iteración de UX sobre el flujo del cliente/invitado, mejoras en el
