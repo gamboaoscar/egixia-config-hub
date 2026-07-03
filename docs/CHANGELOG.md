@@ -2,6 +2,69 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.4] — 2026-07-03 — UX del invitado, formularios y seguridad (4ª pasada)
+
+Iteración de UX sobre el flujo del cliente/invitado, mejoras en el
+motor de formularios y cuarta pasada del escáner de seguridad.
+
+### Añadido
+- **Menú del invitado unificado con el resto de roles**: la barra
+  lateral del invitado muestra ahora *Inicio* y *Proyectos*, con la
+  misma estructura visual que la del equipo interno. Se prepara el
+  crecimiento del catálogo (>15 módulos) sin saturar la sidebar.
+- **Rutas dedicadas del invitado por proyecto**:
+  - `src/routes/mi-proyecto.proyectos.index.tsx` — listado de
+    proyectos del invitado con avance general por proyecto.
+  - `src/routes/mi-proyecto.proyectos.$id.tsx` — detalle del proyecto
+    con avance por módulo, mismo patrón que el panel interno.
+- **Indicador de proyecto en "Próximos a vencer"**: la home del
+  cliente muestra el nombre del proyecto junto al módulo, porque un
+  mismo usuario puede tener el mismo módulo en varios proyectos.
+- **Opción de color personalizado en Imagen Corporativa**: además de
+  la paleta predefinida, el cliente puede solicitar un color propio
+  desde `campo-renderer.tsx`.
+- **Barra de progreso en vivo del módulo**: `FormularioModulo` emite
+  `onProgreso` en cada cambio y `mi-proyecto.modulo.$moduloId.tsx`
+  pinta una barra fija en la parte inferior con el porcentaje de
+  avance mientras se diligencia.
+- **Previsualización inline de actas**: la previsualización PDF se
+  abre en un `Dialog` con `iframe` embebido y botón *Descargar PDF*,
+  reemplazando el `window.open` que quedaba bloqueado por popups y
+  restricciones a blob URLs.
+
+### Cambiado
+- **Redirección tras enviar a revisión**: al enviar el módulo, el
+  cliente vuelve al detalle del proyecto (`/mi-proyecto/proyectos/$id`)
+  para continuar con los módulos restantes en lugar de aterrizar en
+  la home.
+- **Implementador con permisos de edición sobre módulos del cliente**:
+  la home del invitado y las rutas de módulo reconocen al
+  implementador como editor válido de los formularios del proyecto,
+  además del propio cliente.
+
+### Seguridad
+- **`EXECUTE` revocado sobre todas las funciones `SECURITY DEFINER`
+  de `public`**: `has_role`, `is_project_member`,
+  `comparten_proyecto`, `destinatarios_notificacion`,
+  `validar_invitacion` y `registrar_auditoria` dejan de ser
+  invocables por `PUBLIC`, `anon` y `authenticated`. Se otorga
+  `EXECUTE` únicamente a `service_role`. Las políticas RLS que las
+  consumen siguen funcionando (RLS no exige `EXECUTE` sobre las
+  funciones referenciadas).
+  Cierra los hallazgos `SUPA_anon_security_definer_function_executable`
+  y `SUPA_authenticated_security_definer_function_executable`.
+
+### Archivos
+- Nuevos: `src/routes/mi-proyecto.proyectos.index.tsx`,
+  `src/routes/mi-proyecto.proyectos.$id.tsx`,
+  `supabase/migrations/20260703190333_*.sql`.
+- Editados: `src/components/app-sidebar.tsx`,
+  `src/components/cliente-shell.tsx`, `src/hooks/use-mi-proyecto.tsx`,
+  `src/routes/mi-proyecto.index.tsx`,
+  `src/routes/mi-proyecto.modulo.$moduloId.tsx`,
+  `src/components/form-engine/formulario-modulo.tsx`,
+  `src/components/form-engine/campo-renderer.tsx`.
+
 ## [1.0.3] — 2026-07-03 — Endurecimiento de seguridad (3ª pasada)
 
 Tercera ronda de hallazgos del escáner de seguridad.
