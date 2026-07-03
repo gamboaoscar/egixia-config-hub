@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { AdminOnly } from "@/components/admin-only";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +22,15 @@ import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { moduloCatalogo, type ModuloKey } from "@/lib/modulos-catalogo";
 import type { CampoDefinicion } from "@/lib/form-engine/tipos";
 
-export const Route = createFileRoute("/app/catalogo")({ component: CatalogoPage });
+export const Route = createFileRoute("/app/catalogo")({ component: CatalogoGuarded });
+
+function CatalogoGuarded() {
+  return (
+    <AdminOnly>
+      <CatalogoPage />
+    </AdminOnly>
+  );
+}
 
 interface ProyectoLite { id: string; nombre: string; empresa: string }
 interface OverrideRow {
