@@ -22,6 +22,7 @@ import {
 } from "@/lib/modulo-estado";
 import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { descargarActaFirmada } from "@/lib/acta.functions";
+import { abrirPdfBlob } from "@/lib/acta/abrir-pdf";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
@@ -155,11 +156,11 @@ function ModuloCard({
     setCargandoActa(true);
     try {
       const res = await descargar({ data: { moduloId: id } });
-      if (!res.url) {
+      if (!res.base64) {
         toast.error("Aún no hay un acta generada para este módulo.");
         return;
       }
-      window.open(res.url, "_blank", "noopener");
+      abrirPdfBlob(res.base64, res.filename);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo abrir el acta.");
     } finally {
