@@ -4,7 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMiProyectoOptional } from "@/hooks/use-mi-proyecto";
 
 import type { DatosModulo, ModuloDefinicion } from "./tipos";
-import { calcularProgreso, validarCampo, validarModulo } from "./validacion";
+import {
+  calcularProgreso,
+  camposRequeridosFaltantes,
+  validarCampo,
+  validarModulo,
+} from "./validacion";
 
 interface Params {
   moduloId: string;
@@ -103,6 +108,16 @@ export function useFormModulo({
     setTocados((p) => (p[campoKey] ? p : { ...p, [campoKey]: true }));
   }, []);
 
+  const marcarTodosTocados = useCallback(() => {
+    const next: Record<string, boolean> = {};
+    for (const s of definicion.secciones) {
+      for (const c of s.campos) {
+        if (c.tipo !== "info") next[c.key] = true;
+      }
+    }
+    setTocados(next);
+  }, [definicion]);
+
   // Cleanup del debounce al desmontar.
   useEffect(() => {
     return () => {
@@ -111,6 +126,7 @@ export function useFormModulo({
   }, []);
 
   const progreso = calcularProgreso(definicion, datos);
+  const faltantes = camposRequeridosFaltantes(definicion, datos);
 
   return {
     datos,
@@ -118,6 +134,8 @@ export function useFormModulo({
     tocados,
     setValor,
     marcarTocado,
+    marcarTodosTocados,
+    faltantes,
     progreso,
   };
 }

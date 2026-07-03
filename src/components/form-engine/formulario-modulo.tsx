@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { CampoRenderer } from "./campo-renderer";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
@@ -14,6 +14,17 @@ interface Props {
   onCambio?: (datos: DatosModulo) => void;
   /** Reporta el % de progreso calculado en tiempo real. */
   onProgreso?: (progreso: number) => void;
+  /** Reporta los `campo.key` obligatorios sin completar. */
+  onFaltantes?: (faltantes: string[]) => void;
+}
+
+export interface FormularioModuloHandle {
+  /**
+   * Marca todos los campos como tocados (para mostrar mensajes de error),
+   * desplaza el foco al primer campo obligatorio faltante y devuelve la
+   * lista de campos faltantes.
+   */
+  mostrarFaltantes: () => string[];
 }
 
 /**
@@ -21,16 +32,29 @@ interface Props {
  * sus campos. Gestiona autoguardado con debounce, validación en línea y
  * cálculo del % de progreso (persistido en `proyecto_modulos.progreso`).
  */
-export function FormularioModulo({
-  moduloId,
-  proyectoId,
-  definicion,
-  datosIniciales,
-  soloLectura,
-  onCambio,
-  onProgreso,
-}: Props) {
-  const { datos, errores, tocados, setValor, marcarTocado, progreso } = useFormModulo({
+export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(function FormularioModulo(
+  {
+    moduloId,
+    proyectoId,
+    definicion,
+    datosIniciales,
+    soloLectura,
+    onCambio,
+    onProgreso,
+    onFaltantes,
+  },
+  ref,
+) {
+  const {
+    datos,
+    errores,
+    tocados,
+    setValor,
+    marcarTocado,
+    marcarTodosTocados,
+    faltantes,
+    progreso,
+  } = useFormModulo({
     moduloId,
     definicion,
     datosIniciales,
@@ -42,8 +66,49 @@ export function FormularioModulo({
     onProgreso?.(progreso);
   }, [progreso, onProgreso]);
 
+  useEffect(() => {
+    onFaltantes?.(faltantes);
+  }, [faltantes, onFaltantes]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      mostrarFaltantes: () => {
+        marcarTodosTocados();
+        if (faltantes.length > 0 && typeof document !== "undefined") {
+          const primero = faltantes[0];
+          // Esperamos al siguiente frame para que el DOM refleje los errores.
+          requestAnimationFrame(() => {
+            const el =
+              document.getElementById(`campo-${primero}`) ??
+              document.querySelector(`[data-campo-key="${primero}"]`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              if (el instanceof HTMLElement && typeof el.focus === "function") {
+                try {
+                  el.focus({ preventScroll: true });
+                } catch {
+                  el.focus();
+                }
+              }
+            }
+          });
+        }
+        return faltantes;
+      },
+    }),
+    [faltantes, marcarTodosTocados],
+  );
+
   return (
     <div className="space-y-6">
+      {!soloLectura && (
+        <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Los campos marcados con{" "}
+          <span className="font-semibold text-primary">*</span> son obligatorios.
+          Los demás son opcionales.
+        </p>
+      )}
       {definicion.secciones.map((seccion) => {
         const camposVisibles = seccion.campos.filter(
           (c) => campoActivo(c) && campoVisible(c, datos),
@@ -87,4 +152,4 @@ export function FormularioModulo({
       })}
     </div>
   );
-}
+});

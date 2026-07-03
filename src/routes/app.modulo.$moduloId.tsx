@@ -17,6 +17,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -35,7 +37,7 @@ import {
   devolverModuloConObservaciones,
   reabrirModulo,
 } from "@/lib/revision.functions";
-import { editarDatosModulo } from "@/lib/admin.functions";
+import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
 import { calcularProgreso } from "@/lib/form-engine/validacion";
 
 export const Route = createFileRoute("/app/modulo/$moduloId")({
@@ -56,6 +58,13 @@ interface ModuloRow {
   progreso: number;
   enviado_at: string | null;
   revisado_at: string | null;
+  fecha_limite: string | null;
+  comportamiento_vencimiento:
+    | "bloquear"
+    | "editable_avisar"
+    | "solo_avisar"
+    | "extension_implementador"
+    | null;
   proyectos?: { nombre: string; empresa: string | null } | null;
 }
 
@@ -86,17 +95,27 @@ function RevisionModuloPage() {
   const devolver = useServerFn(devolverModuloConObservaciones);
   const reabrir = useServerFn(reabrirModulo);
   const editar = useServerFn(editarDatosModulo);
+  const actualizarConfig = useServerFn(actualizarConfigModulo);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdit, setDatosEdit] = useState<Record<string, unknown>>({});
   const [guardando, setGuardando] = useState(false);
   const [overrides, setOverrides] = useState<CampoOverride[]>([]);
+  const [cfgFecha, setCfgFecha] = useState<string>("");
+  const [cfgComp, setCfgComp] = useState<string>("solo_avisar");
+  const [cfgEstado, setCfgEstado] = useState<string>("sin_iniciar");
+  const [guardandoCfg, setGuardandoCfg] = useState(false);
+
+  const hoyStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
 
   const cargar = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("proyecto_modulos")
       .select(
-        "id, proyecto_id, modulo_key, estado, datos, progreso, enviado_at, revisado_at, proyectos(nombre, empresa)",
+        "id, proyecto_id, modulo_key, estado, datos, progreso, enviado_at, revisado_at, fecha_limite, comportamiento_vencimiento, proyectos(nombre, empresa)",
       )
       .eq("id", moduloId)
       .maybeSingle();
@@ -111,7 +130,14 @@ function RevisionModuloPage() {
       .order("created_at", { ascending: false });
     setObservaciones((obs ?? []) as Observacion[]);
     setLoading(false);
-    if (data) setDatosEdit((data.datos as Record<string, unknown>) ?? {});
+    if (data) {
+      setDatosEdit((data.datos as Record<string, unknown>) ?? {});
+      setCfgFecha((data.fecha_limite as string | null) ?? "");
+      setCfgComp(
+        (data.comportamiento_vencimiento as string | null) ?? "solo_avisar",
+      );
+      setCfgEstado(data.estado as string);
+    }
     if (data?.proyecto_id) {
       const { data: ov } = await supabase
         .from("catalogo_overrides")
@@ -225,6 +251,35 @@ function RevisionModuloPage() {
     }
   };
 
+  const handleGuardarConfig = async () => {
+    if (!modulo) return;
+    if (cfgFecha && cfgFecha < hoyStr) {
+      toast.error("La fecha límite no puede ser anterior a hoy.");
+      return;
+    }
+    setGuardandoCfg(true);
+    try {
+      await actualizarConfig({
+        data: {
+          moduloId: modulo.id,
+          fecha_limite: cfgFecha ? cfgFecha : null,
+          comportamiento_vencimiento: cfgComp as
+            | "bloquear"
+            | "editable_avisar"
+            | "solo_avisar"
+            | "extension_implementador",
+          estado: cfgEstado as ModuloRow["estado"],
+        },
+      });
+      toast.success("Configuración actualizada.");
+      await cargar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo actualizar.");
+    } finally {
+      setGuardandoCfg(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -262,6 +317,89 @@ function RevisionModuloPage() {
             <div className="text-xs text-muted-foreground">Avance</div>
             <div className="mt-1 text-lg font-semibold text-foreground">{modulo.progreso}%</div>
           </div>
+        </div>
+      </section>
+
+      {/* Configuración del módulo (interno) */}
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Configuración del módulo
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Ajusta el avance, la fecha de vencimiento y qué debe pasar cuando se
+          cumpla. Los cambios quedan registrados en auditoría.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label className="text-xs">Estado del módulo</Label>
+            <Select value={cfgEstado} onValueChange={setCfgEstado}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sin_iniciar">Sin iniciar</SelectItem>
+                <SelectItem value="en_diligenciamiento">
+                  En diligenciamiento (reabierto)
+                </SelectItem>
+                <SelectItem value="con_observaciones">
+                  Con observaciones
+                </SelectItem>
+                <SelectItem value="en_revision">En revisión</SelectItem>
+                <SelectItem value="aprobado">Aprobado</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Cambiar a “En diligenciamiento” reabre el módulo para que el
+              invitado pueda seguir editando.
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs">Fecha límite</Label>
+            <Input
+              type="date"
+              min={hoyStr}
+              value={cfgFecha}
+              onChange={(e) => setCfgFecha(e.target.value)}
+              className="mt-1"
+            />
+            {cfgFecha && cfgFecha < hoyStr && (
+              <p className="mt-1 text-xs text-red-600">
+                La fecha no puede ser anterior a hoy.
+              </p>
+            )}
+          </div>
+          <div>
+            <Label className="text-xs">Al vencer</Label>
+            <Select value={cfgComp} onValueChange={setCfgComp}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solo_avisar">Solo avisar</SelectItem>
+                <SelectItem value="editable_avisar">
+                  Editable con aviso
+                </SelectItem>
+                <SelectItem value="bloquear">Bloquear al vencer</SelectItem>
+                <SelectItem value="extension_implementador">
+                  Requiere extensión
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleGuardarConfig}
+            disabled={guardandoCfg || (!!cfgFecha && cfgFecha < hoyStr)}
+          >
+            {guardandoCfg ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1 h-4 w-4" />
+            )}
+            Guardar configuración
+          </Button>
         </div>
       </section>
 

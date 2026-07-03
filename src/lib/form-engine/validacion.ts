@@ -107,6 +107,41 @@ export function validarModulo(
 }
 
 /**
+ * Devuelve los `campo.key` de todos los campos obligatorios (activos y
+ * visibles) que aún no tienen valor, en el orden en que aparecen en el
+ * formulario. Útil para llevar al usuario al primer campo faltante.
+ */
+export function camposRequeridosFaltantes(
+  modulo: ModuloDefinicion,
+  datos: DatosModulo,
+): string[] {
+  const faltantes: string[] = [];
+  for (const s of modulo.secciones) {
+    for (const c of s.campos) {
+      if (!campoActivo(c)) continue;
+      if (c.tipo === "info") continue;
+      if (!campoVisible(c, datos)) continue;
+      if (!c.requerido) continue;
+      if (c.tipo === "tabla" && c.columnas) {
+        const reqCols = c.columnas.filter((col) => col.requerido);
+        if (reqCols.length > 0) {
+          const filas = Array.isArray(datos[c.key])
+            ? (datos[c.key] as Record<string, unknown>[])
+            : [];
+          const completo =
+            filas.length > 0 &&
+            filas.every((fila) => reqCols.every((col) => valorLleno(fila[col.key])));
+          if (!completo) faltantes.push(c.key);
+          continue;
+        }
+      }
+      if (!valorLleno(datos[c.key])) faltantes.push(c.key);
+    }
+  }
+  return faltantes;
+}
+
+/**
  * % de avance de un módulo:
  * (campos requeridos + activos con valor) ÷ (total requeridos + activos) × 100.
  * Si no hay campos requeridos activos, se calcula sobre todos los campos activos.
