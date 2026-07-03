@@ -9,7 +9,6 @@ import {
   Inbox,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
@@ -242,5 +241,3 @@ function Metric({
   );
 }
 
-// Preserve import (used by Metric prop typing indirectly)
-void Button;
