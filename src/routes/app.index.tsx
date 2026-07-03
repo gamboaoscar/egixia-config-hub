@@ -112,8 +112,15 @@ function DashboardAdmin() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-foreground">
-          Hola{profile?.nombre ? `, ${profile.nombre}` : ""} 👋
+        <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <span>
+            Hola{profile?.nombre ? `, ${profile.nombre}` : ""}
+          </span>
+          <Hand
+            aria-hidden
+            className="h-5 w-5 text-primary"
+            strokeWidth={2.2}
+          />
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Panorama general de los proyectos e implementaciones en curso.
