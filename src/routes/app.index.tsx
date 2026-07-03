@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   AlarmClock,
   CheckCircle2,
+  Hand,
 } from "lucide-react";
 import {
   Bar,
