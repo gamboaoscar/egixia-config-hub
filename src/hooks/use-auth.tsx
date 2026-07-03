@@ -70,7 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const p = data as Profile | null;
     setProfile(p);
-    setAvatarUrl(await loadAvatarUrl(p?.foto_perfil));
+    // El avatar no debe bloquear la carga del portal: se resuelve aparte.
+    setAvatarUrl(null);
+    if (p?.foto_perfil) {
+      loadAvatarUrl(p.foto_perfil)
+        .then((url) => setAvatarUrl(url))
+        .catch(() => setAvatarUrl(null));
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
