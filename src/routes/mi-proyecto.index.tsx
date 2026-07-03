@@ -168,6 +168,7 @@ function MiProyectoInicio() {
             {proximos.map((m) => {
               const cat = moduloCatalogo(m.modulo_key);
               const dias = diasHasta(m.fecha_limite!);
+              const proy = proyectos.find((p) => p.id === m.proyecto_id);
               return (
                 <li key={m.id}>
                   <Link
@@ -177,10 +178,18 @@ function MiProyectoInicio() {
                   >
                     <cat.icon className="h-4 w-4 text-primary" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {cat.nombre}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {cat.nombre}
+                        </p>
+                        {proy && (
+                          <span className="inline-flex items-center rounded-full bg-primary-soft px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                            {proy.nombre}
+                          </span>
+                        )}
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">
+                        {proy?.empresa ? `${proy.empresa} · ` : ""}
                         {m.progreso}% avance
                       </p>
                     </div>
