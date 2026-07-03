@@ -20,6 +20,7 @@ import { EstadoPastilla } from "@/components/estado-pastilla";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { descargarActaFirmada } from "@/lib/acta.functions";
+import { abrirPdfBlob } from "@/lib/acta/abrir-pdf";
 import {
   actualizarMiembroEstado,
   desvincularMiembro,
