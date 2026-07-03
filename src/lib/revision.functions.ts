@@ -289,6 +289,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     });
     await notificar({
       proyectoId: modulo.proyecto_id,
+      actorId: userId,
       moduloId: modulo.id,
       moduloNombre: definicion.nombre,
       tipo: "acta_envio",
@@ -342,6 +343,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_aprobacion",
@@ -431,6 +433,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_devolucion",
@@ -484,6 +487,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       const actorNombre = await nombreActor(supabaseAdmin, userId);
       await notificar({
         proyectoId: modulo.proyecto_id,
+      actorId: userId,
         moduloId: modulo.id,
         moduloNombre: definicionModulo(modulo.modulo_key).nombre,
         tipo: "acta_devolucion",
@@ -576,6 +580,7 @@ export const reenviarModulo = createServerFn({ method: "POST" })
     });
     await notificar({
       proyectoId: modulo.proyecto_id,
+      actorId: userId,
       moduloId: modulo.id,
       moduloNombre: definicion.nombre,
       tipo: "acta_envio",
