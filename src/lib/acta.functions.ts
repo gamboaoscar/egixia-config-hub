@@ -109,8 +109,33 @@ export const descargarActaFirmada = createServerFn({ method: "POST" })
     const { ultimaActa, urlFirmadaActa } = await import(
       "@/lib/acta/acta.server"
     );
-    const acta = await ultimaActa(data.moduloId);
-    if (!acta) return { url: null, version: null };
+    let acta = await ultimaActa(data.moduloId);
+    if (!acta) {
+      // Autoreparación: si el módulo ya fue enviado/aprobado pero por
+      // alguna razón no quedó persistida el acta, la generamos ahora.
+      const { data: mod } = await supabaseAdmin
+        .from("proyecto_modulos")
+        .select("estado, enviado_por")
+        .eq("id", data.moduloId)
+        .maybeSingle();
+      const estadosConActa = ["en_revision", "aprobado", "con_observaciones"];
+      if (mod && estadosConActa.includes(mod.estado as string)) {
+        const { renderYSubirActa } = await import("@/lib/acta/acta.server");
+        const autor = (mod.enviado_por as string | null) ?? userId;
+        try {
+          const { version, archivoUrl } = await renderYSubirActa(
+            data.moduloId,
+            autor,
+          );
+          acta = { version, archivoUrl };
+        } catch (err) {
+          console.error("[descargarActaFirmada] auto-regen falló", err);
+          return { url: null, version: null };
+        }
+      } else {
+        return { url: null, version: null };
+      }
+    }
     const url = await urlFirmadaActa(acta.archivoUrl);
     return { url, version: acta.version };
   });
