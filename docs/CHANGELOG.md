@@ -2,6 +2,42 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.7] — 2026-07-04 — Selector de fecha con fines de semana y festivos CO
+
+### Añadido
+- **Selector de fecha hábil** (`src/components/ui/date-picker-habil.tsx`)
+  basado en `Popover` + `Calendar` (`react-day-picker`, `date-fns`
+  con locale `es`). Pinta:
+  - **Sábados y domingos** en amarillo pastel.
+  - **Festivos de Colombia** en rojo pastel — calculados en
+    `src/lib/festivos-co.ts` combinando fechas fijas, la Ley
+    Emiliani (traslado al lunes) y días basados en la Pascua
+    (algoritmo de Meeus).
+  - Leyenda inline con las convenciones de color.
+- **Parámetro global "Bloquear fines de semana y festivos"** en
+  `/app/configuracion` (sección *Parámetros generales*). Persistido
+  como `parametros.bloquear_fines_semana_festivos` en
+  `configuracion_sistema`. Nuevo hook `useParametrosSistema`
+  (`src/hooks/use-parametros-sistema.ts`) que lo lee al montar la
+  vista.
+
+### Cambiado
+- Las vistas de fecha límite (`/app/proyectos/nuevo` y
+  `/app/modulo/{id}`) reemplazan el `<Input type="date">` por
+  `DatePickerHabil`. Cuando el parámetro está activo, sábados,
+  domingos y festivos quedan **deshabilitados** en el calendario y
+  además se valida en el submit con un `toast` explicativo. Cuando
+  el parámetro está desactivado, se muestran resaltados pero pueden
+  seleccionarse.
+
+### Archivos
+- Nuevos: `src/lib/festivos-co.ts`,
+  `src/components/ui/date-picker-habil.tsx`,
+  `src/hooks/use-parametros-sistema.ts`.
+- Editados: `src/routes/app.configuracion.tsx`,
+  `src/routes/app.proyectos.nuevo.tsx`,
+  `src/routes/app.modulo.$moduloId.tsx`.
+
 ## [1.0.6] — 2026-07-04 — Descarga directa del acta y bloqueo de reingreso al módulo enviado
 
 ### Cambiado
