@@ -109,6 +109,7 @@ interface NuevaObservacion {
 
 function RevisionModuloPage() {
   const { moduloId } = Route.useParams();
+  const parametros = useParametrosSistema();
   const [modulo, setModulo] = useState<ModuloRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
@@ -303,6 +304,16 @@ function RevisionModuloPage() {
       toast.error("La fecha límite no puede ser anterior a hoy.");
       return;
     }
+    if (
+      cfgFecha &&
+      parametros.bloquear_fines_semana_festivos &&
+      esNoHabil(parseISOLocal(cfgFecha))
+    ) {
+      toast.error(
+        "La fecha no puede caer en fin de semana o festivo de Colombia.",
+      );
+      return;
+    }
     setGuardandoCfg(true);
     try {
       await actualizarConfig({
@@ -490,13 +501,14 @@ function RevisionModuloPage() {
           </div>
           <div>
             <Label className="text-xs">Fecha límite</Label>
-            <Input
-              type="date"
-              min={hoyStr}
-              value={cfgFecha}
-              onChange={(e) => setCfgFecha(e.target.value)}
-              className="mt-1"
-            />
+            <div className="mt-1">
+              <DatePickerHabil
+                value={cfgFecha}
+                onChange={setCfgFecha}
+                min={hoyStr}
+                bloquearNoHabiles={parametros.bloquear_fines_semana_festivos}
+              />
+            </div>
             {cfgFecha && cfgFecha < hoyStr && (
               <p className="mt-1 text-xs text-red-600">
                 La fecha no puede ser anterior a hoy.
