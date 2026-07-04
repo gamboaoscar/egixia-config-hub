@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminOnly } from "@/components/admin-only";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { guardarConfiguracion } from "@/lib/admin.functions";
+import { guardarConfiguracion, enviarCorreosPrueba } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/app/configuracion")({ component: ConfiguracionGuarded });
 
@@ -32,6 +32,7 @@ interface ConfigRow { clave: string; valor: Record<string, unknown> }
 function ConfiguracionPage() {
   const { profile } = useAuth();
   const guardar = useServerFn(guardarConfiguracion);
+  const enviarPrueba = useServerFn(enviarCorreosPrueba);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -84,6 +85,27 @@ function ConfiguracionPage() {
   }
 
   const disabled = !esAdmin;
+
+  const probarCorreos = async () => {
+    setBusy("prueba");
+    try {
+      const r = await enviarPrueba();
+      const okCount = r.resultados.filter((x) => x.ok).length;
+      const failCount = r.resultados.length - okCount;
+      if (failCount === 0) {
+        toast.success(`Enviados ${okCount} correos a ${r.destinatario}.`);
+      } else {
+        const primerError = r.resultados.find((x) => !x.ok);
+        toast.error(
+          `Enviados ${okCount}/${r.resultados.length}. Error: ${primerError?.error ?? "desconocido"}`,
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo enviar la prueba.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -158,6 +180,22 @@ function ConfiguracionPage() {
             {busy === "correo" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
             Guardar correo
           </Button>
+        </div>
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-muted/30 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="text-sm text-foreground">Enviar correos de prueba</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Envía las 4 plantillas del portal (invitación, acta enviada,
+                devolución con observaciones y aprobación) a tu correo de
+                administrador usando Resend.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={probarCorreos} disabled={disabled || busy === "prueba"}>
+              {busy === "prueba" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
+              Enviar prueba
+            </Button>
+          </div>
         </div>
       </section>
 
