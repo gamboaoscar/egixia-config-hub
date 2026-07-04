@@ -3,6 +3,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { renderCorreo, type TipoCorreo, type ContextoCorreo } from "@/lib/acta/plantillas-correo";
 
 /**
  * Server functions del panel de administrador / implementador.
@@ -276,6 +277,148 @@ export const actualizarConfigModulo = createServerFn({ method: "POST" })
     );
 
     return { ok: true };
+  });
+
+// ---------- Prueba de correos (envía las 4 plantillas al admin) -----------
+
+async function enviarConResend(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  from: string;
+}): Promise<{ ok: boolean; status: number; body: unknown }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY no está configurado.");
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      from: input.from,
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+    }),
+  });
+  const body = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, body };
+}
+
+export const enviarCorreosPrueba = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+
+    const { data: perfil } = await supabaseAdmin
+      .from("profiles")
+      .select("email, nombre")
+      .eq("id", userId)
+      .maybeSingle();
+    const destino = perfil?.email as string | undefined;
+    if (!destino) throw new Error("No se pudo obtener el correo del administrador.");
+
+    const base = urlBaseDelPortal();
+    const from = "EGIXIA <onboarding@resend.dev>";
+
+    const escenarios: Array<{ tipo: TipoCorreo; ctx: ContextoCorreo; etiqueta: string }> = [
+      {
+        tipo: "invitacion",
+        etiqueta: "invitacion",
+        ctx: {
+          invitacion: {
+            empresa: "ACME S.A.S. (prueba)",
+            nombreProyecto: "Implementación demo",
+            urlRegistro: `${base}/invitacion/token-de-prueba`,
+            expiraTexto: "14 días",
+          },
+        },
+      },
+      {
+        tipo: "acta_envio",
+        etiqueta: "acta_envio",
+        ctx: {
+          acta: {
+            proyecto: "Proyecto de prueba",
+            empresa: "ACME S.A.S.",
+            moduloNombre: "Datos de la sociedad",
+            version: 1,
+            autorNombre: perfil?.nombre || "Administrador",
+            urlActa: `${base}/`,
+            urlModulo: `${base}/app/modulo/prueba`,
+          },
+        },
+      },
+      {
+        tipo: "acta_devolucion",
+        etiqueta: "acta_devolucion",
+        ctx: {
+          observaciones: {
+            proyecto: "Proyecto de prueba",
+            moduloNombre: "Datos de la sociedad",
+            cantidad: 3,
+            urlModulo: `${base}/mi-proyecto/modulo/prueba`,
+          },
+        },
+      },
+      {
+        tipo: "acta_aprobacion",
+        etiqueta: "acta_aprobacion",
+        ctx: {
+          aprobacion: {
+            proyecto: "Proyecto de prueba",
+            moduloNombre: "Datos de la sociedad",
+            urlModulo: `${base}/mi-proyecto/modulo/prueba`,
+          },
+        },
+      },
+    ];
+
+    const resultados: Array<{ tipo: string; ok: boolean; status: number; error?: string }> = [];
+    for (const e of escenarios) {
+      try {
+        const r = renderCorreo(e.tipo, e.ctx);
+        const asunto = `[PRUEBA] ${r.asunto}`;
+        const resp = await enviarConResend({
+          to: destino,
+          from,
+          subject: asunto,
+          html: r.html,
+          text: r.texto,
+        });
+        const errMsg = !resp.ok
+          ? (resp.body as { message?: string; error?: string })?.message ||
+            (resp.body as { error?: string })?.error ||
+            `HTTP ${resp.status}`
+          : undefined;
+        resultados.push({ tipo: e.etiqueta, ok: resp.ok, status: resp.status, error: errMsg });
+      } catch (err) {
+        resultados.push({
+          tipo: e.etiqueta,
+          ok: false,
+          status: 0,
+          error: err instanceof Error ? err.message : "error desconocido",
+        });
+      }
+    }
+
+    await auditar(
+      supabaseAdmin,
+      userId,
+      "correos_prueba_enviados",
+      "notificacion_correo",
+      userId,
+      { destinatario: destino, resultados },
+    );
+
+    return { destinatario: destino, resultados };
   });
 
 // ---------- Invitaciones ---------------------------------------------------
