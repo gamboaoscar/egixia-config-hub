@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { guardarConfiguracion } from "@/lib/admin.functions";
@@ -48,6 +49,7 @@ function ConfiguracionPage() {
   const [parametros, setParametros] = useState({
     dias_alerta_vencimiento: 3,
     autoguardado_debounce_ms: 800,
+    bloquear_fines_semana_festivos: false,
   });
 
   const esAdmin = profile?.rol === "admin";
@@ -171,6 +173,27 @@ function ConfiguracionPage() {
               value={parametros.autoguardado_debounce_ms} disabled={disabled}
               onChange={(e) => setParametros({ ...parametros, autoguardado_debounce_ms: Number(e.target.value) })} />
           </Field>
+        </div>
+        <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Label className="text-sm text-foreground">
+                Bloquear fines de semana y festivos
+              </Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Cuando está activado, el implementador y el administrador
+                no podrán seleccionar sábados, domingos ni festivos de
+                Colombia como fecha de vencimiento de un módulo.
+              </p>
+            </div>
+            <Switch
+              checked={parametros.bloquear_fines_semana_festivos}
+              disabled={disabled}
+              onCheckedChange={(v) =>
+                setParametros({ ...parametros, bloquear_fines_semana_festivos: v })
+              }
+            />
+          </div>
         </div>
         <div className="mt-4 flex justify-end">
           <Button size="sm" onClick={() => submit("parametros", parametros)} disabled={disabled || busy === "parametros"}>
