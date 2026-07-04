@@ -2,6 +2,48 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.6] — 2026-07-04 — Descarga directa del acta y bloqueo de reingreso al módulo enviado
+
+### Cambiado
+- **Botones "Ver acta" → "Descargar acta"** en todas las vistas
+  (`/app/proyectos/$id`, `/mi-proyecto/proyectos/$id`). La acción
+  ahora fuerza la descarga del PDF vía `<a download>` sobre un
+  `Blob` same-origin, sin abrir pestañas emergentes ni depender de
+  URLs de Storage. Nuevo helper `descargarPdfBlob` en
+  `src/lib/acta/abrir-pdf.ts`.
+- **`descargarActaFirmada` devuelve bytes base64** en lugar de una
+  URL firmada. El servidor descarga el PDF del bucket privado
+  `actas` (`descargarBytesActa` en `src/lib/acta/acta.server.ts`) y
+  lo entrega al cliente para transformarlo en `Blob`. Elimina los
+  bloqueos por ad-blocker (`ERR_BLOCKED_BY_CLIENT`) sobre el dominio
+  del backend.
+- **Tarjeta del módulo enviado en modo "en revisión" para el
+  cliente**: una vez el invitado envía el módulo, la tarjeta de
+  `/mi-proyecto/proyectos/$id` deja de permitir el reingreso al
+  formulario. Solo se muestra el botón *Descargar acta* y una
+  pastilla que comunica el estado. La transición es transparente:
+  la tarjeta cambia de "En diligenciamiento" a "En revisión" al
+  instante.
+
+### Corregido
+- **`Cannot destructure property '__extends'` en producción** al
+  descargar el acta: se eliminó por completo la dependencia
+  `pdf-lib` y se reemplazó por un generador PDF 1.4 propio y sin
+  dependencias en `src/lib/acta/acta-pdf.ts`. El bundle de
+  producción ya no incluye el `tslib` roto que originaba el error.
+- **"Aún no hay un acta generada para este módulo"** al ver el acta
+  de un módulo ya enviado: `descargarActaFirmada` autogenera y sube
+  la versión faltante (`renderYSubirActa`) si el registro en
+  `actas` no existe, en vez de rechazar la solicitud.
+
+### Archivos
+- Nuevo: `src/lib/acta/abrir-pdf.ts`.
+- Editados: `src/lib/acta.functions.ts`, `src/lib/acta/acta.server.ts`,
+  `src/lib/acta/acta-pdf.ts`, `src/lib/revision.functions.ts`,
+  `src/routes/app.proyectos.$id.tsx`,
+  `src/routes/mi-proyecto.proyectos.$id.tsx`,
+  `src/components/form-engine/formulario-modulo.tsx`.
+
 ## [1.0.5] — 2026-07-03 — Fix login tras endurecimiento de RLS helpers
 
 ### Corregido
