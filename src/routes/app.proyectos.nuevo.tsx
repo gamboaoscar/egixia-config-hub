@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/select";
 import { MODULOS_CATALOGO, type ModuloKey } from "@/lib/modulos-catalogo";
 import { crearProyecto } from "@/lib/admin.functions";
+import { DatePickerHabil } from "@/components/ui/date-picker-habil";
+import { useParametrosSistema } from "@/hooks/use-parametros-sistema";
+import { esNoHabil, parseISOLocal } from "@/lib/festivos-co";
 
 export const Route = createFileRoute("/app/proyectos/nuevo")({
   component: NuevoProyecto,
@@ -44,6 +47,7 @@ interface ModuloForm {
 function NuevoProyecto() {
   const navigate = useNavigate();
   const crear = useServerFn(crearProyecto);
+  const parametros = useParametrosSistema();
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const hoyStr = (() => {
@@ -95,6 +99,20 @@ function NuevoProyecto() {
         `La fecha límite no puede ser anterior a hoy. Revisa: ${nombres}.`,
       );
       return;
+    }
+    if (parametros.bloquear_fines_semana_festivos) {
+      const noHabil = activos.filter((k) =>
+        esNoHabil(parseISOLocal(modulos[k].fecha_limite)),
+      );
+      if (noHabil.length > 0) {
+        const nombres = noHabil
+          .map((k) => MODULOS_CATALOGO[k].nombre)
+          .join(", ");
+        toast.error(
+          `La fecha no puede caer en fin de semana o festivo. Revisa: ${nombres}.`,
+        );
+        return;
+      }
     }
     const seleccionados = activos.map((k) => ({
       modulo_key: k,
@@ -189,13 +207,16 @@ function NuevoProyecto() {
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                       <Label className="text-xs">Fecha límite</Label>
-                      <Input
-                        type="date"
-                        min={hoyStr}
-                        value={m.fecha_limite}
-                        onChange={(e) => set(k, { fecha_limite: e.target.value })}
-                        className="mt-1"
-                      />
+                      <div className="mt-1">
+                        <DatePickerHabil
+                          value={m.fecha_limite}
+                          onChange={(v) => set(k, { fecha_limite: v })}
+                          min={hoyStr}
+                          bloquearNoHabiles={
+                            parametros.bloquear_fines_semana_festivos
+                          }
+                        />
+                      </div>
                       {m.fecha_limite && m.fecha_limite < hoyStr && (
                         <p className="mt-1 text-xs text-red-600">
                           La fecha no puede ser anterior a hoy.
