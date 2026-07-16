@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -24,6 +24,8 @@ import { esEditablePorInvitado } from "@/lib/modulo-estado";
 import { descargarActaFirmada } from "@/lib/acta.functions";
 import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { formatoFechaHoraCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
   component: MiProyectoDetalle,
@@ -32,6 +34,43 @@ export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
 function MiProyectoDetalle() {
   const { id } = Route.useParams();
   const { proyectoById, modulosDeProyecto, loading } = useMiProyecto();
+
+  const modulosProy = modulosDeProyecto(id);
+  const idsUpdatedPor = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          modulosProy
+            .map((m) => m.updated_por)
+            .filter((v): v is string => !!v),
+        ),
+      ),
+    [modulosProy],
+  );
+  const [autores, setAutores] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (idsUpdatedPor.length === 0) {
+      setAutores({});
+      return;
+    }
+    let cancelado = false;
+    supabase
+      .from("profiles")
+      .select("id, nombre, apellido, email")
+      .in("id", idsUpdatedPor)
+      .then(({ data }) => {
+        if (cancelado || !data) return;
+        const map: Record<string, string> = {};
+        for (const p of data) {
+          const n = `${p.nombre ?? ""} ${p.apellido ?? ""}`.trim();
+          map[p.id] = n || p.email || "Usuario";
+        }
+        setAutores(map);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [idsUpdatedPor.join("|")]);
 
   if (loading) {
     return (
@@ -44,7 +83,7 @@ function MiProyectoDetalle() {
   const proyecto = proyectoById(id);
   if (!proyecto) throw notFound();
 
-  const modulos = modulosDeProyecto(id);
+  const modulos = modulosProy;
   const pendientes = modulos.filter((m) => m.estado !== "aprobado").length;
   const conObservaciones = modulos.filter(
     (m) => m.estado === "con_observaciones",
@@ -121,6 +160,8 @@ function MiProyectoDetalle() {
                 estado={m.estado}
                 progreso={m.progreso}
                 fechaLimite={m.fecha_limite}
+                updatedAt={m.updated_at}
+                updatedPorNombre={m.updated_por ? autores[m.updated_por] ?? null : null}
               />
             ))}
           </div>
@@ -136,12 +177,16 @@ function ModuloCard({
   estado,
   progreso,
   fechaLimite,
+  updatedAt,
+  updatedPorNombre,
 }: {
   id: string;
   moduloKey: string;
   estado: ModuloEstado;
   progreso: number;
   fechaLimite: string | null;
+  updatedAt: string;
+  updatedPorNombre: string | null;
 }) {
   const cat = moduloCatalogo(moduloKey);
   const Icon = cat.icon;
@@ -201,6 +246,13 @@ function ModuloCard({
             />
           </div>
         </div>
+
+        {(progreso > 0 || estado !== "sin_iniciar") && updatedAt && (
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            Última actualización: {formatoFechaHoraCO(updatedAt)}
+            {updatedPorNombre ? ` · ${updatedPorNombre}` : ""}
+          </div>
+        )}
 
         {fechaLimite && (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
