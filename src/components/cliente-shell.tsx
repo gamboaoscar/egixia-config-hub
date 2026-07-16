@@ -190,7 +190,7 @@ function SaveIndicator({
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700">
         <CheckCircle2 className="h-3.5 w-3.5" />
-        Guardado {lastSavedAt.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+        Guardado {formatoHoraCO(lastSavedAt)}
       </span>
     );
   }
