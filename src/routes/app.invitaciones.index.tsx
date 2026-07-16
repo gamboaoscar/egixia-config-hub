@@ -235,6 +235,9 @@ function Invitaciones() {
                       expira{" "}
                       {formatoFechaHoraCO(r.expira_at)}
                     </div>
+                    <div className="text-xs text-muted-foreground">
+                      Invitada el {formatoFechaHoraCO(r.created_at)}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span

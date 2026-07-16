@@ -2,6 +2,36 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.9] — 2026-07-16 — M2: pipeline de correos e invitaciones
+
+### Corregido
+- **Edge Function `enviar-correo`**: se despliega correctamente (antes
+  devolvía 404 "Requested function was not found"). La autenticación
+  ahora acepta `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`
+  (comparación constant-time), que es lo que ya envía `enviarBatch` en
+  el backend. El chequeo de `x-egixia-secret` queda como defensa
+  adicional opcional cuando `CORREO_WEBHOOK_SECRET` está definido; ya
+  no se devuelve 503 cuando el service role es válido.
+- **Invitaciones con plantilla propia EGIXIA**: `enviarInvitacionCorreo`
+  (`src/lib/admin.functions.ts`) ya **no** usa
+  `auth.admin.inviteUserByEmail` ni `resetPasswordForEmail` (que enviaban
+  el correo genérico de "cambio de contraseña" de Supabase Auth en
+  inglés). Ahora renderiza la plantilla `invitacion` con la identidad
+  EGIXIA y la envía vía la Edge Function `enviar-correo` usando
+  `notificarInvitacion`. La cuenta se sigue creando de forma automática
+  al aceptar el enlace (`aceptarInvitacion`).
+
+### Añadido
+- **URL base canónica** (`src/lib/site-url.server.ts`): helper compartido
+  con caché en memoria (60s) que lee
+  `configuracion_sistema.clave='parametros' → valor->>'site_url'`, con
+  fallback a `PUBLIC_SITE_URL` / `SITE_URL` y, por último,
+  `https://configurador.egixia.app`. Reemplaza el fallback anterior
+  `https://portal.egixia.com` en `notificaciones.server.ts` y
+  `admin.functions.ts`.
+- **Listado de invitaciones** (`/app/invitaciones`): cada fila muestra
+  "Invitada el {fecha/hora Bogotá}" a partir de `created_at`.
+
 ## [1.0.8] — 2026-07-16 — Lote 1 de estabilización
 
 ### Añadido

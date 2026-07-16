@@ -168,13 +168,20 @@ cuando `fecha_limite` es superada:
 
 1. Un admin/implementador crea la invitación (email + rol + proyecto).
 2. Se emite `token` único con `expira_at`.
-3. El usuario abre `/invitacion/:token`; se valida vía RPC
+3. El correo sale por la Edge Function `enviar-correo` con la plantilla
+   propia EGIXIA (`invitacion` en `plantillas-correo.ts`), enviada vía
+   `notificarInvitacion`. **No** se usan `inviteUserByEmail` ni
+   `resetPasswordForEmail` de Supabase Auth: el usuario recibe un
+   correo con la identidad de EGIXIA (banda azul, CTA a
+   `{site_url}/invitacion/{token}`) en lugar del correo genérico de
+   Supabase en inglés.
+4. El usuario abre `/invitacion/:token`; se valida vía RPC
    `validar_invitacion`.
-4. Al enviar el formulario, `aceptarInvitacion` reclama el token de
+5. Al enviar el formulario, `aceptarInvitacion` reclama el token de
    forma atómica, crea el usuario en Auth, upserta su perfil con el rol
    correcto y lo vincula al proyecto.
-5. La invitación queda `aceptada`; el token no puede reutilizarse.
-6. Se registra en `auditoria` la acción `invitacion.aceptada`.
+6. La invitación queda `aceptada`; el token no puede reutilizarse.
+7. Se registra en `auditoria` la acción `invitacion.aceptada`.
 
 ## Destinatarios de notificaciones/actas
 

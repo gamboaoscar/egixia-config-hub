@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { siteUrlCanonico } from "@/lib/site-url.server";
 
 import {
   renderCorreo,
@@ -54,13 +55,9 @@ async function destinatariosProyecto(
   };
 }
 
-/** URL base del portal. Se usa para armar los enlaces de los correos. */
-function baseUrl(): string {
-  return (
-    process.env.PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    "https://portal.egixia.com"
-  ).replace(/\/$/, "");
+/** URL base del portal. Ver `siteUrlCanonico` para la prioridad. */
+async function baseUrl(): Promise<string> {
+  return siteUrlCanonico();
 }
 
 interface Mensaje {
@@ -133,7 +130,7 @@ export async function notificarProyecto(input: {
   actorId?: string | null;
 }) {
   const dest = await destinatariosProyecto(input.proyectoId);
-  const b = baseUrl();
+  const b = await baseUrl();
   const mensajes: Mensaje[] = [];
 
   const construir = (emails: string[], ctx: ContextoCorreo) => {

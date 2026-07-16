@@ -31,19 +31,35 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function constantTimeEq(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
-  // Autenticación obligatoria: solo el backend de EGIXIA (server functions)
-  // puede invocar esta función. Se exige un secreto compartido; si no está
-  // configurado, la función queda deshabilitada por seguridad.
-  const secret = Deno.env.get("CORREO_WEBHOOK_SECRET");
-  if (!secret) return json({ ok: false, error: "not_configured" }, 503);
-  const hdr = req.headers.get("x-egixia-secret") ?? "";
-  if (hdr.length !== secret.length) return json({ ok: false, error: "unauthorized" }, 401);
-  let diff = 0;
-  for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ hdr.charCodeAt(i);
-  if (diff !== 0) return json({ ok: false, error: "unauthorized" }, 401);
+  // Autenticación: aceptamos la petición cuando `Authorization: Bearer <token>`
+  // coincide con `SUPABASE_SERVICE_ROLE_KEY` (comparación constant-time), que es
+  // exactamente lo que envían las server functions del backend EGIXIA.
+  // Adicionalmente, si `CORREO_WEBHOOK_SECRET` está definido, aceptamos también
+  // llamadas que traigan el header `x-egixia-secret` correcto (defensa extra
+  // para invocaciones fuera del backend).
+  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearer = authHeader.toLowerCase().startsWith("bearer ")
+    ? authHeader.slice(7).trim()
+    : "";
+  let authorized = constantTimeEq(bearer, serviceRole);
+
+  const webhookSecret = Deno.env.get("CORREO_WEBHOOK_SECRET");
+  if (!authorized && webhookSecret) {
+    const hdr = req.headers.get("x-egixia-secret") ?? "";
+    authorized = constantTimeEq(hdr, webhookSecret);
+  }
+  if (!authorized) return json({ ok: false, error: "unauthorized" }, 401);
 
   let payload: { mensajes?: Mensaje[] };
   try {
