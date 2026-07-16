@@ -2,6 +2,36 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.10] — 2026-07-16 — M4: Acta PDF enriquecida (pdf-lib)
+
+### Cambiado
+- **Generador de acta reescrito con `pdf-lib`**
+  (`src/lib/acta/acta-pdf.ts`). Sigue siendo asíncrono y solo se importa
+  dinámicamente desde el servidor, así `pdf-lib` no entra al bundle del
+  cliente. Se conservan las mismas firmas públicas (`generarActaPDF`,
+  `extraerFilasActa`, `bytesABase64`, `base64ABytes`), por lo que
+  `previsualizarActa` y `descargarActaFirmada` siguen funcionando sin
+  cambios.
+- **Rutas internas ocultas en el resumen**: los campos tipo archivo ya
+  no muestran `nombre (bucket/storagePath)` — solo el nombre visible.
+
+### Añadido
+- **Imágenes del cliente incrustadas** en la sección correspondiente
+  del acta (marco blanco con borde y caption "Imagen adjunta: {nombre}"),
+  escaladas a 220×130pt máx conservando proporción.
+- **PDFs adjuntos fusionados al final** como **Anexo N** con portada
+  (título "ANEXO N", nombre del archivo y nota de contexto). Si el
+  PDF no puede incluirse (protegido, tamaño excedido, descarga fallida)
+  se agrega igualmente la portada con el motivo.
+- **Encabezado y paginación consistentes** en todas las páginas del
+  acta ("EGIXIA · Acta de configuración · {módulo} · v{n}") y pie
+  "Página X de Y · Hora Colombia". Las páginas de anexos llevan un pie
+  discreto "Página X de Y · Anexo del acta EGIXIA".
+- **Metadatos del documento** PDF (título, autor, subject, creator).
+- **Límites de tamaño**: 15 MB por anexo, 30 MB acumulados en el
+  acta. Cuando se supera el presupuesto, el anexo aparece con el motivo
+  en su portada y queda referenciado en el expediente digital.
+
 ## [1.0.9] — 2026-07-16 — M2: pipeline de correos e invitaciones
 
 ### Corregido
