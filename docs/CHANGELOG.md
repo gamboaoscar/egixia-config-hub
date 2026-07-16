@@ -2,6 +2,49 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.12] — 2026-07-16 — M7+M8: Parametrización de secciones y opciones
+
+### Añadido
+- **Secciones habilitables por proyecto**: nueva tabla
+  `catalogo_overrides_seccion` que permite ocultar secciones enteras
+  de un módulo o marcarlas como no obligatorias por proyecto. Las
+  secciones deshabilitadas se eliminan de la definición renderizada:
+  no aparecen en el formulario, no cuentan para el progreso ni para
+  la validación, y no salen en el acta. Los datos guardados nunca se
+  tocan.
+- **Opciones permitidas por proyecto**: nueva columna
+  `catalogo_overrides.opciones_permitidas text[]` (null = todas). Para
+  campos `select` / `radio_tarjetas` / `checkbox_multiple`, permite
+  restringir qué opciones ve el cliente. En el módulo Seguridad, los
+  roles internos y de proveedor ahora se parametrizan por proyecto
+  desde el catálogo.
+- Server function `guardarOverrideSeccion` y motor de formularios
+  extendido: `aplicarOverrides(def, overrides, seccionOverrides?)` es
+  retrocompatible y aplica los tres niveles (sección, campo, opción).
+
+### Regla de protección de datos
+- El equipo implementador ya puede acceder al catálogo (antes solo
+  admin), pero el servidor rechaza operaciones destructivas cuando el
+  cliente ya diligenció información:
+  - No se puede desactivar un campo con dato.
+  - No se puede ocultar una sección con datos.
+  - No se pueden quitar opciones que el cliente ya seleccionó.
+  Solo un administrador puede hacerlo. La UI muestra un candado con
+  tooltip y deshabilita el control; el servidor revalida siempre.
+
+### Corregido
+- **Acta (`construirDatosActa`)**: ahora aplica los overrides de
+  campo y sección del proyecto antes de extraer filas y adjuntos, de
+  modo que un campo o sección desactivado no vuelve a aparecer en el
+  PDF.
+- **Portal del cliente (`mi-proyecto/modulo/$moduloId`)**: pasa los
+  overrides de sección al motor (antes solo se aplicaban los overrides
+  de campo).
+
+### Progreso
+- Al guardar cualquier override (campo o sección), el servidor
+  recalcula `proyecto_modulos.progreso` con la definición efectiva.
+
 ## [1.0.11] — 2026-07-16 — M1: Ver y descargar archivos adjuntos
 
 ### Añadido
