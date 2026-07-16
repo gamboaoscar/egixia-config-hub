@@ -213,10 +213,11 @@ export async function firmarUrl(
   bucket: string,
   path: string,
   segundos = 3600,
+  download?: string,
 ): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(path, segundos);
+    .createSignedUrl(path, segundos, download ? { download } : undefined);
   if (error) return null;
   return data.signedUrl;
 }
