@@ -14,7 +14,7 @@ import type {
   ComportamientoVencimiento,
   ModuloEstado,
 } from "@/lib/modulo-estado";
-import type { CampoOverride } from "@/lib/form-engine/overrides";
+import type { CampoOverride, SeccionOverride } from "@/lib/form-engine/overrides";
 
 export interface ProyectoLite {
   id: string;
@@ -45,6 +45,7 @@ interface MiProyectoContextValue {
   proyectoById: (id: string) => ProyectoLite | undefined;
   modulosDeProyecto: (proyectoId: string) => ProyectoModulo[];
   overridesDeProyecto: (proyectoId: string) => CampoOverride[];
+  seccionOverridesDeProyecto: (proyectoId: string) => SeccionOverride[];
   moduloById: (id: string) => ProyectoModulo | undefined;
   refreshModulos: () => Promise<void>;
   saveStatus: SaveStatus;
@@ -62,6 +63,9 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   const [modulos, setModulos] = useState<ProyectoModulo[]>([]);
   const [overrides, setOverrides] = useState<
     Array<CampoOverride & { proyecto_id: string }>
+  >([]);
+  const [seccionOverrides, setSeccionOverrides] = useState<
+    Array<SeccionOverride & { proyecto_id: string }>
   >([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -101,12 +105,26 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
   }, [profile]);
 
   const refreshOverrides = useCallback(async () => {
-    if (!profile) { setOverrides([]); return; }
-    const { data } = await supabase
-      .from("catalogo_overrides")
-      .select("proyecto_id, modulo_key, campo_key, activo, label, requerido, guia");
+    if (!profile) {
+      setOverrides([]);
+      setSeccionOverrides([]);
+      return;
+    }
+    const [{ data: campos }, { data: secciones }] = await Promise.all([
+      supabase
+        .from("catalogo_overrides")
+        .select(
+          "proyecto_id, modulo_key, campo_key, activo, label, requerido, guia, opciones_permitidas",
+        ),
+      supabase
+        .from("catalogo_overrides_seccion")
+        .select("proyecto_id, modulo_key, seccion_key, habilitada, obligatoria"),
+    ]);
     setOverrides(
-      (data ?? []) as unknown as Array<CampoOverride & { proyecto_id: string }>,
+      (campos ?? []) as unknown as Array<CampoOverride & { proyecto_id: string }>,
+    );
+    setSeccionOverrides(
+      (secciones ?? []) as unknown as Array<SeccionOverride & { proyecto_id: string }>,
     );
   }, [profile]);
 
@@ -137,6 +155,13 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
         .map(({ proyecto_id: _p, ...rest }) => rest as CampoOverride),
     [overrides],
   );
+  const seccionOverridesDeProyecto = useCallback(
+    (id: string) =>
+      seccionOverrides
+        .filter((o) => o.proyecto_id === id)
+        .map(({ proyecto_id: _p, ...rest }) => rest as SeccionOverride),
+    [seccionOverrides],
+  );
 
   const markSaved = useCallback(() => {
     setSaveStatus("saved");
@@ -151,6 +176,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       proyectoById,
       modulosDeProyecto,
       overridesDeProyecto,
+      seccionOverridesDeProyecto,
       moduloById,
       refreshModulos,
       saveStatus,
@@ -165,6 +191,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
       proyectoById,
       modulosDeProyecto,
       overridesDeProyecto,
+      seccionOverridesDeProyecto,
       moduloById,
       refreshModulos,
       saveStatus,
