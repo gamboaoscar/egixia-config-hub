@@ -827,6 +827,75 @@ export const eliminarProyecto = createServerFn({ method: "POST" })
 
 // ---------- Catálogo (overrides por proyecto) ----------------------------
 
+// Helper interno — devuelve el set de campo_keys con valor no vacío en el módulo.
+async function camposConDatos(
+  admin: Cliente,
+  proyectoId: string,
+  moduloKey: string,
+): Promise<{ set: Set<string>; datos: Record<string, unknown> }> {
+  const { data } = await admin
+    .from("proyecto_modulos")
+    .select("datos")
+    .eq("proyecto_id", proyectoId)
+    .eq("modulo_key", moduloKey)
+    .maybeSingle();
+  const datos = ((data?.datos as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+  const set = new Set<string>();
+  const lleno = (v: unknown): boolean => {
+    if (v === null || v === undefined) return false;
+    if (typeof v === "string") return v.trim().length > 0;
+    if (typeof v === "number") return !Number.isNaN(v);
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === "object") return Object.keys(v as object).length > 0;
+    return true;
+  };
+  for (const [k, v] of Object.entries(datos)) {
+    if (lleno(v)) set.add(k);
+  }
+  return { set, datos };
+}
+
+// Helper interno — recalcula progreso del módulo aplicando todos los overrides.
+async function recalcularProgresoModulo(
+  admin: Cliente,
+  proyectoId: string,
+  moduloKey: string,
+) {
+  const { data: mod } = await admin
+    .from("proyecto_modulos")
+    .select("id, datos")
+    .eq("proyecto_id", proyectoId)
+    .eq("modulo_key", moduloKey)
+    .maybeSingle();
+  if (!mod) return;
+  const [{ data: ovCampos }, { data: ovSecciones }] = await Promise.all([
+    admin
+      .from("catalogo_overrides")
+      .select("modulo_key, campo_key, activo, label, requerido, guia, opciones_permitidas")
+      .eq("proyecto_id", proyectoId)
+      .eq("modulo_key", moduloKey),
+    admin
+      .from("catalogo_overrides_seccion")
+      .select("modulo_key, seccion_key, habilitada, obligatoria")
+      .eq("proyecto_id", proyectoId)
+      .eq("modulo_key", moduloKey),
+  ]);
+  const { definicionModulo } = await import("@/lib/form-engine/modulo-ejemplo");
+  const { aplicarOverrides } = await import("@/lib/form-engine/overrides");
+  const { calcularProgreso } = await import("@/lib/form-engine/validacion");
+  const def = aplicarOverrides(
+    definicionModulo(moduloKey),
+    (ovCampos ?? []) as never,
+    (ovSecciones ?? []) as never,
+  );
+  const datos = (mod.datos as Record<string, unknown>) ?? {};
+  const progreso = calcularProgreso(def, datos);
+  await admin
+    .from("proyecto_modulos")
+    .update({ progreso } as never)
+    .eq("id", mod.id);
+}
+
 const overrideSchema = z.object({
   proyectoId: z.string().uuid(),
   moduloKey: z.string().min(1),
@@ -842,6 +911,7 @@ const overrideSchema = z.object({
     })
     .nullable()
     .optional(),
+  opciones_permitidas: z.array(z.string()).nullable().optional(),
 });
 
 export const guardarOverrideCampo = createServerFn({ method: "POST" })
@@ -852,7 +922,39 @@ export const guardarOverrideCampo = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
-    await exigirInterno(supabaseAdmin, userId);
+    const rolActor = await rolDe(supabaseAdmin, userId);
+    if (rolActor !== "admin" && rolActor !== "implementador") {
+      throw new Error("Acción reservada al equipo EGIXIA.");
+    }
+
+    // Regla de protección para no-admin.
+    if (rolActor !== "admin") {
+      const { set: llenos, datos } = await camposConDatos(
+        supabaseAdmin,
+        data.proyectoId,
+        data.moduloKey,
+      );
+      if (data.activo === false && llenos.has(data.campoKey)) {
+        throw new Error(
+          "Este campo ya tiene información diligenciada. Solo un administrador puede desactivarlo.",
+        );
+      }
+      if (Array.isArray(data.opciones_permitidas) && llenos.has(data.campoKey)) {
+        const permitidas = new Set(data.opciones_permitidas);
+        const val = datos[data.campoKey];
+        const seleccionadas: string[] = Array.isArray(val)
+          ? (val as unknown[]).filter((x) => typeof x === "string") as string[]
+          : typeof val === "string" && val.length > 0
+            ? [val]
+            : [];
+        const excluidas = seleccionadas.filter((s) => !permitidas.has(s));
+        if (excluidas.length > 0) {
+          throw new Error(
+            "No puedes quitar opciones que el cliente ya seleccionó. Solo un administrador puede hacerlo.",
+          );
+        }
+      }
+    }
 
     const row: Record<string, unknown> = {
       proyecto_id: data.proyectoId,
@@ -864,6 +966,7 @@ export const guardarOverrideCampo = createServerFn({ method: "POST" })
     if (data.label !== undefined) row.label = data.label;
     if (data.requerido !== undefined) row.requerido = data.requerido;
     if (data.guia !== undefined) row.guia = data.guia;
+    if (data.opciones_permitidas !== undefined) row.opciones_permitidas = data.opciones_permitidas;
 
     const { error } = await supabaseAdmin
       .from("catalogo_overrides")
@@ -878,6 +981,83 @@ export const guardarOverrideCampo = createServerFn({ method: "POST" })
       `${data.proyectoId}:${data.moduloKey}:${data.campoKey}`,
       { proyecto_id: data.proyectoId, campos: Object.keys(row) },
     );
+
+    await recalcularProgresoModulo(supabaseAdmin, data.proyectoId, data.moduloKey);
+    return { ok: true };
+  });
+
+const overrideSeccionSchema = z.object({
+  proyectoId: z.string().uuid(),
+  moduloKey: z.string().min(1),
+  seccionKey: z.string().min(1),
+  habilitada: z.boolean().optional(),
+  obligatoria: z.boolean().nullable().optional(),
+});
+
+export const guardarOverrideSeccion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => overrideSeccionSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const rolActor = await rolDe(supabaseAdmin, userId);
+    if (rolActor !== "admin" && rolActor !== "implementador") {
+      throw new Error("Acción reservada al equipo EGIXIA.");
+    }
+
+    let protegida = false;
+    if (data.habilitada === false) {
+      const { definicionModulo } = await import("@/lib/form-engine/modulo-ejemplo");
+      const def = definicionModulo(data.moduloKey);
+      const seccion = def.secciones.find((s) => s.key === data.seccionKey);
+      if (seccion) {
+        const { set: llenos } = await camposConDatos(
+          supabaseAdmin,
+          data.proyectoId,
+          data.moduloKey,
+        );
+        const conDatos = seccion.campos.some(
+          (c) => c.tipo !== "info" && llenos.has(c.key),
+        );
+        if (conDatos) {
+          if (rolActor !== "admin") {
+            throw new Error(
+              "Esta sección ya tiene información diligenciada por el cliente. Solo un administrador puede ocultarla.",
+            );
+          }
+          protegida = true;
+        }
+      }
+    }
+
+    const row: Record<string, unknown> = {
+      proyecto_id: data.proyectoId,
+      modulo_key: data.moduloKey,
+      seccion_key: data.seccionKey,
+      updated_by: userId,
+    };
+    if (typeof data.habilitada === "boolean") row.habilitada = data.habilitada;
+    if (data.obligatoria !== undefined) row.obligatoria = data.obligatoria;
+
+    const { error } = await supabaseAdmin
+      .from("catalogo_overrides_seccion")
+      .upsert(row as never, {
+        onConflict: "proyecto_id,modulo_key,seccion_key",
+      });
+    if (error) throw new Error("No se pudo guardar el override de sección.");
+
+    await auditar(
+      supabaseAdmin,
+      userId,
+      "catalogo_override_seccion_guardado",
+      "catalogo_override_seccion",
+      `${data.proyectoId}:${data.moduloKey}:${data.seccionKey}`,
+      { cambios: Object.keys(row), protegida },
+    );
+
+    await recalcularProgresoModulo(supabaseAdmin, data.proyectoId, data.moduloKey);
     return { ok: true };
   });
 
