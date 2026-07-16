@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { supabase } from "@/integrations/supabase/client";
 import { aceptarInvitacion, validarInvitacion } from "@/lib/invitaciones.functions";
 
@@ -209,9 +210,8 @@ function InvitacionPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -223,9 +223,8 @@ function InvitacionPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirm">Confirmar contraseña</Label>
-                <Input
+                <PasswordInput
                   id="confirm"
-                  type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password"
