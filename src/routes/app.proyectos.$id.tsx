@@ -27,6 +27,7 @@ import {
   eliminarProyecto,
 } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
+import { formatoFechaHoraCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/proyectos/$id")({
   component: DetalleProyecto,
@@ -49,6 +50,8 @@ interface Modulo {
   datos: Record<string, unknown>;
   enviado_at: string | null;
   revisado_at: string | null;
+  updated_at: string;
+  updated_por: string | null;
 }
 
 interface Miembro {
@@ -88,6 +91,7 @@ function DetalleProyecto() {
   const [actas, setActas] = useState<Acta[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRow[]>([]);
   const [descargando, setDescargando] = useState<string | null>(null);
+  const [autores, setAutores] = useState<Record<string, string>>({});
 
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
@@ -116,7 +120,9 @@ function DetalleProyecto() {
       supabase.from("proyectos").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("proyecto_modulos")
-        .select("id, modulo_key, estado, progreso, fecha_limite, datos, enviado_at, revisado_at")
+        .select(
+          "id, modulo_key, estado, progreso, fecha_limite, datos, enviado_at, revisado_at, updated_at, updated_por",
+        )
         .eq("proyecto_id", id)
         .order("modulo_key"),
       supabase
@@ -141,6 +147,29 @@ function DetalleProyecto() {
     setModulos((m.data ?? []) as unknown as Modulo[]);
     setMiembros((mem.data ?? []) as unknown as Miembro[]);
     setActas((ac.data ?? []) as Acta[]);
+
+    // Resolver nombres de autores (updated_por distintos) en una sola consulta.
+    const ids = Array.from(
+      new Set(
+        ((m.data ?? []) as unknown as Modulo[])
+          .map((x) => x.updated_por)
+          .filter((v): v is string => !!v),
+      ),
+    );
+    if (ids.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, nombre, apellido, email")
+        .in("id", ids);
+      const map: Record<string, string> = {};
+      for (const p of profs ?? []) {
+        const n = `${p.nombre ?? ""} ${p.apellido ?? ""}`.trim();
+        map[p.id] = n || p.email || "Usuario";
+      }
+      setAutores(map);
+    } else {
+      setAutores({});
+    }
 
     // Auditoría: filtrar por detalle->>proyecto_id o entidad_id = id
     const { data: aud } = await supabase
@@ -321,6 +350,14 @@ function DetalleProyecto() {
                           ? ` · vence ${new Date(m.fecha_limite + "T00:00:00").toLocaleDateString("es-CO")}`
                           : ""}
                       </p>
+                      {(m.progreso > 0 || m.estado !== "sin_iniciar") && m.updated_at && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Última actualización: {formatoFechaHoraCO(m.updated_at)}
+                          {m.updated_por && autores[m.updated_por]
+                            ? ` · ${autores[m.updated_por]}`
+                            : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -399,7 +436,7 @@ function DetalleProyecto() {
                   <span className="ml-2 text-xs text-muted-foreground">{a.entidad}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(a.created_at).toLocaleString("es-CO")}
+                  {formatoFechaHoraCO(a.created_at)}
                 </span>
               </li>
             ))}
