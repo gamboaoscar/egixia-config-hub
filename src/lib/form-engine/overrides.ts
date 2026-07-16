@@ -7,6 +7,14 @@ export interface CampoOverride {
   label?: string | null;
   guia?: Partial<GuiaCampo> | null;
   requerido?: boolean | null;
+  opciones_permitidas?: string[] | null;
+}
+
+export interface SeccionOverride {
+  modulo_key: string;
+  seccion_key: string;
+  habilitada: boolean;
+  obligatoria: boolean | null;
 }
 
 /**
@@ -14,22 +22,49 @@ export interface CampoOverride {
  * módulo. Los campos con `activo === false` se marcan como inactivos,
  * de modo que el motor de formularios los ignora tanto para renderizado
  * como para cálculo de progreso y validación.
+ *
+ * Si se entregan `seccionOverrides`, las secciones con `habilitada=false`
+ * se ELIMINAN de la definición resultante (no se renderizan, no cuentan
+ * para progreso/validación, no salen en el acta; los datos guardados
+ * NUNCA se tocan). Si `obligatoria === false`, todos los campos de la
+ * sección pasan a `requerido: false`.
  */
 export function aplicarOverrides(
   def: ModuloDefinicion,
   overrides: CampoOverride[],
+  seccionOverrides?: SeccionOverride[],
 ): ModuloDefinicion {
-  if (!overrides || overrides.length === 0) return def;
   const map = new Map<string, CampoOverride>();
-  for (const o of overrides) {
+  for (const o of overrides ?? []) {
     if (o.modulo_key !== def.key) continue;
     map.set(o.campo_key, o);
   }
-  if (map.size === 0) return def;
-  const secciones = def.secciones.map((s) => ({
-    ...s,
-    campos: s.campos.map((c) => aplicarACampo(c, map.get(c.key))),
-  }));
+  const secMap = new Map<string, SeccionOverride>();
+  for (const s of seccionOverrides ?? []) {
+    if (s.modulo_key !== def.key) continue;
+    secMap.set(s.seccion_key, s);
+  }
+  if (map.size === 0 && secMap.size === 0) return def;
+
+  const secciones = def.secciones
+    .filter((s) => {
+      const ov = secMap.get(s.key);
+      return !ov || ov.habilitada !== false;
+    })
+    .map((s) => {
+      const secOv = secMap.get(s.key);
+      const forzarNoRequerido = secOv?.obligatoria === false;
+      return {
+        ...s,
+        campos: s.campos.map((c) => {
+          let campo = aplicarACampo(c, map.get(c.key));
+          if (forzarNoRequerido && campo.requerido) {
+            campo = { ...campo, requerido: false };
+          }
+          return campo;
+        }),
+      };
+    });
   return { ...def, secciones };
 }
 
@@ -45,6 +80,10 @@ function aplicarACampo(
   if (typeof o.requerido === "boolean") next.requerido = o.requerido;
   if (o.guia && typeof o.guia === "object") {
     next.guia = { ...(campo.guia ?? { que: "" }), ...o.guia } as GuiaCampo;
+  }
+  if (Array.isArray(o.opciones_permitidas) && Array.isArray(campo.opciones)) {
+    const permitidas = new Set(o.opciones_permitidas);
+    next.opciones = campo.opciones.filter((op) => permitidas.has(op.valor));
   }
   return next;
 }
