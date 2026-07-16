@@ -69,12 +69,14 @@ function LoginPage() {
     if (loading) return;
     if (session && profile) {
       if (profile.estado === "inhabilitado") return;
-      const target =
-        next && (next.startsWith("/app") || next.startsWith("/mi-proyecto"))
-          ? next
-          : profile.rol === "cliente"
-            ? "/mi-proyecto"
-            : "/app";
+      // Ruta relativa segura (misma origin, sin protocol-relative //).
+      const isSafeNext =
+        typeof next === "string" && next.startsWith("/") && !next.startsWith("//");
+      const target = isSafeNext
+        ? next!
+        : profile.rol === "cliente"
+          ? "/mi-proyecto"
+          : "/app";
       navigate({ to: target });
     }
   }, [session, profile, loading, next, navigate]);
