@@ -2,6 +2,38 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.8] — 2026-07-16 — Lote 1 de estabilización
+
+### Añadido
+- **`PasswordInput`** reutilizable (`src/components/ui/password-input.tsx`)
+  con botón mostrar/ocultar (Eye/EyeOff, accesible con `aria-label` y
+  `type="button"`). Aplicado en `/login`, `/reset-password` y
+  `/invitacion/$token`.
+- **Última actualización por módulo**: nueva columna
+  `proyecto_modulos.updated_por` + trigger `BEFORE UPDATE` que setea
+  `updated_at`/`updated_por` cuando cambian `datos`, `progreso` o
+  `estado`. Visible en las tarjetas de módulo del detalle interno
+  (`/app/proyectos/$id`) y del cliente (`/mi-proyecto/proyectos/$id`)
+  cuando el módulo tiene progreso > 0 o estado ≠ `sin_iniciar`.
+- **Helpers de fecha centralizados** en `src/lib/fechas.ts`
+  (`formatoFechaHoraCO`, `formatoHoraCO`, `formatoFechaCO`,
+  `fechaISOBogota`) — todas las horas visibles al usuario ahora se
+  formatean en `America/Bogota`.
+
+### Corregido
+- **Autotransición de estado**: el módulo pasa de `sin_iniciar` a
+  `en_diligenciamiento` automáticamente cuando el autosave sube el
+  progreso por encima de 0 (trigger en BD + backfill de módulos ya
+  existentes). El botón "Continuar" reemplaza a "Comenzar" al primer
+  cambio.
+- **Acta PDF**: pie de página y fila "Fecha y hora (Hora Colombia)"
+  usan la zona `America/Bogota` en lugar de UTC.
+- **Texto de roles personalizados** (módulo seguridad): se retira la
+  mención a la mesa de servicio; ahora indica que los roles los define
+  el implementador de EGIXIA según el alcance contratado.
+- Indicador "Guardado hh:mm" del topbar del cliente, listado de
+  invitaciones y auditoría reciente ahora muestran hora Colombia.
+
 ## [1.0.7] — 2026-07-04 — Selector de fecha con fines de semana y festivos CO
 
 ### Añadido
