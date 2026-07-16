@@ -94,10 +94,20 @@ funciones — se guarda por `PrivateShell` + validación server-side.
 | Habilitar / inhabilitar cuenta                  |  ✅   |      ❌       |
 | Eliminar cuenta de usuario                      |  ✅   |      ❌       |
 | Eliminar proyecto (y su información)            |  ✅   |      ❌       |
-| Editar catálogo (overrides por proyecto)        |  ✅   |      ❌       |
+| Editar catálogo (overrides por proyecto)        |  ✅   |      ✅       |
+| Desactivar campos/secciones con datos del cliente |  ✅   |      ❌       |
+| Quitar opciones ya seleccionadas por el cliente |  ✅   |      ❌       |
 | Configurar branding / correo / parámetros       |  ✅   |      ❌       |
 | Consultar auditoría global y exportarla         |  ✅   |      ✅       |
 | Invitar usuarios internos                       |  ✅   |      ✅       |
+
+**Regla de protección de datos (catálogo).** Desde M7+M8 el
+implementador puede parametrizar el catálogo (secciones, campos y
+opciones disponibles por proyecto), pero el servidor rechaza cualquier
+cambio que borre información visible ya diligenciada por el cliente:
+ocultar una sección con datos, desactivar un campo con dato o quitar
+una opción ya seleccionada. Estas acciones quedan reservadas al
+administrador y la UI las bloquea con un candado.
 
 Las mutaciones sensibles se ejecutan en server functions
 (`src/lib/admin.functions.ts`) que verifican el rol del llamante contra
