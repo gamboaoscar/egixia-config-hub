@@ -21,6 +21,7 @@ import {
   revocarInvitacion,
 } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
+import { formatoFechaHoraCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/invitaciones/")({
   component: Invitaciones,
@@ -232,7 +233,7 @@ function Invitaciones() {
                       {r.rol_invitado}
                       {r.proyectos?.nombre ? ` · ${r.proyectos.nombre}` : ""} ·
                       expira{" "}
-                      {new Date(r.expira_at).toLocaleDateString("es-CO")}
+                      {formatoFechaHoraCO(r.expira_at)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
