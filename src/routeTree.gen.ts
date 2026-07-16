@@ -39,6 +39,7 @@ import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nu
 import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
 import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -196,6 +197,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app': typeof AppIndexRoute
   '/mi-proyecto': typeof MiProyectoIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
@@ -282,6 +290,7 @@ export interface FileRoutesById {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app/'
     | '/mi-proyecto/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app'
     | '/mi-proyecto'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app/'
     | '/mi-proyecto/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   GuiasPortalDeProveedoresRoute: typeof GuiasPortalDeProveedoresRoute
   InvitacionTokenRoute: typeof InvitacionTokenRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
@@ -616,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -686,6 +706,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   GuiasPortalDeProveedoresRoute: GuiasPortalDeProveedoresRoute,
   InvitacionTokenRoute: InvitacionTokenRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
