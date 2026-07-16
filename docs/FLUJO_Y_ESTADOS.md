@@ -34,8 +34,9 @@ destinatarios devueltos por `destinatarios_notificacion(_proyecto_id)`.
 ## Acta por módulo (PDF)
 
 Cada vez que un módulo se envía o reenvía a revisión, `renderYSubirActa`
-(`src/lib/acta/acta.server.ts`) genera un PDF con `pdf-lib` y lo
-persiste en el bucket privado `actas` en la ruta
+(`src/lib/acta/acta.server.ts`) genera un PDF con `pdf-lib` (server-side,
+import dinámico — no llega al bundle del cliente) y lo persiste en el
+bucket privado `actas` en la ruta
 `{proyecto_id}/{modulo_id}/acta-vN.pdf`. Se registra la fila en
 `public.actas` con la versión secuencial (`v = max(previa) + 1`).
 
@@ -48,11 +49,24 @@ persiste en el bucket privado `actas` en la ruta
 4. **Secciones** del módulo con filas *campo → valor*:
    - Selects/radios muestran la etiqueta legible.
    - Multi-checkbox: lista separada por comas.
-   - Archivos: `nombre_original (bucket/storage_path)`.
+   - Archivos: solo el `nombre_original` visible (las rutas internas
+     nunca salen en un documento de cliente).
+   - **Imágenes** (PNG/JPG) del cliente se incrustan bajo su fila con
+     marco blanco y caption "Imagen adjunta: {nombre}".
    - Tablas dinámicas: total + una línea por fila con las columnas.
 5. **Declaración de conformidad** con banda azul: el cliente confirma
    que la información registrada es la que se implementará.
-6. **Pie de página** con la fecha de generación y paginación.
+6. **Anexos**: los PDFs adjuntos por el cliente se fusionan al final del
+   documento. Cada uno se antecede con una portada "ANEXO N" (nombre
+   del archivo y nota de contexto). Si un anexo no puede incluirse
+   (protegido, corrupto, mayor a 15 MB o supera el tope acumulado de
+   30 MB), aparece igualmente la portada con el motivo y queda
+   referenciado en el expediente digital.
+7. **Encabezado de continuación** en todas las páginas del acta
+   ("EGIXIA · Acta de configuración · {módulo} · v{n}") y **pie de
+   página** con la fecha de generación (Hora Colombia) y paginación
+   "Página X de Y". Las páginas de anexos llevan un pie discreto
+   "Página X de Y · Anexo del acta EGIXIA".
 
 **Previsualización antes de enviar**: el invitado dispone del botón
 "Previsualizar acta" en `/mi-proyecto/modulo/{id}` que llama a
