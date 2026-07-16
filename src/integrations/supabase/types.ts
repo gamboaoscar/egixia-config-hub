@@ -149,6 +149,7 @@ export type Database = {
           id: string
           label: string | null
           modulo_key: string
+          opciones_permitidas: string[] | null
           proyecto_id: string
           requerido: boolean | null
           updated_at: string
@@ -162,6 +163,7 @@ export type Database = {
           id?: string
           label?: string | null
           modulo_key: string
+          opciones_permitidas?: string[] | null
           proyecto_id: string
           requerido?: boolean | null
           updated_at?: string
@@ -175,6 +177,7 @@ export type Database = {
           id?: string
           label?: string | null
           modulo_key?: string
+          opciones_permitidas?: string[] | null
           proyecto_id?: string
           requerido?: boolean | null
           updated_at?: string
@@ -186,6 +189,57 @@ export type Database = {
             columns: ["proyecto_id"]
             isOneToOne: false
             referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogo_overrides_seccion: {
+        Row: {
+          created_at: string
+          habilitada: boolean
+          id: string
+          modulo_key: string
+          obligatoria: boolean | null
+          proyecto_id: string
+          seccion_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          habilitada?: boolean
+          id?: string
+          modulo_key: string
+          obligatoria?: boolean | null
+          proyecto_id: string
+          seccion_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          habilitada?: boolean
+          id?: string
+          modulo_key?: string
+          obligatoria?: boolean | null
+          proyecto_id?: string
+          seccion_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_overrides_seccion_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogo_overrides_seccion_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
