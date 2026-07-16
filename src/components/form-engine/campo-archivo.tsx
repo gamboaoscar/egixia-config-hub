@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
+import { Download, Eye, FileText, Loader2, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,8 @@ export function CampoArchivo({
   const [error, setError] = useState<string | null>(null);
   const [ajuste, setAjuste] = useState<AjusteState | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [abriendo, setAbriendo] = useState(false);
+  const [descargando, setDescargando] = useState(false);
 
   const aceptar = useMemo(
     () => config.formatosPermitidos.join(","),
@@ -77,6 +80,43 @@ export function CampoArchivo({
   }, [valorActual]);
 
   const seleccionar = () => inputRef.current?.click();
+
+  const verArchivo = async () => {
+    if (!valorActual) return;
+    setAbriendo(true);
+    try {
+      const url = await firmarUrl(valorActual.bucket, valorActual.storagePath);
+      if (!url) throw new Error("No se pudo obtener el enlace del archivo.");
+      window.open(url, "_blank", "noopener");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo abrir el archivo.",
+      );
+    } finally {
+      setAbriendo(false);
+    }
+  };
+
+  const descargarArchivo = async () => {
+    if (!valorActual) return;
+    setDescargando(true);
+    try {
+      const url = await firmarUrl(
+        valorActual.bucket,
+        valorActual.storagePath,
+        3600,
+        valorActual.nombre,
+      );
+      if (!url) throw new Error("No se pudo obtener el enlace de descarga.");
+      window.location.href = url;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo descargar el archivo.",
+      );
+    } finally {
+      setDescargando(false);
+    }
+  };
 
   const procesarArchivo = async (file: File) => {
     setError(null);
@@ -248,6 +288,7 @@ export function CampoArchivo({
           <Miniatura
             valor={valorActual}
             previewUrl={previewUrl}
+            onVer={verArchivo}
           />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-foreground">
@@ -272,27 +313,59 @@ export function CampoArchivo({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={disabled || subiendo}
-                onClick={seleccionar}
+                onClick={verArchivo}
+                disabled={abriendo}
               >
-                {subiendo ? (
+                {abriendo ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                  <Eye className="mr-1.5 h-3.5 w-3.5" />
                 )}
-                Reemplazar
+                Ver
               </Button>
               <Button
                 type="button"
                 size="sm"
-                variant="ghost"
-                disabled={disabled || subiendo}
-                onClick={quitar}
-                className="text-muted-foreground hover:text-red-600"
+                variant="outline"
+                onClick={descargarArchivo}
+                disabled={descargando}
               >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Quitar
+                {descargando ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Descargar
               </Button>
+              {!disabled && (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={subiendo}
+                    onClick={seleccionar}
+                  >
+                    {subiendo ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Reemplazar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={subiendo}
+                    onClick={quitar}
+                    className="text-muted-foreground hover:text-red-600"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Quitar
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -369,26 +442,38 @@ export function CampoArchivo({
 function Miniatura({
   valor,
   previewUrl,
+  onVer,
 }: {
   valor: ValorArchivo;
   previewUrl: string | null;
+  onVer: () => void;
 }) {
   const esImagen = valor.tipo.startsWith("image/");
   if (esImagen && previewUrl) {
     return (
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+      <button
+        type="button"
+        onClick={onVer}
+        aria-label="Ver archivo"
+        className="h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border bg-muted transition hover:border-primary"
+      >
         <img
           src={previewUrl}
           alt={valor.nombre}
           className="h-full w-full object-contain"
         />
-      </div>
+      </button>
     );
   }
   return (
-    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
+    <button
+      type="button"
+      onClick={onVer}
+      aria-label="Ver archivo"
+      className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition hover:border-primary hover:text-primary"
+    >
       <FileText className="h-8 w-8" />
-    </div>
+    </button>
   );
 }
 
