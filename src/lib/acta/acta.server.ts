@@ -1,10 +1,13 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import {
   extraerFilasActa,
   generarActaPDF,
+  type AnexoActa,
   type DatosActa,
+  type SeccionActa,
 } from "./acta-pdf";
 
 /**
@@ -22,6 +25,160 @@ import {
 
 const BUCKET_ACTAS = "actas";
 const URL_FIRMADA_SEGUNDOS = 60 * 60 * 24 * 7; // 7 días
+
+const MAX_ANEXO_MB = 15;
+const MAX_TOTAL_MB = 30;
+const MB = 1024 * 1024;
+
+interface ValorArchivo {
+  bucket?: string;
+  storagePath?: string;
+  nombre?: string;
+  tipo?: string;
+  tamano?: number;
+}
+
+function esValorArchivo(v: unknown): v is ValorArchivo {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return typeof o.storagePath === "string" && typeof o.bucket === "string";
+}
+
+function esImagenEmbebible(v: ValorArchivo): boolean {
+  const tipo = (v.tipo ?? "").toLowerCase();
+  const nombre = (v.nombre ?? "").toLowerCase();
+  return (
+    tipo.includes("png") ||
+    tipo.includes("jpeg") ||
+    tipo.includes("jpg") ||
+    nombre.endsWith(".png") ||
+    nombre.endsWith(".jpg") ||
+    nombre.endsWith(".jpeg")
+  );
+}
+
+function esPdf(v: ValorArchivo): boolean {
+  const tipo = (v.tipo ?? "").toLowerCase();
+  const nombre = (v.nombre ?? "").toLowerCase();
+  return tipo.includes("pdf") || nombre.endsWith(".pdf");
+}
+
+async function descargarDeStorage(
+  bucket: string,
+  path: string,
+): Promise<Uint8Array | null> {
+  try {
+    const { data, error } = await supabaseAdmin.storage
+      .from(bucket)
+      .download(path);
+    if (error || !data) return null;
+    return new Uint8Array(await data.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function adjuntarArchivosActa(
+  moduloKey: string,
+  datos: Record<string, unknown>,
+  secciones: SeccionActa[],
+): Promise<AnexoActa[]> {
+  const anexos: AnexoActa[] = [];
+  let totalBytes = 0;
+
+  const asignarImagen = (
+    tituloSeccion: string,
+    label: string,
+    imagen: { bytes: Uint8Array; mime: string; nombre?: string },
+  ) => {
+    const sec = secciones.find((s) => s.titulo === tituloSeccion);
+    if (!sec) return;
+    const fila = sec.filas.find((f) => f.label === label && !f.imagen);
+    if (fila) fila.imagen = imagen;
+  };
+
+  const procesarArchivo = async (
+    tituloSeccion: string,
+    label: string,
+    v: ValorArchivo,
+  ) => {
+    const nombre = v.nombre ?? "archivo";
+    if (esPdf(v)) {
+      if ((v.tamano ?? 0) > MAX_ANEXO_MB * MB) {
+        anexos.push({
+          nombre,
+          motivoOmision: `supera el tamaño máximo de anexos (${MAX_ANEXO_MB} MB)`,
+        });
+        return;
+      }
+      const bytes = await descargarDeStorage(v.bucket!, v.storagePath!);
+      if (!bytes) {
+        anexos.push({
+          nombre,
+          motivoOmision: "no se pudo descargar del almacenamiento",
+        });
+        return;
+      }
+      if (totalBytes + bytes.byteLength > MAX_TOTAL_MB * MB) {
+        anexos.push({
+          nombre,
+          motivoOmision: "se alcanzó el tamaño máximo total del acta",
+        });
+        return;
+      }
+      totalBytes += bytes.byteLength;
+      anexos.push({ nombre, bytes });
+      return;
+    }
+    if (esImagenEmbebible(v)) {
+      if ((v.tamano ?? 0) > MAX_ANEXO_MB * MB) return;
+      const bytes = await descargarDeStorage(v.bucket!, v.storagePath!);
+      if (!bytes) return;
+      if (totalBytes + bytes.byteLength > MAX_TOTAL_MB * MB) return;
+      totalBytes += bytes.byteLength;
+      asignarImagen(tituloSeccion, label, {
+        bytes,
+        mime: v.tipo ?? "",
+        nombre: v.nombre,
+      });
+      return;
+    }
+    // SVG/WEBP/ICO u otros: no se incrustan; quedan listados por nombre en el resumen.
+  };
+
+  const definicion = definicionModulo(moduloKey);
+  for (const seccion of definicion.secciones) {
+    for (const campo of seccion.campos) {
+      if (campo.tipo === "info") continue;
+      if (!campoActivo(campo)) continue;
+      if (!campoVisible(campo, datos)) continue;
+
+      const valor = datos[campo.key];
+
+      if (campo.tipo === "archivo" && esValorArchivo(valor)) {
+        await procesarArchivo(seccion.titulo, campo.label, valor);
+      } else if (campo.tipo === "tabla" && campo.columnas) {
+        const filas = (valor as Array<Record<string, unknown>>) ?? [];
+        for (let i = 0; i < filas.length; i++) {
+          const fila = filas[i];
+          for (const col of campo.columnas) {
+            if (col.tipo !== "archivo") continue;
+            const cel = fila[col.key];
+            if (esValorArchivo(cel)) {
+              await procesarArchivo(
+                seccion.titulo,
+                `   · Fila ${i + 1}`,
+                cel,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return anexos;
+}
 
 export async function construirDatosActa(
   moduloId: string,
@@ -53,6 +210,12 @@ export async function construirDatosActa(
     (modulo.datos as Record<string, unknown>) ?? {},
   );
 
+  const anexos = await adjuntarArchivosActa(
+    modulo.modulo_key,
+    (modulo.datos as Record<string, unknown>) ?? {},
+    secciones,
+  );
+
   return {
     proyecto: proyecto?.nombre ?? "Proyecto",
     empresa: proyecto?.empresa ?? null,
@@ -64,6 +227,7 @@ export async function construirDatosActa(
     fecha: new Date(),
     version,
     secciones,
+    anexos,
   };
 }
 
