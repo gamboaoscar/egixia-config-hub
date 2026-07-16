@@ -327,7 +327,7 @@ export const enviarCorreosPrueba = createServerFn({ method: "POST" })
     const destino = perfil?.email as string | undefined;
     if (!destino) throw new Error("No se pudo obtener el correo del administrador.");
 
-    const base = urlBaseDelPortal();
+    const base = await urlBaseDelPortal();
     const from = "EGIXIA <onboarding@resend.dev>";
 
     const escenarios: Array<{ tipo: TipoCorreo; ctx: ContextoCorreo; etiqueta: string }> = [
