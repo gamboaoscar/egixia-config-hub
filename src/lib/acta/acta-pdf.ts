@@ -8,6 +8,7 @@ import {
   campoActivo,
   campoVisible,
 } from "@/lib/form-engine/validacion";
+import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
 
 /**
  * Motor del **Acta por módulo** (Parte 13).
@@ -343,7 +344,7 @@ function pieDePagina(ctx: Ctx) {
   ctx.paginas.forEach((pagina, i) => {
     const paginaActual = ctx.pagina;
     ctx.pagina = pagina;
-    const texto = `EGIXIA · Acta generada el ${new Date().toISOString().slice(0, 10)} · Página ${i + 1} de ${total}`;
+    const texto = `EGIXIA · Acta generada el ${fechaISOBogota()} · Página ${i + 1} de ${total}`;
     drawText(ctx, texto, {
       x: ctx.margin,
       y: 24,
@@ -425,8 +426,8 @@ function drawMetaBox(ctx: Ctx, datos: DatosActa) {
     ["Proyecto", datos.proyecto, "Empresa", datos.empresa ?? "—"],
     ["Diligenciado por", datos.autorNombre, "Correo", datos.autorEmail],
     [
-      "Fecha y hora",
-      datos.fecha.toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" }),
+      "Fecha y hora (Hora Colombia)",
+      `${formatoFechaHoraCO(datos.fecha)} (America/Bogota)`,
       "Versión del acta",
       `v${datos.version}`,
     ],

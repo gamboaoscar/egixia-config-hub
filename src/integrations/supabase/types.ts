@@ -412,6 +412,7 @@ export type Database = {
           revisado_at: string | null
           revisado_por: string | null
           updated_at: string
+          updated_por: string | null
         }
         Insert: {
           comportamiento_vencimiento?:
@@ -430,6 +431,7 @@ export type Database = {
           revisado_at?: string | null
           revisado_por?: string | null
           updated_at?: string
+          updated_por?: string | null
         }
         Update: {
           comportamiento_vencimiento?:
@@ -448,6 +450,7 @@ export type Database = {
           revisado_at?: string | null
           revisado_por?: string | null
           updated_at?: string
+          updated_por?: string | null
         }
         Relationships: [
           {
@@ -467,6 +470,13 @@ export type Database = {
           {
             foreignKeyName: "proyecto_modulos_revisado_por_fkey"
             columns: ["revisado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_modulos_updated_por_fkey"
+            columns: ["updated_por"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

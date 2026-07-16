@@ -154,7 +154,10 @@ export const editarDatosModulo = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!prev) throw new Error("Módulo no encontrado.");
 
-    const upd: Record<string, unknown> = { datos: data.datos as Record<string, unknown> };
+    const upd: Record<string, unknown> = {
+      datos: data.datos as Record<string, unknown>,
+      updated_por: userId,
+    };
     if (typeof data.progreso === "number") upd.progreso = data.progreso;
     const { error } = await supabaseAdmin
       .from("proyecto_modulos")

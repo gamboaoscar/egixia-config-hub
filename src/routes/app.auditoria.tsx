@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminOnly } from "@/components/admin-only";
+import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/auditoria")({ component: AuditoriaGuarded });
 
@@ -114,7 +115,7 @@ function AuditoriaPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `auditoria-${fechaISOBogota()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -180,7 +181,7 @@ function AuditoriaPage() {
                 {filtradas.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/20">
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(r.created_at).toLocaleString("es-CO")}
+                      {formatoFechaHoraCO(r.created_at)}
                     </td>
                     <td className="px-3 py-2">
                       {r.profiles

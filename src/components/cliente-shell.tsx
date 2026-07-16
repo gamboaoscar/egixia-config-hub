@@ -20,6 +20,7 @@ import { MiProyectoProvider, useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { diasHasta } from "@/lib/modulo-estado";
+import { formatoHoraCO } from "@/lib/fechas";
 
 interface Props {
   children: ReactNode;
@@ -190,7 +191,7 @@ function SaveIndicator({
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700">
         <CheckCircle2 className="h-3.5 w-3.5" />
-        Guardado {lastSavedAt.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+        Guardado {formatoHoraCO(lastSavedAt)}
       </span>
     );
   }
