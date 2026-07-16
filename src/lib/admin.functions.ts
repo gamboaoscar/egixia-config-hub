@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -580,50 +579,28 @@ async function enviarInvitacionCorreo(
       nombreProyecto = data.nombre as string;
     }
   }
-  const base = urlBaseDelPortal();
+  const base = await urlBaseDelPortal();
   const urlRegistro = `${base}/invitacion/${input.token}`;
 
-  // Reutilizamos el motor de correo integrado del backend (el mismo que
-  // envía los correos de "Olvidé mi contraseña"). Si el usuario aún no
-  // existe en Auth lo invitamos; si ya existe, disparamos un enlace de
-  // recuperación apuntando a la misma página de aceptación.
-  const meta = {
-    egixia_token: input.token,
-    rol_invitado: input.rolInvitado,
-    proyecto_id: input.proyectoId,
-    proyecto_nombre: nombreProyecto ?? null,
-    empresa,
-  };
-
-  const { error: invErr } = await admin.auth.admin.inviteUserByEmail(
-    input.email,
-    { redirectTo: urlRegistro, data: meta },
+  // Enviamos el correo con la plantilla propia EGIXIA a través de la
+  // Edge Function `enviar-correo`. `aceptarInvitacion` ya se encarga de
+  // crear la cuenta en Auth si el usuario no existe cuando abra el enlace,
+  // por lo que no dependemos de `inviteUserByEmail` / `resetPasswordForEmail`
+  // (que envían correos genéricos de Supabase Auth en inglés).
+  const diasValidez = Math.max(
+    1,
+    Math.round((input.expira.getTime() - Date.now()) / (24 * 3600 * 1000)),
   );
-
-  if (invErr) {
-    const msg = (invErr.message || "").toLowerCase();
-    const yaExiste =
-      msg.includes("already") ||
-      msg.includes("registered") ||
-      msg.includes("exists");
-    if (yaExiste) {
-      // Usuario ya tiene cuenta: mandamos un enlace de recuperación que
-      // aterriza igualmente en /invitacion/{token} con sesión activa.
-      const { error: resetErr } = await admin.auth.resetPasswordForEmail(
-        input.email,
-        { redirectTo: urlRegistro },
-      );
-      if (resetErr) {
-        throw new Error(
-          `No se pudo enviar el correo de invitación: ${resetErr.message}`,
-        );
-      }
-    } else {
-      throw new Error(
-        `No se pudo enviar el correo de invitación: ${invErr.message}`,
-      );
-    }
-  }
+  const { notificarInvitacion } = await import("@/lib/acta/notificaciones.server");
+  await notificarInvitacion({
+    invitacionId,
+    destinatario: input.email,
+    empresa,
+    nombreProyecto,
+    urlRegistro,
+    expiraTexto: `${diasValidez} días`,
+    actorId,
+  });
 
   await admin.from("auditoria").insert({
     actor_id: actorId,
@@ -638,25 +615,9 @@ async function enviarInvitacionCorreo(
   });
 }
 
-function urlBaseDelPortal(): string {
-  // Preferencia: origin del request (funciona en preview y en publicado).
-  try {
-    const origin =
-      getRequestHeader("origin") ||
-      (() => {
-        const h = getRequestHeader("host");
-        const proto = getRequestHeader("x-forwarded-proto") || "https";
-        return h ? `${proto}://${h}` : "";
-      })();
-    if (origin) return origin.replace(/\/$/, "");
-  } catch {
-    /* fuera de contexto request */
-  }
-  const fromEnv =
-    process.env.PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    "https://egixia-config-hub.lovable.app";
-  return fromEnv.replace(/\/$/, "");
+async function urlBaseDelPortal(): Promise<string> {
+  const { siteUrlCanonico } = await import("@/lib/site-url.server");
+  return siteUrlCanonico();
 }
 
 // ---------- Miembros de proyecto ------------------------------------------
