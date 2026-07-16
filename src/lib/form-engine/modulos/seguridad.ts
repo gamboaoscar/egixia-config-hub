@@ -184,7 +184,7 @@ export const MODULO_SEGURIDAD: ModuloDefinicion = {
           label: "Roles personalizados adicionales",
           tipo: "info",
           aviso:
-            "Se pueden habilitar hasta 3 roles personalizados adicionales. Solicítalos por la mesa de servicio de EGIXIA indicando nombre y permisos requeridos.",
+            "Se pueden habilitar hasta 3 roles personalizados adicionales. Los roles disponibles en tu portal son definidos por el equipo implementador de EGIXIA durante la configuración del proyecto, según el alcance contratado. Si necesitas un rol adicional, coméntalo con tu implementador.",
         },
       ],
     },
