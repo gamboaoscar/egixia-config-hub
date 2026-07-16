@@ -20,6 +20,7 @@ import { MiProyectoProvider, useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { diasHasta } from "@/lib/modulo-estado";
+import { formatoHoraCO } from "@/lib/fechas";
 
 interface Props {
   children: ReactNode;
