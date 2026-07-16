@@ -157,9 +157,16 @@ privados: nunca se exponen URLs públicas.
 ### Piezas del código
 
 - `src/lib/form-engine/archivo.ts` — validación, redimensionado
-  (canvas cover), subida y firma de URL.
+  (canvas cover), subida y firma de URL. `firmarUrl(bucket, path,
+  segundos?, download?)` admite un parámetro opcional `download` que
+  usa `createSignedUrl(..., { download: <nombre> })` para forzar
+  descarga con el nombre original.
 - `src/components/form-engine/campo-archivo.tsx` — UI: dropzone,
-  panel de ajuste con sliders, tarjeta de archivo cargado con botones
+  panel de ajuste con sliders, tarjeta de archivo cargado con
+  acciones **Ver** (abre pestaña con URL firmada) y **Descargar**
+  (URL firmada con `download` = nombre original). Miniatura clicable
+  para ver el archivo. **Reemplazar** y **Quitar** solo se muestran
+  cuando el campo es editable.
 
 ## Autorización de rutas y RBAC
 

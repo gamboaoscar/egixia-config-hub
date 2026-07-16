@@ -57,6 +57,7 @@ import {
 import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
 import { previsualizarActa } from "@/lib/acta.functions";
 import { calcularProgreso } from "@/lib/form-engine/validacion";
+import { formatoFechaHoraCO } from "@/lib/fechas";
 
 /** Decodifica base64 → Uint8Array sin importar pdf-lib en el cliente. */
 function base64ABytes(b64: string): Uint8Array {
@@ -454,7 +455,7 @@ function RevisionModuloPage() {
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {modulo.enviado_at
-                  ? `Enviado el ${new Date(modulo.enviado_at).toLocaleString("es-CO")}`
+                  ? `Enviado el ${formatoFechaHoraCO(modulo.enviado_at)}`
                   : "Aún sin envíos."}
               </p>
             </div>
