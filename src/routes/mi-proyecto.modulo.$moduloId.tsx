@@ -54,7 +54,13 @@ interface Observacion {
 
 function ModuloPage() {
   const { moduloId } = Route.useParams();
-  const { moduloById, loading, refreshModulos, overridesDeProyecto } = useMiProyecto();
+  const {
+    moduloById,
+    loading,
+    refreshModulos,
+    overridesDeProyecto,
+    seccionOverridesDeProyecto,
+  } = useMiProyecto();
   const modulo = moduloById(moduloId);
   const navigate = useNavigate();
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
@@ -102,6 +108,7 @@ function ModuloPage() {
   }
 
   const overrides = overridesDeProyecto(modulo.proyecto_id);
+  const seccionOverrides = seccionOverridesDeProyecto(modulo.proyecto_id);
   const cat = moduloCatalogo(modulo.modulo_key);
   const Icon = cat.icon;
 
@@ -309,6 +316,7 @@ function ModuloPage() {
         definicion={aplicarOverrides(
           definicionModulo(modulo.modulo_key),
           overrides,
+          seccionOverrides,
         )}
         datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={soloLectura}

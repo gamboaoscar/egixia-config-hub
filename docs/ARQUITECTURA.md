@@ -89,6 +89,30 @@ bloquear`. Los campos se desactivan y los cambios se ignoran.
 para probar el motor (Imagen / Sociedades / Seguridad). Las
 definiciones reales se cargan en las Partes 7–9.
 
+### Overrides por proyecto (secciones, campos y opciones)
+
+`src/lib/form-engine/overrides.ts` aplica tres niveles de
+parametrización sobre la definición estática antes de renderizar:
+
+1. **Secciones** (tabla `catalogo_overrides_seccion`): si
+   `habilitada = false`, la sección se elimina de la definición
+   resultante (no se renderiza, no cuenta para progreso ni validación
+   y no aparece en el acta). Si `obligatoria = false`, todos los
+   campos de la sección pasan a `requerido: false`.
+2. **Campos** (tabla `catalogo_overrides`): habilita/oculta, cambia
+   etiqueta, requerido y guía por proyecto.
+3. **Opciones** (columna `catalogo_overrides.opciones_permitidas`):
+   restringe qué valores están disponibles en campos con `opciones`
+   (select, radio_tarjetas, checkbox_multiple). `null` significa
+   "todas las opciones".
+
+La misma definición efectiva se usa en el motor de formularios, en
+`calcularProgreso` (server-side, tras cada `guardarOverride*`) y en
+`construirDatosActa` (para que el acta refleje solo lo parametrizado).
+Los datos del cliente nunca se borran: si una sección/campo se oculta,
+la información persiste en `proyecto_modulos.datos` y reaparece al
+rehabilitarla.
+
 ## Flujo de archivos y auto-ajuste
 
 Los campos `tipo: 'archivo'` se declaran con un bloque `archivo` en la

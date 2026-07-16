@@ -3,6 +3,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import {
+  aplicarOverrides,
+  type CampoOverride,
+  type SeccionOverride,
+} from "@/lib/form-engine/overrides";
+import type { ModuloDefinicion } from "@/lib/form-engine/tipos";
+import {
   extraerFilasActa,
   generarActaPDF,
   type AnexoActa,
@@ -79,7 +85,7 @@ async function descargarDeStorage(
 }
 
 async function adjuntarArchivosActa(
-  moduloKey: string,
+  definicion: ModuloDefinicion,
   datos: Record<string, unknown>,
   secciones: SeccionActa[],
 ): Promise<AnexoActa[]> {
@@ -146,7 +152,6 @@ async function adjuntarArchivosActa(
     // SVG/WEBP/ICO u otros: no se incrustan; quedan listados por nombre en el resumen.
   };
 
-  const definicion = definicionModulo(moduloKey);
   for (const seccion of definicion.secciones) {
     for (const campo of seccion.campos) {
       if (campo.tipo === "info") continue;
@@ -180,6 +185,25 @@ async function adjuntarArchivosActa(
   return anexos;
 }
 
+async function cargarOverrides(proyectoId: string, moduloKey: string) {
+  const [{ data: ovCampos }, { data: ovSecciones }] = await Promise.all([
+    supabaseAdmin
+      .from("catalogo_overrides")
+      .select("modulo_key, campo_key, activo, label, requerido, guia, opciones_permitidas")
+      .eq("proyecto_id", proyectoId)
+      .eq("modulo_key", moduloKey),
+    supabaseAdmin
+      .from("catalogo_overrides_seccion")
+      .select("modulo_key, seccion_key, habilitada, obligatoria")
+      .eq("proyecto_id", proyectoId)
+      .eq("modulo_key", moduloKey),
+  ]);
+  return {
+    campos: (ovCampos ?? []) as unknown as CampoOverride[],
+    secciones: (ovSecciones ?? []) as unknown as SeccionOverride[],
+  };
+}
+
 export async function construirDatosActa(
   moduloId: string,
   actorId: string,
@@ -204,14 +228,22 @@ export async function construirDatosActa(
     .eq("id", actorId)
     .maybeSingle();
 
-  const definicion = definicionModulo(modulo.modulo_key);
+  const overrides = await cargarOverrides(
+    modulo.proyecto_id as string,
+    modulo.modulo_key as string,
+  );
+  const definicion = aplicarOverrides(
+    definicionModulo(modulo.modulo_key as string),
+    overrides.campos,
+    overrides.secciones,
+  );
   const secciones = extraerFilasActa(
     definicion,
     (modulo.datos as Record<string, unknown>) ?? {},
   );
 
   const anexos = await adjuntarArchivosActa(
-    modulo.modulo_key,
+    definicion,
     (modulo.datos as Record<string, unknown>) ?? {},
     secciones,
   );

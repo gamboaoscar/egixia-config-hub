@@ -169,6 +169,12 @@ Define la política de contraseñas del portal y los roles que estarán
 disponibles para usuarios internos y contactos de proveedores. Se
 organiza en 4 secciones.
 
+> **Nota (M7+M8).** Los roles disponibles (internos y de proveedor)
+> se parametrizan por proyecto desde el catálogo. Cada proyecto puede
+> tener un subconjunto distinto de opciones según el alcance
+> contratado; las opciones no marcadas en el catálogo no se muestran
+> al cliente.
+
 ### Sección 1 — Política de contraseñas
 
 Todos los campos son numéricos y **requeridos**. El valor estándar
