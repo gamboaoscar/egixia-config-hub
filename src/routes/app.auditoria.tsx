@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminOnly } from "@/components/admin-only";
+import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/auditoria")({ component: AuditoriaGuarded });
 
@@ -114,7 +115,7 @@ function AuditoriaPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `auditoria-${fechaISOBogota()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
