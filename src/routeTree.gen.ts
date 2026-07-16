@@ -25,6 +25,7 @@ import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
 import { Route as AppRevisionesRouteImport } from './routes/app.revisiones'
 import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
 import { Route as AppConfiguracionRouteImport } from './routes/app.configuracion'
+import { Route as AppCatalogoRouteImport } from './routes/app.catalogo'
 import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -121,6 +122,11 @@ const AppConfiguracionRoute = AppConfiguracionRouteImport.update({
   path: '/configuracion',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCatalogoRoute = AppCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAuditoriaRoute = AppAuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/configuracion': typeof AppConfiguracionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/configuracion': typeof AppConfiguracionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
+  '/app/catalogo': typeof AppCatalogoRoute
   '/app/configuracion': typeof AppConfiguracionRoute
   '/app/mi-perfil': typeof AppMiPerfilRoute
   '/app/revisiones': typeof AppRevisionesRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/configuracion'
     | '/app/mi-perfil'
     | '/app/revisiones'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/configuracion'
     | '/app/mi-perfil'
     | '/app/revisiones'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
+    | '/app/catalogo'
     | '/app/configuracion'
     | '/app/mi-perfil'
     | '/app/revisiones'
@@ -519,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/catalogo': {
+      id: '/app/catalogo'
+      path: '/catalogo'
+      fullPath: '/app/catalogo'
+      preLoaderRoute: typeof AppCatalogoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/auditoria': {
       id: '/app/auditoria'
       path: '/auditoria'
@@ -623,6 +642,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppSectionRoute: typeof AppSectionRoute
   AppAuditoriaRoute: typeof AppAuditoriaRoute
+  AppCatalogoRoute: typeof AppCatalogoRoute
   AppConfiguracionRoute: typeof AppConfiguracionRoute
   AppMiPerfilRoute: typeof AppMiPerfilRoute
   AppRevisionesRoute: typeof AppRevisionesRoute
@@ -638,6 +658,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppSectionRoute: AppSectionRoute,
   AppAuditoriaRoute: AppAuditoriaRoute,
+  AppCatalogoRoute: AppCatalogoRoute,
   AppConfiguracionRoute: AppConfiguracionRoute,
   AppMiPerfilRoute: AppMiPerfilRoute,
   AppRevisionesRoute: AppRevisionesRoute,
