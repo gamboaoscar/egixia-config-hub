@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://lhhstryzsmcrqptwqtjv.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "egixia-configurator-mcp",
+      "version": "0.1.0",
+      "title": "EGIXIA Configurator"
+    },
+    "tools": [
+      {
+        "name": "list_proyectos",
+        "title": "Listar proyectos",
+        "description": "Lista los proyectos EGIXIA visibles para el usuario autenticado (según su rol y membresía). Devuelve id, nombre, empresa y estado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_proyecto",
+        "title": "Detalle de un proyecto",
+        "description": "Devuelve los datos generales de un proyecto EGIXIA y el listado de sus módulos con estado, progreso y fecha límite. Requiere pertenecer al proyecto o ser parte del equipo interno.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "proyecto_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID del proyecto."
+            }
+          },
+          "required": [
+            "proyecto_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_revisiones_pendientes",
+        "title": "Revisiones pendientes",
+        "description": "Lista los módulos de proyectos que están en estado 'enviado' esperando revisión del equipo interno. RLS limita el resultado según el rol del usuario.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

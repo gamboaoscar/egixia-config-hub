@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -27,6 +28,8 @@ import { Route as AppConfiguracionRouteImport } from './routes/app.configuracion
 import { Route as AppCatalogoRouteImport } from './routes/app.catalogo'
 import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
 import { Route as AppSectionRouteImport } from './routes/app.$section'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as MiProyectoProyectosIndexRouteImport } from './routes/mi-proyecto.proyectos.index'
 import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
 import { Route as AppInvitacionesIndexRouteImport } from './routes/app.invitaciones.index'
@@ -35,6 +38,7 @@ import { Route as MiProyectoModuloModuloIdRouteImport } from './routes/mi-proyec
 import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nuevo'
 import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
 import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -49,6 +53,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const MiProyectoRoute = MiProyectoRouteImport.update({
   id: '/mi-proyecto',
   path: '/mi-proyecto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -127,6 +136,18 @@ const AppSectionRoute = AppSectionRouteImport.update({
   path: '/$section',
   getParentRoute: () => AppRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MiProyectoProyectosIndexRoute =
   MiProyectoProyectosIndexRouteImport.update({
     id: '/proyectos/',
@@ -169,14 +190,23 @@ const AppModuloModuloIdRoute = AppModuloModuloIdRouteImport.update({
   path: '/modulo/$moduloId',
   getParentRoute: () => AppRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -189,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
@@ -201,8 +232,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -215,6 +249,7 @@ export interface FileRoutesByTo {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app': typeof AppIndexRoute
   '/mi-proyecto': typeof MiProyectoIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
@@ -229,9 +264,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/mi-proyecto': typeof MiProyectoRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/app/$section': typeof AppSectionRoute
   '/app/auditoria': typeof AppAuditoriaRoute
   '/app/catalogo': typeof AppCatalogoRoute
@@ -244,6 +282,7 @@ export interface FileRoutesById {
   '/mi-proyecto/mi-perfil': typeof MiProyectoMiPerfilRoute
   '/app/': typeof AppIndexRoute
   '/mi-proyecto/': typeof MiProyectoIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/app/modulo/$moduloId': typeof AppModuloModuloIdRoute
   '/app/proyectos/$id': typeof AppProyectosIdRoute
   '/app/proyectos/nuevo': typeof AppProyectosNuevoRoute
@@ -259,9 +298,12 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
+    | '/mcp'
     | '/mi-proyecto'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -274,6 +316,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app/'
     | '/mi-proyecto/'
+    | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
@@ -286,8 +329,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/mcp'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -300,6 +346,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app'
     | '/mi-proyecto'
+    | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
@@ -313,9 +360,12 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
+    | '/mcp'
     | '/mi-proyecto'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/app/$section'
     | '/app/auditoria'
     | '/app/catalogo'
@@ -328,6 +378,7 @@ export interface FileRouteTypes {
     | '/mi-proyecto/mi-perfil'
     | '/app/'
     | '/mi-proyecto/'
+    | '/.mcp/invoke-tool/$tool'
     | '/app/modulo/$moduloId'
     | '/app/proyectos/$id'
     | '/app/proyectos/nuevo'
@@ -342,11 +393,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   MiProyectoRoute: typeof MiProyectoRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   GuiasPortalDeProveedoresRoute: typeof GuiasPortalDeProveedoresRoute
   InvitacionTokenRoute: typeof InvitacionTokenRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -370,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/mi-proyecto'
       fullPath: '/mi-proyecto'
       preLoaderRoute: typeof MiProyectoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -477,6 +539,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSectionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mi-proyecto/proyectos/': {
       id: '/mi-proyecto/proyectos/'
       path: '/proyectos'
@@ -532,6 +608,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/modulo/$moduloId'
       preLoaderRoute: typeof AppModuloModuloIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -594,11 +677,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   MiProyectoRoute: MiProyectoRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   GuiasPortalDeProveedoresRoute: GuiasPortalDeProveedoresRoute,
   InvitacionTokenRoute: InvitacionTokenRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
