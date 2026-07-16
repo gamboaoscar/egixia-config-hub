@@ -2,6 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.11] — 2026-07-16 — M1: Ver y descargar archivos adjuntos
+
+### Añadido
+- **Ver / Descargar en `CampoArchivo`**: la tarjeta de archivo ya
+  cargado ahora expone dos acciones visibles siempre (incluso en modo
+  lectura): "Ver" abre el archivo en pestaña nueva mediante URL
+  firmada, y "Descargar" fuerza la descarga con el nombre original
+  usando el parámetro `download` de `createSignedUrl`. La miniatura
+  (imagen o icono PDF) es clicable y ejecuta la acción "Ver". Aplica
+  también a celdas tipo archivo de tablas dinámicas por reutilización
+  de `CampoArchivo`.
+- `firmarUrl(bucket, path, segundos?, download?)`: tercer/cuarto
+  parámetro opcional que produce una URL firmada de descarga forzada.
+
+### Cambiado
+- "Reemplazar" y "Quitar" ahora se **ocultan** en modo lectura en
+  lugar de aparecer deshabilitados.
+- `app.modulo.$moduloId.tsx`: la fecha "Enviado el …" usa
+  `formatoFechaHoraCO` (`America/Bogota`).
+
+### Seguridad
+- **RLS `configuracion_sistema`**: se sustituye
+  `cs_select_todos_autenticados` por `cs_select_parametros_o_interno`.
+  Los clientes solo pueden leer la fila `clave = 'parametros'`
+  (necesaria para `useParametrosSistema`); `branding` y `correo`
+  quedan restringidos a admin/implementador.
+
 ## [1.0.10] — 2026-07-16 — M4: Acta PDF enriquecida (pdf-lib)
 
 ### Cambiado
