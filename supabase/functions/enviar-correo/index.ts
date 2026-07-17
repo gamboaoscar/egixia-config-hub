@@ -73,7 +73,32 @@ Deno.serve(async (req) => {
   }
 
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("CORREO_FROM") ?? "EGIXIA <no-reply@egixia.com>";
+  // Fuente única de verdad del remitente: configuracion_sistema.clave='correo'.
+  // Se lee una vez por invocación; si falla, usamos CORREO_FROM o el default.
+  let from = Deno.env.get("CORREO_FROM") ?? "EGIXIA <no-reply@egixia.com>";
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    if (supabaseUrl && serviceRole) {
+      const r = await fetch(
+        `${supabaseUrl}/rest/v1/configuracion_sistema?clave=eq.correo&select=valor`,
+        {
+          headers: {
+            apikey: serviceRole,
+            authorization: `Bearer ${serviceRole}`,
+          },
+        },
+      );
+      if (r.ok) {
+        const rows = (await r.json()) as Array<{ valor?: { from_nombre?: string; from_email?: string } }>;
+        const v = rows?.[0]?.valor;
+        if (v?.from_nombre && v?.from_email) {
+          from = `${v.from_nombre} <${v.from_email}>`;
+        }
+      }
+    }
+  } catch (err) {
+    console.log(`[enviar-correo] no se pudo leer configuracion_sistema: ${(err as Error).message}`);
+  }
   const results: Array<{ to: string; status: number | string; dryRun?: boolean }> = [];
 
   for (const m of mensajes) {
