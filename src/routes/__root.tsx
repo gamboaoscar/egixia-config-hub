@@ -79,35 +79,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EGIXIA Configurator" },
+      { title: "EGIXIA · Portal de Configuración de tu Implementación" },
       {
         name: "description",
         content:
-          "Portal de onboarding de EGIXIA: configura tu Portal de Proveedores de forma guiada.",
+          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
       },
       { name: "author", content: "EGIXIA" },
-      { property: "og:title", content: "EGIXIA Configurator" },
+      { property: "og:title", content: "EGIXIA · Portal de Configuración de tu Implementación" },
       {
         property: "og:description",
         content:
-          "Portal de onboarding de EGIXIA: configura tu Portal de Proveedores de forma guiada.",
+          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
       },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "EGIXIA Configurator" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "EGIXIA Configurator" },
-      { name: "twitter:description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
+      { name: "twitter:title", content: "EGIXIA · Portal de Configuración de tu Implementación" },
+      { name: "twitter:description", content: "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f3bc1d25-c1d6-430e-9372-532ba29c0d77" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f3bc1d25-c1d6-430e-9372-532ba29c0d77" },
-      { name: "description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
-      { property: "og:description", content: "Portal de configuración de implementación de EGIXIA. Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo." },
+      { name: "description", content: "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel." },
+      { property: "og:description", content: "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel." },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
     scripts: [
       {
@@ -116,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "EGIXIA",
-          url: "https://configurador.egixia.app",
+          url: "https://egixia-config-hub.lovable.app",
           description:
             "EGIXIA implementa Portales de Proveedores (procure-to-pay) para grandes empresas en LATAM.",
         }),
@@ -127,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "EGIXIA Configurator",
-          url: "https://configurador.egixia.app",
+          url: "https://egixia-config-hub.lovable.app",
           inLanguage: "es",
         }),
       },

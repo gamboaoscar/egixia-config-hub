@@ -10,15 +10,15 @@ export const Route = createFileRoute("/")({
         content:
           "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
       },
-      { property: "og:title", content: "EGIXIA · Portal de Configuración" },
+      { property: "og:title", content: "EGIXIA · Portal de Configuración de tu Implementación" },
       {
         property: "og:description",
         content:
-          "Portal de onboarding de EGIXIA para configurar tu Portal de Proveedores.",
+          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
       },
-      { property: "og:url", content: "https://configurador.egixia.app/" },
+      { property: "og:url", content: "https://egixia-config-hub.lovable.app/" },
     ],
-    links: [{ rel: "canonical", href: "https://configurador.egixia.app/" }],
+    links: [{ rel: "canonical", href: "https://egixia-config-hub.lovable.app/" }],
   }),
   component: LandingPage,
 });
