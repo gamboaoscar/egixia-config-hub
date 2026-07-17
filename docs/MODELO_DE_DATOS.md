@@ -105,7 +105,9 @@ usuarios `cliente`.
 - `id`, `proyecto_id`, `modulo_key` (`imagen` | `sociedades` | `seguridad`),
   `estado` (enum `modulo_estado`), `fecha_limite`,
   `comportamiento_vencimiento` (enum), `datos` (jsonb), `progreso`
-  (0–100), `enviado_at/por`, `revisado_at/por`, timestamps.
+  (0–100), `enviado_at/por`, `revisado_at/por`, `updated_por` (uuid del
+  último autor de cambios en `datos`/`progreso`/`estado`, sincronizado
+  por el trigger `proyecto_modulos_before_update`), timestamps.
 - RLS: admin/implementador acceso total. El invitado puede leer los
   módulos de sus proyectos y **solo puede actualizar** cuando el módulo
   está en `sin_iniciar`, `en_diligenciamiento` o `con_observaciones`.
