@@ -2,7 +2,28 @@
 
 ## Visión general
 
-_Pendiente de detallar._
+El configurador EGIXIA es un portal web guiado que reemplaza el
+intercambio manual de Excel entre EGIXIA y sus clientes durante la
+puesta en marcha del Portal de Proveedores. El flujo end-to-end es:
+
+1. **Invitación** — el equipo interno (admin o implementador) crea
+   un proyecto y envía invitaciones por correo (Edge Function
+   `enviar-correo`, plantillas EGIXIA, Resend). Cada invitación es
+   un token de un solo uso con vencimiento.
+2. **Diligenciamiento guiado** — el cliente entra a `/mi-proyecto`,
+   ve solo los módulos que le corresponden y los completa en un
+   motor de formularios declarativo con autoguardado, validación en
+   línea, indicador de progreso y adjuntos con URL firmada.
+3. **Revisión** — el equipo interno revisa cada módulo, deja
+   observaciones por campo y aprueba o devuelve al cliente. El
+   estado del módulo/proyecto avanza automáticamente.
+4. **Acta** — cuando un módulo queda aprobado se genera el PDF con
+   `pdf-lib` (server-side), con portada, imágenes incrustadas y
+   anexos fusionados, y se notifica por correo.
+
+Toda la información sensible vive en Supabase con RLS extensa;
+`/app` solo lo pueden abrir admin/implementador y `/mi-proyecto` solo
+los invitados activos del proyecto.
 
 ## Frontend
 
@@ -16,7 +37,24 @@ _Pendiente de detallar._
 
 ## Despliegue
 
-_Pendiente._
+- **Hosting frontend:** Lovable (SSR/edge) con dominio propio
+  `https://configurador.egixia.app` gestionado en AWS Route 53
+  (registros A/CNAME apuntando a la infraestructura de Lovable, TLS
+  automático). El dominio interno `egixia-config-hub.lovable.app`
+  queda como URL secundaria del hosting.
+- **Backend:** Supabase (Auth, Postgres con RLS, Storage privado).
+  Las claves publicables se inyectan en el bundle vía
+  `VITE_SUPABASE_*`; la service role solo se usa en server functions
+  y Edge Functions.
+- **Edge Functions:** `enviar-correo` para todo el correo
+  transaccional del portal (invitaciones, envío/aprobación/
+  devolución de acta, avisos) — usa `RESEND_API_KEY` y plantillas
+  EGIXIA compartidas con el frontend en `src/lib/acta/plantillas-
+  correo.ts`.
+- **Server functions (TanStack Start):** toda la lógica interna del
+  frontend (validaciones, catálogo, generación de PDF, invitaciones)
+  se resuelve con `createServerFn` protegido por
+  `requireSupabaseAuth`.
 
 ## Motor de formularios dinámicos
 
