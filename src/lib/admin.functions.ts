@@ -328,7 +328,21 @@ export const enviarCorreosPrueba = createServerFn({ method: "POST" })
     if (!destino) throw new Error("No se pudo obtener el correo del administrador.");
 
     const base = await urlBaseDelPortal();
-    const from = "EGIXIA <onboarding@resend.dev>";
+    const { data: cfgCorreo } = await supabaseAdmin
+      .from("configuracion_sistema")
+      .select("valor")
+      .eq("clave", "correo")
+      .maybeSingle();
+    const cfg = (cfgCorreo?.valor ?? {}) as { from_nombre?: unknown; from_email?: unknown };
+    const fromNombre =
+      typeof cfg.from_nombre === "string" && cfg.from_nombre.trim()
+        ? cfg.from_nombre.trim()
+        : "EGIXIA";
+    const fromEmail =
+      typeof cfg.from_email === "string" && cfg.from_email.trim()
+        ? cfg.from_email.trim()
+        : "onboarding@resend.dev";
+    const from = `${fromNombre} <${fromEmail}>`;
 
     const escenarios: Array<{ tipo: TipoCorreo; ctx: ContextoCorreo; etiqueta: string }> = [
       {

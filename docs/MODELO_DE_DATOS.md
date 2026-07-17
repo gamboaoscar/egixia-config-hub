@@ -72,6 +72,32 @@ usuarios `cliente`.
   inserta usando `auth.uid()` como `actor_id`. `SECURITY DEFINER`;
   acceso revocado a `anon`.
 
+### Triggers de auditoría automática (M11)
+
+Cubren las acciones que no pasan por `registrar_auditoria` desde
+código de aplicación. Todos son `SECURITY DEFINER` con
+`search_path = public`.
+
+- **`proyecto_modulos_auditar_datos`** — `AFTER UPDATE ON
+  proyecto_modulos` cuando `OLD.datos IS DISTINCT FROM NEW.datos`.
+  Ejecuta `auditar_datos_modulo()`, que calcula el arreglo de claves
+  cuyo valor cambió (unión de `jsonb_object_keys` de `OLD.datos` y
+  `NEW.datos`) e inserta en `auditoria` con acción
+  `modulo_datos_actualizados` y detalle
+  `{ proyecto_id, modulo_key, campos_modificados, progreso }`. Solo
+  inserta cuando `auth.uid()` no es nulo — las ediciones internas
+  ya se auditan como `modulo_editado_admin` desde
+  `admin.functions.ts`.
+- **`archivos_auditar_subida`** — `AFTER INSERT ON archivos`.
+  Ejecuta `auditar_archivo_subido()`, que inserta la acción
+  `archivo_subido` (`actor_id = COALESCE(auth.uid(), NEW.created_by)`,
+  detalle con `nombre_original`, `campo_key`, `proyecto_modulo_id`,
+  `tamano`).
+- **`actas_auditar_generacion`** — `AFTER INSERT ON actas`. Ejecuta
+  `auditar_acta_generada()`, que inserta la acción `acta_generada`
+  (`actor_id = COALESCE(auth.uid(), NEW.generada_por)`, detalle con
+  `proyecto_modulo_id`, `version`, `archivo_url`).
+
 ## Storage
 
 - Bucket **`avatares`** (privado). Estructura: `{user_id}/archivo.ext`.
@@ -105,7 +131,9 @@ usuarios `cliente`.
 - `id`, `proyecto_id`, `modulo_key` (`imagen` | `sociedades` | `seguridad`),
   `estado` (enum `modulo_estado`), `fecha_limite`,
   `comportamiento_vencimiento` (enum), `datos` (jsonb), `progreso`
-  (0–100), `enviado_at/por`, `revisado_at/por`, timestamps.
+  (0–100), `enviado_at/por`, `revisado_at/por`, `updated_por` (uuid del
+  último autor de cambios en `datos`/`progreso`/`estado`, sincronizado
+  por el trigger `proyecto_modulos_before_update`), timestamps.
 - RLS: admin/implementador acceso total. El invitado puede leer los
   módulos de sus proyectos y **solo puede actualizar** cuando el módulo
   está en `sin_iniciar`, `en_diligenciamiento` o `con_observaciones`.

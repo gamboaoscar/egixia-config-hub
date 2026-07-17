@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LogIn, ArrowLeft, CheckCircle2, ClipboardList, Users, ShieldCheck, FileText, Rocket } from "lucide-react";
 
-const URL = "https://egixia-config-hub.lovable.app/guias/portal-de-proveedores";
+const URL = "https://configurador.egixia.app/guias/portal-de-proveedores";
 const TITLE = "Cómo implementar un Portal de Proveedores — Guía EGIXIA";
 const DESCRIPTION =
   "Guía práctica para grandes empresas de LATAM: pasos, roles, entregables y buenas prácticas para implementar un Portal de Proveedores (procure-to-pay) sin correos ni archivos Excel.";
@@ -37,8 +37,8 @@ export const Route = createFileRoute("/guias/portal-de-proveedores")({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Inicio", item: "https://egixia-config-hub.lovable.app/" },
-            { "@type": "ListItem", position: 2, name: "Guías", item: "https://egixia-config-hub.lovable.app/guias/portal-de-proveedores" },
+            { "@type": "ListItem", position: 1, name: "Inicio", item: "https://configurador.egixia.app/" },
+            { "@type": "ListItem", position: 2, name: "Guías", item: "https://configurador.egixia.app/guias/portal-de-proveedores" },
             { "@type": "ListItem", position: 3, name: "Portal de Proveedores", item: URL },
           ],
         }),

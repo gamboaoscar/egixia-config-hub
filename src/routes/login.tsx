@@ -38,10 +38,10 @@ export const Route = createFileRoute("/login")({
         property: "og:description",
         content: "Accede a EGIXIA Configurator con tu cuenta.",
       },
-      { property: "og:url", content: "https://egixia-config-hub.lovable.app/login" },
+      { property: "og:url", content: "https://configurador.egixia.app/login" },
       { name: "robots", content: "noindex,nofollow" },
     ],
-    links: [{ rel: "canonical", href: "https://egixia-config-hub.lovable.app/login" }],
+    links: [{ rel: "canonical", href: "https://configurador.egixia.app/login" }],
   }),
   component: LoginPage,
 });
