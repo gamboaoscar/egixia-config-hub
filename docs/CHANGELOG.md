@@ -2,6 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.13] — 2026-07-17 — M11: Cobertura de auditoría, canonical y refresco de docs
+
+### Añadido
+- **Auditoría automática** vía triggers SQL (`SECURITY DEFINER`):
+  - `proyecto_modulos_auditar_datos` registra
+    `modulo_datos_actualizados` con el arreglo `campos_modificados`
+    (unión de claves de `OLD.datos` y `NEW.datos` cuyos valores
+    difieren) y el progreso. Solo se ejecuta cuando `auth.uid()` no
+    es nulo, para no duplicar las ediciones internas que ya se
+    auditan como `modulo_editado_admin`.
+  - `archivos_auditar_subida` registra `archivo_subido` con
+    `nombre_original`, `campo_key`, `proyecto_modulo_id` y `tamano`.
+  - `actas_auditar_generacion` registra `acta_generada` con
+    `proyecto_modulo_id`, `version` y `archivo_url`.
+
+### Cambiado
+- **Correo del pipeline de pruebas** (`enviarCorreosPrueba`): el
+  remitente ya no está hardcodeado; se lee de
+  `configuracion_sistema.clave='correo'` (`from_nombre` +
+  `from_email`) con fallback a `EGIXIA <onboarding@resend.dev>`.
+- **Dominio canónico** unificado en
+  `https://configurador.egixia.app`: se actualizaron `canonical`,
+  `og:url`, `sitemap.xml`, `robots.txt` y los JSON-LD del root.
+- **Documentación** actualizada al estado real del proyecto:
+  `README.md`, `docs/ARQUITECTURA.md` (Visión general y Despliegue),
+  `docs/MODELO_DE_DATOS.md` (nuevos triggers y `updated_por`).
+
 ## [1.0.12] — 2026-07-16 — M7+M8: Parametrización de secciones y opciones
 
 ### Añadido
