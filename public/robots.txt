@@ -5,4 +5,4 @@ Disallow: /mi-proyecto/
 Disallow: /invitacion/
 Disallow: /reset-password
 
-Sitemap: https://egixia-config-hub.lovable.app/sitemap.xml
+Sitemap: https://configurador.egixia.app/sitemap.xml

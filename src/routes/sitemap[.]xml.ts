@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://egixia-config-hub.lovable.app";
+const BASE_URL = "https://configurador.egixia.app";
 
 interface SitemapEntry {
   path: string;

@@ -116,7 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "EGIXIA",
-          url: "https://egixia-config-hub.lovable.app",
+          url: "https://configurador.egixia.app",
           description:
             "EGIXIA implementa Portales de Proveedores (procure-to-pay) para grandes empresas en LATAM.",
         }),
@@ -127,7 +127,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "EGIXIA Configurator",
-          url: "https://egixia-config-hub.lovable.app",
+          url: "https://configurador.egixia.app",
           inLanguage: "es",
         }),
       },
