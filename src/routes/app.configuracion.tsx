@@ -9,9 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,9 +40,8 @@ function ConfiguracionPage() {
     mensaje_bienvenida: "",
   });
   const [correo, setCorreo] = useState({
-    proveedor: "resend",
-    remitente_nombre: "EGIXIA",
-    remitente_email: "no-reply@egixia.com",
+    from_nombre: "EGIXIA",
+    from_email: "no-reply@egixia.com",
   });
   const [parametros, setParametros] = useState({
     dias_alerta_vencimiento: 3,
@@ -154,24 +150,17 @@ function ConfiguracionPage() {
           y nunca se exponen al frontend.
         </p>
         <div className="mt-4 space-y-3">
-          <Field label="Proveedor">
-            <Select value={correo.proveedor} onValueChange={(v) => setCorreo({ ...correo, proveedor: v })} disabled={disabled}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="resend">Resend</SelectItem>
-                <SelectItem value="ses">Amazon SES</SelectItem>
-                <SelectItem value="sendgrid">SendGrid</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
+          <p className="text-xs text-muted-foreground">
+            Proveedor: Resend (configurado por el secreto <code className="rounded bg-muted px-1 py-0.5">RESEND_API_KEY</code>).
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Nombre del remitente">
-              <Input value={correo.remitente_nombre} disabled={disabled}
-                onChange={(e) => setCorreo({ ...correo, remitente_nombre: e.target.value })} />
+              <Input value={correo.from_nombre} disabled={disabled}
+                onChange={(e) => setCorreo({ ...correo, from_nombre: e.target.value })} />
             </Field>
             <Field label="Correo del remitente">
-              <Input type="email" value={correo.remitente_email} disabled={disabled}
-                onChange={(e) => setCorreo({ ...correo, remitente_email: e.target.value })} />
+              <Input type="email" value={correo.from_email} disabled={disabled}
+                onChange={(e) => setCorreo({ ...correo, from_email: e.target.value })} />
             </Field>
           </div>
         </div>

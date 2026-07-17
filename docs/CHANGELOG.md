@@ -2,6 +2,21 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.14] — 2026-07-17 — Remitente de correo unificado
+
+### Cambiado
+- **Fuente única de verdad del remitente**: `configuracion_sistema.clave='correo'`
+  con los campos `from_nombre` y `from_email`. Tanto `enviarCorreosPrueba`
+  como la Edge Function `enviar-correo` leen esa fila para construir el
+  `from`. La Edge Function la consulta una vez por invocación vía REST
+  con la service role key y cae a `CORREO_FROM` o
+  `EGIXIA <no-reply@egixia.com>` si la lectura falla.
+- **UI de configuración**: la sección "Integración de correo" ya no
+  guarda `proveedor`/`remitente_nombre`/`remitente_email`; los inputs
+  enlazan directamente a `from_nombre`/`from_email` y se sustituye el
+  selector de proveedor por una nota informativa (Resend, configurado
+  por el secreto `RESEND_API_KEY`).
+
 ## [1.0.13] — 2026-07-17 — M11: Cobertura de auditoría, canonical y refresco de docs
 
 ### Añadido
