@@ -6,6 +6,8 @@ intercambio manual de archivos Excel por formularios web guiados donde los
 clientes diligencian toda la información necesaria (identidad visual,
 sociedades, dominios, políticas de seguridad, etc.).
 
+**Sitio productivo:** <https://configurador.egixia.app>
+
 ## Roles
 
 - **Administrador** — control total del sistema, catálogo, usuarios e invitaciones.
@@ -17,8 +19,24 @@ sociedades, dominios, políticas de seguridad, etc.).
 - React 19 + TypeScript
 - Vite 7 + TanStack Start / TanStack Router (file-based routing)
 - Tailwind CSS v4 + shadcn/ui
-- Supabase (auth, base de datos, almacenamiento) — se integrará más adelante
+- Supabase integrado: autenticación (email + magic link), Postgres con
+  RLS extensa (roles admin/implementador/cliente, membresías por
+  proyecto) y Storage privado (avatares, logos-clientes, documentos,
+  actas — acceso siempre por URL firmada).
+- Edge Function `enviar-correo` con plantillas EGIXIA y Resend como
+  proveedor SMTP transaccional.
+- Generación del acta PDF con `pdf-lib` (server-side, import dinámico).
+- Parametrización por proyecto desde el catálogo (secciones y opciones
+  habilitables, con regla de protección de datos ya diligenciados).
 - Idioma de la interfaz: **español neutro LATAM**
+
+## Portales
+
+- `/app` — equipo interno (admin + implementador): proyectos,
+  revisiones, catálogo, usuarios, invitaciones, auditoría.
+- `/mi-proyecto` — cliente invitado: solo los proyectos y módulos a
+  los que pertenece.
+- `/invitacion/$token` — aceptación pública de invitación.
 
 ## Estructura de carpetas
 
@@ -40,6 +58,20 @@ docs/                 Documentación viva del proyecto (ES)
 
 ## Documentación
 
-La documentación vive en [`/docs`](./docs) y se mantiene actualizada en cada
-entrega. Ver especialmente [`docs/GUIA_UX.md`](./docs/GUIA_UX.md) y
-[`docs/CHANGELOG.md`](./docs/CHANGELOG.md).
+La documentación viva del proyecto (español) vive en [`/docs`](./docs)
+y se actualiza en cada entrega:
+
+- [`ARQUITECTURA.md`](./docs/ARQUITECTURA.md) — visión general,
+  frontend, backend, motor de formularios, archivos, despliegue.
+- [`MODELO_DE_DATOS.md`](./docs/MODELO_DE_DATOS.md) — tablas, enums,
+  funciones, triggers y buckets de Storage.
+- [`FLUJO_Y_ESTADOS.md`](./docs/FLUJO_Y_ESTADOS.md) — flujo de
+  invitación, diligenciamiento, revisión y acta.
+- [`MODULOS.md`](./docs/MODULOS.md) — catálogo de módulos y campos.
+- [`ROLES_Y_PERMISOS.md`](./docs/ROLES_Y_PERMISOS.md) — matriz de
+  permisos y acciones exclusivas del administrador.
+- [`GUIA_UX.md`](./docs/GUIA_UX.md) — lineamientos de UX y copy.
+- [`SEGURIDAD.md`](./docs/SEGURIDAD.md) — RLS, auditoría, buckets.
+- [`DECISIONES.md`](./docs/DECISIONES.md) — ADR.
+- [`QA_LOG.md`](./docs/QA_LOG.md) — bitácora de pruebas.
+- [`CHANGELOG.md`](./docs/CHANGELOG.md) — historial de versiones.
