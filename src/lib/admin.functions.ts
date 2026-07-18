@@ -618,7 +618,7 @@ async function enviarInvitacionCorreo(
     Math.round((input.expira.getTime() - Date.now()) / (24 * 3600 * 1000)),
   );
   const { notificarInvitacion } = await import("@/lib/acta/notificaciones.server");
-  await notificarInvitacion({
+  const resultado = await notificarInvitacion({
     invitacionId,
     destinatario: input.email,
     empresa,
@@ -637,8 +637,12 @@ async function enviarInvitacionCorreo(
       destinatario: input.email,
       url: urlRegistro,
       expira_at: input.expira.toISOString(),
+      correo_enviado: resultado.ok,
+      correo_detalle: resultado,
     },
   });
+
+  return resultado;
 }
 
 async function urlBaseDelPortal(): Promise<string> {
