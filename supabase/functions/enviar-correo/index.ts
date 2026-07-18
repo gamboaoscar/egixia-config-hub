@@ -41,24 +41,26 @@ function constantTimeEq(a: string, b: string): boolean {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
-  // Autenticación: aceptamos la petición cuando `Authorization: Bearer <token>`
-  // coincide con `SUPABASE_SERVICE_ROLE_KEY` (comparación constant-time), que es
-  // exactamente lo que envían las server functions del backend EGIXIA.
-  // Adicionalmente, si `CORREO_WEBHOOK_SECRET` está definido, aceptamos también
-  // llamadas que traigan el header `x-egixia-secret` correcto (defensa extra
-  // para invocaciones fuera del backend).
-  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  // Autenticación (fuente primaria): header `x-egixia-secret` == CORREO_WEBHOOK_SECRET.
+  // Este es el mecanismo canónico que usa el backend EGIXIA porque no depende
+  // del formato de las claves de servicio de Supabase (que pueden ser JWT
+  // legacy o `sb_secret_*` opacas). Se conservan como fallback:
+  //   - `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`
+  //   - `Authorization: Bearer <SUPABASE_SECRET_KEYS>` (nueva denominación)
   const authHeader = req.headers.get("authorization") ?? "";
   const bearer = authHeader.toLowerCase().startsWith("bearer ")
     ? authHeader.slice(7).trim()
     : "";
-  let authorized = constantTimeEq(bearer, serviceRole);
+  const webhookSecret = Deno.env.get("CORREO_WEBHOOK_SECRET") ?? "";
+  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS") ?? "";
+  const hdrSecret = req.headers.get("x-egixia-secret") ?? "";
 
-  const webhookSecret = Deno.env.get("CORREO_WEBHOOK_SECRET");
-  if (!authorized && webhookSecret) {
-    const hdr = req.headers.get("x-egixia-secret") ?? "";
-    authorized = constantTimeEq(hdr, webhookSecret);
-  }
+  const authorized =
+    (!!webhookSecret && constantTimeEq(hdrSecret, webhookSecret)) ||
+    (!!serviceRole && constantTimeEq(bearer, serviceRole)) ||
+    (!!secretKeys && constantTimeEq(bearer, secretKeys));
+
   if (!authorized) return json({ ok: false, error: "unauthorized" }, 401);
 
   let payload: { mensajes?: Mensaje[] };
