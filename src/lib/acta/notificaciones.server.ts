@@ -67,26 +67,51 @@ interface Mensaje {
   text: string;
 }
 
+interface EnvioResultado {
+  ok: boolean;
+  edgeStatus: number | null;
+  totalMensajes: number;
+  exitosos: number;
+  fallidos: number;
+  error?: string;
+}
+
 async function enviarBatch(
   mensajes: Mensaje[],
   accion: string,
   entidadId: string,
   actorId: string | null = null,
-) {
-  if (mensajes.length === 0) return;
+): Promise<EnvioResultado> {
+  if (mensajes.length === 0) {
+    return { ok: true, edgeStatus: null, totalMensajes: 0, exitosos: 0, fallidos: 0 };
+  }
   const url = `${process.env.SUPABASE_URL}/functions/v1/enviar-correo`;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const webhook = process.env.CORREO_WEBHOOK_SECRET ?? "";
   try {
     const r = await fetch(url, {
       method: "POST",
       headers: {
         authorization: `Bearer ${key}`,
         apikey: key,
+        "x-egixia-secret": webhook,
         "content-type": "application/json",
       },
       body: JSON.stringify({ mensajes }),
     });
     const body = await r.json().catch(() => ({}));
+    const results: Array<{ status: number | string }> = Array.isArray(
+      (body as { results?: unknown }).results,
+    )
+      ? ((body as { results: Array<{ status: number | string }> }).results ?? [])
+      : [];
+    const exitosos = results.filter(
+      (x) =>
+        x.status === "dry_run" ||
+        (typeof x.status === "number" && x.status >= 200 && x.status < 300),
+    ).length;
+    const fallidos = results.length - exitosos;
+    const ok = r.ok && (results.length === 0 || fallidos === 0);
     await supabaseAdmin.rpc("registrar_auditoria", {
       _accion: accion,
       _entidad: "notificacion_correo",
@@ -96,20 +121,38 @@ async function enviarBatch(
         asuntos: mensajes.map((m) => m.subject),
         edge_status: r.status,
         edge_body: body,
+        ok,
       },
       _actor_id: actorId,
     });
+    return {
+      ok,
+      edgeStatus: r.status,
+      totalMensajes: mensajes.length,
+      exitosos,
+      fallidos: mensajes.length - exitosos,
+      error: ok ? undefined : `edge_status_${r.status}`,
+    };
   } catch (err) {
+    const message = (err as Error).message;
     await supabaseAdmin.rpc("registrar_auditoria", {
       _accion: accion,
       _entidad: "notificacion_correo_error",
       _entidad_id: entidadId,
       _detalle: {
         destinatarios: mensajes.map((m) => m.to),
-        error: (err as Error).message,
+        error: message,
       },
       _actor_id: actorId,
     });
+    return {
+      ok: false,
+      edgeStatus: null,
+      totalMensajes: mensajes.length,
+      exitosos: 0,
+      fallidos: mensajes.length,
+      error: message,
+    };
   }
 }
 
@@ -128,7 +171,7 @@ export async function notificarProyecto(input: {
   urlAppPath?: string;
   urlMiProyectoPath?: string;
   actorId?: string | null;
-}) {
+}): Promise<EnvioResultado> {
   const dest = await destinatariosProyecto(input.proyectoId);
   const b = await baseUrl();
   const mensajes: Mensaje[] = [];
@@ -165,7 +208,7 @@ export async function notificarProyecto(input: {
     construir(dest.invitados, ctx);
   }
 
-  await enviarBatch(
+  return enviarBatch(
     mensajes,
     "notificacion_correo_enviada",
     input.moduloId,
@@ -185,7 +228,7 @@ export async function notificarInvitacion(input: {
   urlRegistro: string;
   expiraTexto?: string;
   actorId?: string | null;
-}) {
+}): Promise<EnvioResultado> {
   const rendered = renderCorreo("invitacion", {
     invitacion: {
       empresa: input.empresa,
@@ -194,7 +237,7 @@ export async function notificarInvitacion(input: {
       expiraTexto: input.expiraTexto,
     },
   });
-  await enviarBatch(
+  return enviarBatch(
     [{
       to: input.destinatario,
       subject: rendered.asunto,
@@ -206,3 +249,5 @@ export async function notificarInvitacion(input: {
     input.actorId ?? null,
   );
 }
+
+export type { EnvioResultado };
