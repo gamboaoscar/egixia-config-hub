@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
@@ -139,6 +139,9 @@ function ModuloPage() {
 
   const handlePrevisualizarActa = async () => {
     if (irAlPrimerFaltante()) return;
+    // Guardado inmediato de cambios pendientes antes de generar el acta,
+    // para que el PDF refleje siempre lo último que escribió el usuario.
+    await formRef.current?.flush();
     setPrevisualizando(true);
     try {
       const res = await previsualizar({ data: { moduloId: modulo.id } });
@@ -187,6 +190,7 @@ function ModuloPage() {
       toast.error("Este módulo no está en un estado que permita enviarlo.");
       return;
     }
+    await formRef.current?.flush();
     setEnviando(true);
     try {
       if (esReenvio) {
@@ -313,12 +317,8 @@ function ModuloPage() {
         ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={aplicarOverrides(
-          definicionModulo(modulo.modulo_key),
-          overrides,
-          seccionOverrides,
-        )}
-        datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
+        definicion={definicionMemo}
+        datosIniciales={datosInicialesMemo}
         soloLectura={soloLectura}
         onProgreso={setProgresoLive}
         onFaltantes={setFaltantesLive}
