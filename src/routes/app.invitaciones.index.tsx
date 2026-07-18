@@ -86,7 +86,7 @@ function Invitaciones() {
       return toast.error("Selecciona el proyecto para el invitado.");
     setSending(true);
     try {
-      await crear({
+      const res = await crear({
         data: {
           email,
           rol_invitado: rol,
@@ -94,7 +94,15 @@ function Invitaciones() {
           dias_validez: 14,
         },
       });
-      toast.success("Invitación enviada.");
+      if (res?.correoEnviado) {
+        toast.success("Invitación enviada por correo.");
+      } else {
+        toast.error(
+          `Invitación creada, pero el correo no se pudo entregar${
+            res?.correoError ? ` (${res.correoError})` : ""
+          }. Reenvíala desde la lista o comparte el enlace manualmente.`,
+        );
+      }
       setEmail("");
       setProyectoId("");
       await cargar();
@@ -108,8 +116,16 @@ function Invitaciones() {
   const doReenviar = async (id: string) => {
     setAction(id);
     try {
-      await reenviar({ data: { id } });
-      toast.success("Invitación reenviada.");
+      const res = await reenviar({ data: { id } });
+      if (res?.correoEnviado) {
+        toast.success("Invitación reenviada por correo.");
+      } else {
+        toast.error(
+          `Invitación regenerada, pero el correo no se pudo entregar${
+            res?.correoError ? ` (${res.correoError})` : ""
+          }.`,
+        );
+      }
       await cargar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo reenviar.");

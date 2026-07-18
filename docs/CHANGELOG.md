@@ -2,6 +2,55 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.15] — 2026-07-18 — Lote correo + estabilización (parcial)
+
+### Corregido (P0 — correos)
+- **Autenticación de `enviar-correo`**: la Edge Function ahora acepta como
+  fuente primaria el header `x-egixia-secret` comparado en tiempo constante
+  con el secreto de proyecto `CORREO_WEBHOOK_SECRET`. Se conservan como
+  fallback `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` y
+  `<SUPABASE_SECRET_KEYS>`. Esto elimina los 401 en producción cuando la
+  clave de servicio del proyecto es opaca (`sb_secret_*`) en lugar de un
+  JWT legacy.
+- **`enviarBatch` firma en cada request** con `x-egixia-secret` leyendo
+  `process.env.CORREO_WEBHOOK_SECRET`.
+
+### Corregido (P0.5 — feedback de envío)
+- `enviarBatch` devuelve `{ ok, edgeStatus, totalMensajes, exitosos,
+  fallidos, error? }` y ese resultado se propaga a `notificarProyecto`
+  y `notificarInvitacion`.
+- `crearInvitacion` y `reenviarInvitacion` devuelven
+  `{ correoEnviado, correoError }`. La UI de invitaciones muestra un
+  toast rojo con detalle cuando el correo no se pudo entregar, dejando
+  claro que la invitación existe pero requiere reenvío o compartir el
+  enlace manualmente.
+
+### Corregido (CRÍTICOS)
+1. **Pérdida de datos en formularios**: `useFormModulo` sólo resetea su
+   estado cuando cambia `moduloId`. Antes dependía también de
+   `definicion`/`datosIniciales`, que el padre re-crea en cada render y
+   pisaba los cambios en vuelo durante los autosaves.
+2. **Referencias estables**: las rutas `mi-proyecto/modulo/$moduloId` y
+   `app/modulo/$moduloId` memoizan `definicion`, `overrides` y
+   `datosIniciales` para no forzar re-cálculos ni volver a montar el
+   motor de formularios.
+3. **`flush()` expuesto por `FormularioModulo`**: se llama antes de
+   previsualizar o enviar a revisión, garantizando que el debounce del
+   autosave no deje cambios sin persistir.
+4. **Feedback en `mostrarFaltantes`**: además de desplazar el foco al
+   primer campo faltante, el componente muestra un toast rojo con el
+   número de campos obligatorios pendientes.
+
+### Infraestructura
+- Nuevo secreto de proyecto `CORREO_WEBHOOK_SECRET` (48 chars, generado
+  automáticamente). No requiere gestión manual.
+
+### Pendiente para próximo lote
+- CRÍTICO 5–7 y todos los ítems MEDIOS/BAJOS del pedido original
+  (helpers de fecha CO en `vencimiento-banner` y `modulo-estado`,
+  refresco automático de la tabla de invitaciones, endurecimiento de
+  `catalogo_overrides`, etc.).
+
 ## [1.0.14] — 2026-07-17 — Remitente de correo unificado
 
 ### Cambiado

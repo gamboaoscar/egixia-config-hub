@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
@@ -76,6 +76,37 @@ function ModuloPage() {
   const reenviar = useServerFn(reenviarModulo);
   const previsualizar = useServerFn(previsualizarActa);
 
+  // Overrides y datos iniciales memoizados: la definición no debe cambiar
+  // de referencia en cada render, porque `useFormModulo` sólo resetea su
+  // estado cuando cambia `moduloId`, pero el `useEffect` que valida
+  // arrastra `definicion` como dependencia lógica.
+  const modKey = moduloById(moduloId)?.modulo_key;
+  const overridesTodos = overridesDeProyecto(
+    moduloById(moduloId)?.proyecto_id ?? "",
+  );
+  const seccionOverridesTodos = seccionOverridesDeProyecto(
+    moduloById(moduloId)?.proyecto_id ?? "",
+  );
+  const overridesKey = JSON.stringify(overridesTodos);
+  const seccionOverridesKey = JSON.stringify(seccionOverridesTodos);
+  const definicionMemo = useMemo(() => {
+    if (!modKey) return { key: "", nombre: "", secciones: [] } as never;
+    return aplicarOverrides(
+      definicionModulo(modKey),
+      overridesTodos,
+      seccionOverridesTodos,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modKey, overridesKey, seccionOverridesKey]);
+  // Datos iniciales: capturamos el snapshot al primer render del módulo
+  // para NO reinyectar el estado en cada refresh del hook `useMiProyecto`
+  // (que rehidrata `modulo.datos` con una referencia nueva).
+  const datosInicialesMemo = useMemo(
+    () => (moduloById(moduloId)?.datos as Record<string, unknown>) ?? {},
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moduloId],
+  );
+
   useEffect(() => {
     if (!moduloId) return;
     supabase
@@ -111,6 +142,8 @@ function ModuloPage() {
   const seccionOverrides = seccionOverridesDeProyecto(modulo.proyecto_id);
   const cat = moduloCatalogo(modulo.modulo_key);
   const Icon = cat.icon;
+  void overrides;
+  void seccionOverrides;
 
   const bloqueadoPorEstado = !esEditablePorInvitado(modulo.estado);
   const bloqueadoPorVencimiento = vencimientoBloqueaEdicion(
@@ -139,6 +172,9 @@ function ModuloPage() {
 
   const handlePrevisualizarActa = async () => {
     if (irAlPrimerFaltante()) return;
+    // Guardado inmediato de cambios pendientes antes de generar el acta,
+    // para que el PDF refleje siempre lo último que escribió el usuario.
+    await formRef.current?.flush();
     setPrevisualizando(true);
     try {
       const res = await previsualizar({ data: { moduloId: modulo.id } });
@@ -187,6 +223,7 @@ function ModuloPage() {
       toast.error("Este módulo no está en un estado que permita enviarlo.");
       return;
     }
+    await formRef.current?.flush();
     setEnviando(true);
     try {
       if (esReenvio) {
@@ -313,12 +350,8 @@ function ModuloPage() {
         ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={aplicarOverrides(
-          definicionModulo(modulo.modulo_key),
-          overrides,
-          seccionOverrides,
-        )}
-        datosIniciales={(modulo.datos as Record<string, unknown>) ?? {}}
+        definicion={definicionMemo}
+        datosIniciales={datosInicialesMemo}
         soloLectura={soloLectura}
         onProgreso={setProgresoLive}
         onFaltantes={setFaltantesLive}

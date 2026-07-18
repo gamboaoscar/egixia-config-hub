@@ -489,7 +489,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       .single();
     if (error || !inv) throw new Error("No se pudo crear la invitación.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    const correoResultado = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: data.email,
       token,
       expira,
@@ -501,9 +501,15 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       email: data.email,
       rol_invitado: data.rol_invitado,
       proyecto_id: data.proyecto_id || null,
+      correo_enviado: correoResultado.ok,
+      correo_detalle: correoResultado,
     });
 
-    return { id: inv.id };
+    return {
+      id: inv.id,
+      correoEnviado: correoResultado.ok,
+      correoError: correoResultado.error ?? null,
+    };
   });
 
 export const reenviarInvitacion = createServerFn({ method: "POST" })
@@ -532,7 +538,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       .eq("id", inv.id);
     if (error) throw new Error("No se pudo reenviar.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    const correoResultado = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: inv.email as string,
       token,
       expira,
@@ -542,9 +548,15 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
 
     await auditar(supabaseAdmin, userId, "invitacion_reenviada", "invitaciones", inv.id, {
       email: inv.email,
+      correo_enviado: correoResultado.ok,
+      correo_detalle: correoResultado,
     });
 
-    return { ok: true };
+    return {
+      ok: true,
+      correoEnviado: correoResultado.ok,
+      correoError: correoResultado.error ?? null,
+    };
   });
 
 export const revocarInvitacion = createServerFn({ method: "POST" })
@@ -606,7 +618,7 @@ async function enviarInvitacionCorreo(
     Math.round((input.expira.getTime() - Date.now()) / (24 * 3600 * 1000)),
   );
   const { notificarInvitacion } = await import("@/lib/acta/notificaciones.server");
-  await notificarInvitacion({
+  const resultado = await notificarInvitacion({
     invitacionId,
     destinatario: input.email,
     empresa,
@@ -625,8 +637,12 @@ async function enviarInvitacionCorreo(
       destinatario: input.email,
       url: urlRegistro,
       expira_at: input.expira.toISOString(),
+      correo_enviado: resultado.ok,
+      correo_detalle: resultado,
     },
   });
+
+  return resultado;
 }
 
 async function urlBaseDelPortal(): Promise<string> {

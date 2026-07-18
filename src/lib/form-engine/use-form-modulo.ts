@@ -43,10 +43,22 @@ export function useFormModulo({
   );
   const [tocados, setTocados] = useState<Record<string, boolean>>({});
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Si cambia el módulo activo, resetear estado local.
+  const moduloIdRef = useRef<string>(moduloId);
+  const definicionRef = useRef<ModuloDefinicion>(definicion);
+  const datosRef = useRef<DatosModulo>(datosIniciales);
   useEffect(() => {
+    definicionRef.current = definicion;
+  }, [definicion]);
+
+  // Reset del estado local SÓLO cuando cambia el módulo activo. Antes
+  // dependíamos también de `definicion`/`datosIniciales`; como el padre
+  // re-crea esas referencias en cada render, el estado se reseteaba
+  // durante los autosaves y se perdían datos ya escritos por el usuario.
+  useEffect(() => {
+    if (moduloIdRef.current === moduloId) return;
+    moduloIdRef.current = moduloId;
     setDatos(datosIniciales);
+    datosRef.current = datosIniciales;
     setErrores(validarModulo(definicion, datosIniciales, false));
     setTocados({});
   }, [moduloId, definicion, datosIniciales]);
@@ -54,7 +66,7 @@ export function useFormModulo({
   const persistir = useCallback(
     async (nuevos: DatosModulo) => {
       if (onCambio) return; // el padre se encarga de guardar
-      const progreso = calcularProgreso(definicion, nuevos);
+      const progreso = calcularProgreso(definicionRef.current, nuevos);
       setSaveStatus("saving");
       const { error } = await supabase
         .from("proyecto_modulos")
@@ -68,7 +80,7 @@ export function useFormModulo({
       markSaved();
       refreshModulos();
     },
-    [moduloId, definicion, setSaveStatus, markSaved, refreshModulos, onCambio],
+    [moduloId, setSaveStatus, markSaved, refreshModulos, onCambio],
   );
 
   const setValor = useCallback(
@@ -76,8 +88,9 @@ export function useFormModulo({
       if (soloLectura) return;
       setDatos((prev) => {
         const nuevos = { ...prev, [campoKey]: valor };
+        datosRef.current = nuevos;
         // Validación en línea del campo modificado.
-        const campo = definicion.secciones
+        const campo = definicionRef.current.secciones
           .flatMap((s) => s.campos)
           .find((c) => c.key === campoKey);
         if (campo) {
@@ -101,8 +114,22 @@ export function useFormModulo({
         return nuevos;
       });
     },
-    [definicion, soloLectura, persistir, debounceMs, onCambio],
+    [soloLectura, persistir, debounceMs, onCambio],
   );
+
+  /**
+   * Fuerza el guardado inmediato de los datos actuales, cancelando el
+   * debounce pendiente. Se usa antes de acciones críticas (enviar a
+   * revisión, previsualizar acta) para no perder cambios en vuelo.
+   */
+  const flush = useCallback(async () => {
+    if (onCambio) return;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    await persistir(datosRef.current);
+  }, [onCambio, persistir]);
 
   const marcarTocado = useCallback((campoKey: string) => {
     setTocados((p) => (p[campoKey] ? p : { ...p, [campoKey]: true }));
@@ -137,5 +164,6 @@ export function useFormModulo({
     marcarTodosTocados,
     faltantes,
     progreso,
+    flush,
   };
 }
