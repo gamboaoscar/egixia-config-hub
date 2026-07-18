@@ -224,6 +224,23 @@ function RevisionModuloPage() {
     return out;
   }, [modulo, overrides, seccionOverrides]);
 
+  // Definición estable para <FormularioModulo>: sólo se recalcula cuando
+  // cambian los overrides o la clave del módulo, no en cada render.
+  const definicionEstable = useMemo(() => {
+    if (!modulo) return null;
+    return aplicarOverrides(
+      definicionModulo(modulo.modulo_key),
+      overrides,
+      seccionOverrides,
+    );
+  }, [modulo, overrides, seccionOverrides]);
+  // Datos iniciales estables: capturados al cambiar `moduloId`.
+  const datosInicialesEstables = useMemo(
+    () => (modulo?.datos as Record<string, unknown>) ?? {},
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moduloId],
+  );
+
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
   }
@@ -641,12 +658,13 @@ function RevisionModuloPage() {
         ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={aplicarOverrides(
-          definicionModulo(modulo.modulo_key),
-          overrides,
-          seccionOverrides,
-        )}
-        datosIniciales={modoEdicion ? datosEdit : (modulo.datos as Record<string, unknown>) ?? {}}
+        definicion={definicionEstable ?? {
+          key: modulo.modulo_key,
+          nombre: cat.nombre,
+          descripcion: cat.descripcion,
+          secciones: [],
+        }}
+        datosIniciales={modoEdicion ? datosEdit : datosInicialesEstables}
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}
       />
