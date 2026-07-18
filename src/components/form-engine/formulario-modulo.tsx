@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react";
+import { toast } from "sonner";
 import { CampoRenderer } from "./campo-renderer";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
@@ -25,6 +26,8 @@ export interface FormularioModuloHandle {
    * lista de campos faltantes.
    */
   mostrarFaltantes: () => string[];
+  /** Fuerza el guardado inmediato de los cambios pendientes. */
+  flush: () => Promise<void>;
 }
 
 /**
@@ -54,6 +57,7 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
     marcarTodosTocados,
     faltantes,
     progreso,
+    flush,
   } = useFormModulo({
     moduloId,
     definicion,
@@ -81,6 +85,9 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
       mostrarFaltantes: () => {
         marcarTodosTocados();
         if (faltantes.length > 0 && typeof document !== "undefined") {
+          toast.error(
+            `Aún faltan ${faltantes.length} campo(s) obligatorio(s) por completar.`,
+          );
           const primero = faltantes[0];
           // Esperamos al siguiente frame para que el DOM refleje los errores.
           requestAnimationFrame(() => {
@@ -101,8 +108,9 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
         }
         return faltantes;
       },
+      flush,
     }),
-    [faltantes, marcarTodosTocados],
+    [faltantes, marcarTodosTocados, flush],
   );
 
   return (
