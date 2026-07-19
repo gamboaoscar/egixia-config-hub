@@ -2,6 +2,45 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.16] — 2026-07-19 — Lote M11 (parcial)
+
+### Seguridad (migración)
+- **CRÍTICO 3 — Overrides de catálogo**: reemplazadas las políticas
+  `co_ins_internos`/`co_upd_internos` y `cos_insert_internos`/`cos_update_internos`
+  por versiones que sólo permiten `INSERT`/`UPDATE` directos a `admin`. Los
+  implementadores siguen operando vía server functions (service role) que
+  aplican la regla de protección de `camposConDatos`.
+- **CRÍTICO 4 — `profiles_guard_privileged_fields`**: la función ahora
+  bypasea las guardas cuando `auth.uid() IS NULL` (llamadas server-side).
+  Antes rompía `cambiarRolUsuario`/`cambiarEstadoUsuario` desde service role.
+
+### Corregido
+- **P0.5 (d)**: `enviarModuloARevision`, `aprobarModulo`,
+  `devolverModuloConObservaciones`, `reabrirModulo` y `reenviarModulo`
+  devuelven `correosEnviados: boolean`. Las UIs de módulo (cliente y admin)
+  muestran `toast.warning` no bloqueante cuando falla el envío.
+- **ALTO 5**: `mi-proyecto/modulo/$moduloId` ejecuta `formRef.current.flush()`
+  al desmontar la vista para no perder cambios pendientes al navegar.
+- **ALTO 7 — Carrera en catálogo**: `app.catalogo.tsx` mantiene un set
+  `busy` por control (campo/sección/opciones) que deshabilita el switch
+  o checkbox hasta que termina la mutación y `cargar()` refresca el estado.
+
+### Mantenimiento
+- **M6**: eliminado el hook muerto `useAutosaveModulo` de
+  `src/hooks/use-mi-proyecto.tsx`. El autoguardado real vive en
+  `use-form-modulo.ts`.
+- **M7**: `FormularioModulo` consume `autoguardado_debounce_ms` desde
+  `useParametrosSistema` y lo pasa a `useFormModulo` como `debounceMs`.
+
+### Pendiente en este lote
+- ALTO 6 (`window.open`): ya aplicado en el turno previo.
+- MEDIOS M1 (paginación línea a línea en `acta-pdf.dibujarFila`), M3
+  (helpers `fechaISOBogota`/`formatoFechaPlanaCO` en vencimientos y shells),
+  M4 (guard de `currentUserId` tras `fetchProfileFor`), M5 (endurecer
+  `aceptarInvitacion`), M8 (deshabilitar botones de `app.proyectos.$id`
+  durante mutaciones).
+- BAJOS B1–B3.
+
 ## [1.0.15] — 2026-07-18 — Lote correo + estabilización (parcial)
 
 ### Corregido (P0 — correos)

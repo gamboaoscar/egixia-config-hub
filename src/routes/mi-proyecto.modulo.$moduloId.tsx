@@ -130,6 +130,16 @@ function ModuloPage() {
     };
   }, []);
 
+  // Flush del autoguardado al desmontar la vista: si el usuario navega
+  // fuera antes de que expire el debounce, persistimos lo pendiente.
+  useEffect(() => {
+    const handle = formRef;
+    return () => {
+      // No await: el desmontaje no espera; el hook cancela su timer.
+      handle.current?.flush().catch(() => {});
+    };
+  }, []);
+
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
   }
@@ -226,12 +236,16 @@ function ModuloPage() {
     await formRef.current?.flush();
     setEnviando(true);
     try {
-      if (esReenvio) {
-        await reenviar({ data: { moduloId: modulo.id } });
-        toast.success("Módulo reenviado a revisión.");
-      } else {
-        await enviar({ data: { moduloId: modulo.id } });
-        toast.success("Módulo enviado a revisión.");
+      const res = esReenvio
+        ? await reenviar({ data: { moduloId: modulo.id } })
+        : await enviar({ data: { moduloId: modulo.id } });
+      toast.success(
+        esReenvio ? "Módulo reenviado a revisión." : "Módulo enviado a revisión.",
+      );
+      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
+        toast.warning(
+          "La acción se completó, pero las notificaciones por correo fallaron.",
+        );
       }
       await refreshModulos();
       setObservaciones([]);

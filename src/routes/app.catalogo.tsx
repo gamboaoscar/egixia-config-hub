@@ -79,6 +79,27 @@ function CatalogoPage() {
   const [editando, setEditando] = useState<{
     modulo_key: string; campo: CampoDefinicion; ov?: OverrideRow;
   } | null>(null);
+  // Set de claves ocupadas mientras se ejecuta una mutación de override
+  // (para deshabilitar el control y evitar carreras hasta que `cargar()`
+  // refresque el estado). Claves: `campo:<mod>:<key>`, `seccion:<mod>:<key>`,
+  // `opciones:<mod>:<key>`.
+  const [busy, setBusy] = useState<Set<string>>(new Set());
+  const conBusy = async (clave: string, fn: () => Promise<void>) => {
+    setBusy((prev) => {
+      const n = new Set(prev);
+      n.add(clave);
+      return n;
+    });
+    try {
+      await fn();
+    } finally {
+      setBusy((prev) => {
+        const n = new Set(prev);
+        n.delete(clave);
+        return n;
+      });
+    }
+  };
   const guardarCampo = useServerFn(guardarOverrideCampo);
   const guardarSeccion = useServerFn(guardarOverrideSeccion);
 
@@ -168,15 +189,17 @@ function CatalogoPage() {
     activo: boolean,
   ) => {
     if (!proyectoId) return;
-    try {
-      await guardarCampo({
-        data: { proyectoId, moduloKey: modulo_key, campoKey: campo.key, activo },
-      });
-      toast.success(activo ? "Campo activado." : "Campo desactivado.");
-      await cargar(proyectoId);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
-    }
+    await conBusy(`campo:${modulo_key}:${campo.key}`, async () => {
+      try {
+        await guardarCampo({
+          data: { proyectoId, moduloKey: modulo_key, campoKey: campo.key, activo },
+        });
+        toast.success(activo ? "Campo activado." : "Campo desactivado.");
+        await cargar(proyectoId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+      }
+    });
   };
 
   const toggleSeccion = async (
@@ -185,15 +208,17 @@ function CatalogoPage() {
     habilitada: boolean,
   ) => {
     if (!proyectoId) return;
-    try {
-      await guardarSeccion({
-        data: { proyectoId, moduloKey: modulo_key, seccionKey: seccion_key, habilitada },
-      });
-      toast.success(habilitada ? "Sección habilitada." : "Sección oculta.");
-      await cargar(proyectoId);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
-    }
+    await conBusy(`seccion:${modulo_key}:${seccion_key}`, async () => {
+      try {
+        await guardarSeccion({
+          data: { proyectoId, moduloKey: modulo_key, seccionKey: seccion_key, habilitada },
+        });
+        toast.success(habilitada ? "Sección habilitada." : "Sección oculta.");
+        await cargar(proyectoId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+      }
+    });
   };
 
   const toggleObligatoria = async (
@@ -202,20 +227,22 @@ function CatalogoPage() {
     obligatoria: boolean,
   ) => {
     if (!proyectoId) return;
-    try {
-      await guardarSeccion({
-        data: {
-          proyectoId,
-          moduloKey: modulo_key,
-          seccionKey: seccion_key,
-          obligatoria: obligatoria ? null : false,
-        },
-      });
-      toast.success("Configuración guardada.");
-      await cargar(proyectoId);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
-    }
+    await conBusy(`seccion:${modulo_key}:${seccion_key}`, async () => {
+      try {
+        await guardarSeccion({
+          data: {
+            proyectoId,
+            moduloKey: modulo_key,
+            seccionKey: seccion_key,
+            obligatoria: obligatoria ? null : false,
+          },
+        });
+        toast.success("Configuración guardada.");
+        await cargar(proyectoId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+      }
+    });
   };
 
   const toggleOpcionPermitida = async (
@@ -232,20 +259,22 @@ function CatalogoPage() {
     else actual.delete(valor);
     const arr = Array.from(actual);
     const enviar = arr.length === todas.length ? null : arr;
-    try {
-      await guardarCampo({
-        data: {
-          proyectoId,
-          moduloKey: modulo_key,
-          campoKey: campo.key,
-          opciones_permitidas: enviar,
-        },
-      });
-      toast.success("Opciones actualizadas.");
-      await cargar(proyectoId);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
-    }
+    await conBusy(`opciones:${modulo_key}:${campo.key}`, async () => {
+      try {
+        await guardarCampo({
+          data: {
+            proyectoId,
+            moduloKey: modulo_key,
+            campoKey: campo.key,
+            opciones_permitidas: enviar,
+          },
+        });
+        toast.success("Opciones actualizadas.");
+        await cargar(proyectoId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+      }
+    });
   };
 
   if (loading) {
@@ -302,6 +331,7 @@ function CatalogoPage() {
                   const obligatoria = (os?.obligatoria ?? null) !== false;
                   const secProtegida = seccionTieneDatos(key, s.key);
                   const seccionLocked = secProtegida && !esAdmin;
+                  const seccionBusy = busy.has(`seccion:${key}:${s.key}`);
                   return (
                     <div key={s.key} className="rounded-lg border border-border">
                       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40 px-3 py-2">
@@ -316,7 +346,7 @@ function CatalogoPage() {
                             <Switch
                               id={`sec-${key}-${s.key}-hab`}
                               checked={habilitada}
-                              disabled={seccionLocked && habilitada}
+                              disabled={(seccionLocked && habilitada) || seccionBusy}
                               onCheckedChange={(v) => toggleSeccion(key, s.key, v)}
                             />
                             <Label htmlFor={`sec-${key}-${s.key}-hab`} className="text-xs">
@@ -327,6 +357,7 @@ function CatalogoPage() {
                             <Switch
                               id={`sec-${key}-${s.key}-obl`}
                               checked={obligatoria}
+                              disabled={seccionBusy}
                               onCheckedChange={(v) => toggleObligatoria(key, s.key, v)}
                             />
                             <Label htmlFor={`sec-${key}-${s.key}-obl`} className="text-xs">
@@ -344,6 +375,8 @@ function CatalogoPage() {
                           const req = ov?.requerido ?? c.requerido ?? false;
                           const campoProtegido = tieneDato(key, c.key);
                           const campoLocked = campoProtegido && !esAdmin;
+                          const campoBusy = busy.has(`campo:${key}:${c.key}`);
+                          const opcionesBusy = busy.has(`opciones:${key}:${c.key}`);
                           const seleccionadas = opcionesSeleccionadas(key, c.key);
                           const permitidas = new Set<string>(
                             ov?.opciones_permitidas ?? c.opciones?.map((o) => o.valor) ?? [],
@@ -369,7 +402,7 @@ function CatalogoPage() {
                                   <div className="flex items-center gap-2">
                                     <Switch
                                       checked={activo}
-                                      disabled={campoLocked && activo}
+                                      disabled={(campoLocked && activo) || campoBusy}
                                       onCheckedChange={(v) => toggleActivoCampo(key, c, v)}
                                       id={`sw-${key}-${c.key}`}
                                     />
@@ -403,7 +436,7 @@ function CatalogoPage() {
                                       >
                                         <Checkbox
                                           checked={marcada}
-                                          disabled={opLocked}
+                                          disabled={opLocked || opcionesBusy}
                                           onCheckedChange={(v) =>
                                             toggleOpcionPermitida(key, c, op.valor, v === true)
                                           }

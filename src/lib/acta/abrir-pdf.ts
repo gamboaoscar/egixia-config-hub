@@ -8,8 +8,18 @@ export function abrirPdfBlob(base64: string, filename?: string | null): void {
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const blob = new Blob([bytes], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
-  const win = window.open(url, "_blank", "noopener");
-  if (!win) {
+  // window.open con "noopener" retorna null por especificación en muchos
+  // navegadores, aunque la pestaña sí se abra. Abrimos sin ese flag y
+  // limpiamos manualmente `opener`; el fallback de descarga solo actúa
+  // si el navegador realmente bloqueó el popup.
+  const win = window.open(url, "_blank");
+  if (win) {
+    try {
+      win.opener = null;
+    } catch {
+      // Algunos navegadores lanzan al escribir opener; irrelevante.
+    }
+  } else {
     // Popup bloqueado: forzar descarga.
     const a = document.createElement("a");
     a.href = url;

@@ -122,7 +122,7 @@ async function notificar(input: {
   actaVersion?: number;
   actaUrl?: string;
   observacionesCount?: number;
-}) {
+}): Promise<boolean> {
   const { notificarProyecto } = await import("@/lib/acta/notificaciones.server");
   const urlAppPath = `/app/modulo/${input.moduloId}`;
   const urlMiProyectoPath = `/mi-proyecto/modulo/${input.moduloId}`;
@@ -154,7 +154,7 @@ async function notificar(input: {
               },
             }
           : {};
-  await notificarProyecto({
+  const res = await notificarProyecto({
     proyectoId: input.proyectoId,
     moduloId: input.moduloId,
     tipo: input.tipo,
@@ -163,6 +163,7 @@ async function notificar(input: {
     urlMiProyectoPath,
     actorId: input.actorId ?? null,
   });
+  return res.ok;
 }
 
 /**
@@ -290,7 +291,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar({
+    const correosEnviados = await notificar({
       proyectoId: modulo.proyecto_id,
       actorId: userId,
       moduloId: modulo.id,
@@ -303,7 +304,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       actaUrl: urlFirmada ?? undefined,
     });
 
-    return { ok: true, acta_version: version };
+    return { ok: true, acta_version: version, correosEnviados };
   });
 
 // ---------- Aprobar (interno) ---------------------------------------------
@@ -341,10 +342,11 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
+    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      await notificar({
+      correosEnviados = await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -356,7 +358,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true };
+    return { ok: true, correosEnviados };
   });
 
 // ---------- Devolver con observaciones (interno) ---------------------------
@@ -431,10 +433,11 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
         cantidad_observaciones: filas.length,
       },
     );
+    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      await notificar({
+      correosEnviados = await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -447,7 +450,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, observaciones: filas.length };
+    return { ok: true, observaciones: filas.length, correosEnviados };
   });
 
 // ---------- Reabrir un módulo aprobado (interno) ---------------------------
@@ -485,10 +488,11 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
+    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      await notificar({
+      correosEnviados = await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -501,7 +505,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true };
+    return { ok: true, correosEnviados };
   });
 
 // ---------- Reenviar tras corregir (invitado) ------------------------------
@@ -581,7 +585,7 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar({
+    const correosEnviados = await notificar({
       proyectoId: modulo.proyecto_id,
       actorId: userId,
       moduloId: modulo.id,
@@ -594,5 +598,5 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       actaUrl: urlFirmada ?? undefined,
     });
 
-    return { ok: true, acta_version: version };
+    return { ok: true, acta_version: version, correosEnviados };
   });

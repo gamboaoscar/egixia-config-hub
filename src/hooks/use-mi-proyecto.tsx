@@ -215,43 +215,6 @@ export function useMiProyectoOptional() {
   return useContext(Ctx);
 }
 
-/**
- * Hook de autoguardado con debounce para el diligenciamiento de un módulo.
- * La Parte 5 llamará `saveDatos(datos, progreso)` cada vez que el usuario
- * modifique un campo. Aquí ya queda cableado el estado "Guardado".
- */
-export function useAutosaveModulo(moduloId: string | null, debounceMs = 800) {
-  const { setSaveStatus, markSaved, refreshModulos } = useMiProyecto();
-
-  const saveDatos = useCallback(
-    (datos: Record<string, unknown>, progreso?: number) => {
-      if (!moduloId) return Promise.resolve();
-      setSaveStatus("saving");
-      return new Promise<void>((resolve) => {
-        // Debounce simple: cada llamada reemplaza la anterior.
-        clearTimeout((saveDatos as unknown as { _t?: number })._t);
-        (saveDatos as unknown as { _t?: number })._t = window.setTimeout(async () => {
-          const payload =
-            typeof progreso === "number"
-              ? { datos: datos as never, progreso }
-              : { datos: datos as never };
-          const { error } = await supabase
-            .from("proyecto_modulos")
-            .update(payload)
-            .eq("id", moduloId);
-          if (error) {
-            console.error("[autosave] error", error);
-            setSaveStatus("error");
-          } else {
-            markSaved();
-            refreshModulos();
-          }
-          resolve();
-        }, debounceMs);
-      });
-    },
-    [moduloId, debounceMs, setSaveStatus, markSaved, refreshModulos],
-  );
-
-  return { saveDatos };
-}
+// Nota: el hook `useAutosaveModulo` fue eliminado. El autoguardado real
+// vive en `src/lib/form-engine/use-form-modulo.ts`, que persiste con
+// debounce y consume el parámetro configurable `autoguardado_debounce_ms`.
