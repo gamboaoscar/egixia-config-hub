@@ -79,6 +79,15 @@ export function CampoArchivo({
     };
   }, [valorActual]);
 
+  // Cleanup del ObjectURL del panel de ajuste al desmontar el campo
+  // (por si el usuario navega mientras el panel está abierto).
+  useEffect(() => {
+    return () => {
+      if (ajuste) URL.revokeObjectURL(ajuste.previewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const seleccionar = () => inputRef.current?.click();
 
   const verArchivo = async () => {
