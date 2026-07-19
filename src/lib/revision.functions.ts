@@ -122,7 +122,7 @@ async function notificar(input: {
   actaVersion?: number;
   actaUrl?: string;
   observacionesCount?: number;
-}) {
+}): Promise<boolean> {
   const { notificarProyecto } = await import("@/lib/acta/notificaciones.server");
   const urlAppPath = `/app/modulo/${input.moduloId}`;
   const urlMiProyectoPath = `/mi-proyecto/modulo/${input.moduloId}`;
@@ -154,7 +154,7 @@ async function notificar(input: {
               },
             }
           : {};
-  await notificarProyecto({
+  const res = await notificarProyecto({
     proyectoId: input.proyectoId,
     moduloId: input.moduloId,
     tipo: input.tipo,
@@ -163,6 +163,7 @@ async function notificar(input: {
     urlMiProyectoPath,
     actorId: input.actorId ?? null,
   });
+  return res.ok;
 }
 
 /**
