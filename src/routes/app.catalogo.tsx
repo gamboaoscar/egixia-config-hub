@@ -331,6 +331,7 @@ function CatalogoPage() {
                   const obligatoria = (os?.obligatoria ?? null) !== false;
                   const secProtegida = seccionTieneDatos(key, s.key);
                   const seccionLocked = secProtegida && !esAdmin;
+                  const seccionBusy = busy.has(`seccion:${key}:${s.key}`);
                   return (
                     <div key={s.key} className="rounded-lg border border-border">
                       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40 px-3 py-2">
@@ -345,7 +346,7 @@ function CatalogoPage() {
                             <Switch
                               id={`sec-${key}-${s.key}-hab`}
                               checked={habilitada}
-                              disabled={seccionLocked && habilitada}
+                              disabled={(seccionLocked && habilitada) || seccionBusy}
                               onCheckedChange={(v) => toggleSeccion(key, s.key, v)}
                             />
                             <Label htmlFor={`sec-${key}-${s.key}-hab`} className="text-xs">
@@ -356,6 +357,7 @@ function CatalogoPage() {
                             <Switch
                               id={`sec-${key}-${s.key}-obl`}
                               checked={obligatoria}
+                              disabled={seccionBusy}
                               onCheckedChange={(v) => toggleObligatoria(key, s.key, v)}
                             />
                             <Label htmlFor={`sec-${key}-${s.key}-obl`} className="text-xs">
@@ -373,6 +375,8 @@ function CatalogoPage() {
                           const req = ov?.requerido ?? c.requerido ?? false;
                           const campoProtegido = tieneDato(key, c.key);
                           const campoLocked = campoProtegido && !esAdmin;
+                          const campoBusy = busy.has(`campo:${key}:${c.key}`);
+                          const opcionesBusy = busy.has(`opciones:${key}:${c.key}`);
                           const seleccionadas = opcionesSeleccionadas(key, c.key);
                           const permitidas = new Set<string>(
                             ov?.opciones_permitidas ?? c.opciones?.map((o) => o.valor) ?? [],
@@ -398,7 +402,7 @@ function CatalogoPage() {
                                   <div className="flex items-center gap-2">
                                     <Switch
                                       checked={activo}
-                                      disabled={campoLocked && activo}
+                                      disabled={(campoLocked && activo) || campoBusy}
                                       onCheckedChange={(v) => toggleActivoCampo(key, c, v)}
                                       id={`sw-${key}-${c.key}`}
                                     />
@@ -432,7 +436,7 @@ function CatalogoPage() {
                                       >
                                         <Checkbox
                                           checked={marcada}
-                                          disabled={opLocked}
+                                          disabled={opLocked || opcionesBusy}
                                           onCheckedChange={(v) =>
                                             toggleOpcionPermitida(key, c, op.valor, v === true)
                                           }
