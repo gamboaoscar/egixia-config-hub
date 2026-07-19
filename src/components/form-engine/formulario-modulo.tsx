@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { CampoRenderer } from "./campo-renderer";
 import { campoActivo, campoVisible } from "@/lib/form-engine/validacion";
 import { useFormModulo } from "@/lib/form-engine/use-form-modulo";
+import { useParametrosSistema } from "@/hooks/use-parametros-sistema";
 import type { DatosModulo, ModuloDefinicion } from "@/lib/form-engine/tipos";
 
 interface Props {
@@ -48,6 +49,7 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
   },
   ref,
 ) {
+  const parametros = useParametrosSistema();
   const {
     datos,
     errores,
@@ -64,6 +66,7 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
     datosIniciales,
     soloLectura,
     onCambio,
+    debounceMs: parametros.autoguardado_debounce_ms,
   });
 
   useEffect(() => {
