@@ -433,10 +433,11 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
         cantidad_observaciones: filas.length,
       },
     );
+    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      await notificar({
+      correosEnviados = await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -449,7 +450,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, observaciones: filas.length };
+    return { ok: true, observaciones: filas.length, correosEnviados };
   });
 
 // ---------- Reabrir un módulo aprobado (interno) ---------------------------
