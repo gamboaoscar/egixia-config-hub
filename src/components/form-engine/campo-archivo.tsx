@@ -87,7 +87,19 @@ export function CampoArchivo({
     try {
       const url = await firmarUrl(valorActual.bucket, valorActual.storagePath);
       if (!url) throw new Error("No se pudo obtener el enlace del archivo.");
-      window.open(url, "_blank", "noopener");
+      // Ver abajo (abrir-pdf.ts): "noopener" fuerza retorno null y
+      // dispara falsos "popup bloqueado". Abrimos y limpiamos opener.
+      const win = window.open(url, "_blank");
+      if (win) {
+        try {
+          win.opener = null;
+        } catch {
+          // ignore
+        }
+      } else {
+        // Popup bloqueado: caemos a descarga directa.
+        window.location.href = url;
+      }
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "No se pudo abrir el archivo.",
@@ -252,14 +264,23 @@ export function CampoArchivo({
     setAjuste(null);
   };
 
+  const [quitando, setQuitando] = useState(false);
   const quitar = async () => {
     if (!valorActual) return;
-    // Borrado best-effort del binario. La fila de `archivos` queda como
-    // histórico; se limpia con el módulo si aplica.
-    await import("@/integrations/supabase/client").then(({ supabase }) =>
-      supabase.storage.from(valorActual.bucket).remove([valorActual.storagePath]),
-    );
-    onChange(null);
+    setQuitando(true);
+    // Persistimos primero la limpieza en el módulo (evita quedar sin
+    // binario y con la referencia todavía apuntando a él si el remove
+    // falla o la sesión expira). El borrado del binario es best-effort.
+    const bucket = valorActual.bucket;
+    const path = valorActual.storagePath;
+    try {
+      onChange(null);
+      await import("@/integrations/supabase/client").then(({ supabase }) =>
+        supabase.storage.from(bucket).remove([path]),
+      );
+    } finally {
+      setQuitando(false);
+    }
   };
 
   // ── Render ───────────────────────────────────────────────────────────
