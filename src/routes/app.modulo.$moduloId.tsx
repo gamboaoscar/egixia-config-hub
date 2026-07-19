@@ -286,8 +286,13 @@ function RevisionModuloPage() {
   const handleAprobar = async () => {
     setAccion("aprobar");
     try {
-      await aprobar({ data: { moduloId: modulo.id } });
+      const res = await aprobar({ data: { moduloId: modulo.id } });
       toast.success("Módulo aprobado.");
+      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
+        toast.warning(
+          "La acción se completó, pero las notificaciones por correo fallaron.",
+        );
+      }
       await cargar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo aprobar.");
@@ -310,10 +315,15 @@ function RevisionModuloPage() {
     }
     setAccion("devolver");
     try {
-      await devolver({
+      const res = await devolver({
         data: { moduloId: modulo.id, observaciones: nuevas },
       });
       toast.success("Módulo devuelto al proveedor con observaciones.");
+      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
+        toast.warning(
+          "La acción se completó, pero las notificaciones por correo fallaron.",
+        );
+      }
       setNuevas([]);
       await cargar();
     } catch (err) {
@@ -326,8 +336,13 @@ function RevisionModuloPage() {
   const handleReabrir = async () => {
     setAccion("reabrir");
     try {
-      await reabrir({ data: { moduloId: modulo.id } });
+      const res = await reabrir({ data: { moduloId: modulo.id } });
       toast.success("Módulo reabierto.");
+      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
+        toast.warning(
+          "La acción se completó, pero las notificaciones por correo fallaron.",
+        );
+      }
       await cargar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo reabrir.");
@@ -452,12 +467,16 @@ function RevisionModuloPage() {
     if (!(await guardarSiEditando())) return;
     setEnviando(true);
     try {
-      if (esReenvio) {
-        await reenviar({ data: { moduloId: modulo.id } });
-        toast.success("Módulo reenviado a revisión.");
-      } else {
-        await enviar({ data: { moduloId: modulo.id } });
-        toast.success("Módulo enviado a revisión.");
+      const res = esReenvio
+        ? await reenviar({ data: { moduloId: modulo.id } })
+        : await enviar({ data: { moduloId: modulo.id } });
+      toast.success(
+        esReenvio ? "Módulo reenviado a revisión." : "Módulo enviado a revisión.",
+      );
+      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
+        toast.warning(
+          "La acción se completó, pero las notificaciones por correo fallaron.",
+        );
       }
       setModoEdicion(false);
       await cargar();
