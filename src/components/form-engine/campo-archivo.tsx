@@ -378,11 +378,15 @@ export function CampoArchivo({
                     type="button"
                     size="sm"
                     variant="ghost"
-                    disabled={subiendo}
+                    disabled={subiendo || quitando}
                     onClick={quitar}
                     className="text-muted-foreground hover:text-red-600"
                   >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    {quitando ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    )}
                     Quitar
                   </Button>
                 </>
