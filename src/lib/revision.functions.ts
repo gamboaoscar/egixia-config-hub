@@ -585,7 +585,7 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    await notificar({
+    const correosEnviados = await notificar({
       proyectoId: modulo.proyecto_id,
       actorId: userId,
       moduloId: modulo.id,
@@ -598,5 +598,5 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       actaUrl: urlFirmada ?? undefined,
     });
 
-    return { ok: true, acta_version: version };
+    return { ok: true, acta_version: version, correosEnviados };
   });
