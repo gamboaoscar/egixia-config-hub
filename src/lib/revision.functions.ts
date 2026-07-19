@@ -488,10 +488,11 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
+    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      await notificar({
+      correosEnviados = await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -504,7 +505,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true };
+    return { ok: true, correosEnviados };
   });
 
 // ---------- Reenviar tras corregir (invitado) ------------------------------
