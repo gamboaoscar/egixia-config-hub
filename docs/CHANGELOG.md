@@ -2,93 +2,55 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
-## [1.0.16] — 2026-07-19 — Lote M11 (parcial)
+## [1.0.17] — 2026-07-19 — Cierre de revisión de código + seguimiento de invitaciones para implementador
 
-### Seguridad (migración)
-- **CRÍTICO 3 — Overrides de catálogo**: reemplazadas las políticas
-  `co_ins_internos`/`co_upd_internos` y `cos_insert_internos`/`cos_update_internos`
-  por versiones que sólo permiten `INSERT`/`UPDATE` directos a `admin`. Los
-  implementadores siguen operando vía server functions (service role) que
-  aplican la regla de protección de `camposConDatos`.
-- **CRÍTICO 4 — `profiles_guard_privileged_fields`**: la función ahora
-  bypasea las guardas cuando `auth.uid() IS NULL` (llamadas server-side).
-  Antes rompía `cambiarRolUsuario`/`cambiarEstadoUsuario` desde service role.
+### Añadido
+- **Listado de invitaciones vía server function** (`listarInvitaciones`,
+  con `supabaseAdmin` + `exigirInterno`): el implementador ya puede hacer
+  seguimiento de invitaciones en `/app/invitaciones` (la RLS de la tabla
+  es solo-admin y el select directo le cargaba vacío). El token nunca
+  viaja al cliente; orden por `created_at` desc, límite 200.
+- **Helpers de fecha plana** `formatoFechaPlanaCO` /
+  `formatoFechaPlanaCortaCO` en `fechas.ts`: formatean "YYYY-MM-DD" sin
+  corrimiento de zona (parseo y/m/d + formato UTC).
+- **Migración `20260719120000_auditoria_guard_jsonb.sql`** (B1): guard en
+  `auditar_datos_modulo` que retorna sin auditar si `OLD.datos`/`NEW.datos`
+  no son objetos jsonb, evitando que el trigger rompa el UPDATE.
 
-### Corregido
-- **P0.5 (d)**: `enviarModuloARevision`, `aprobarModulo`,
-  `devolverModuloConObservaciones`, `reabrirModulo` y `reenviarModulo`
-  devuelven `correosEnviados: boolean`. Las UIs de módulo (cliente y admin)
-  muestran `toast.warning` no bloqueante cuando falla el envío.
-- **ALTO 5**: `mi-proyecto/modulo/$moduloId` ejecuta `formRef.current.flush()`
-  al desmontar la vista para no perder cambios pendientes al navegar.
-- **ALTO 7 — Carrera en catálogo**: `app.catalogo.tsx` mantiene un set
-  `busy` por control (campo/sección/opciones) que deshabilita el switch
-  o checkbox hasta que termina la mutación y `cargar()` refresca el estado.
-
-### Mantenimiento
-- **M6**: eliminado el hook muerto `useAutosaveModulo` de
-  `src/hooks/use-mi-proyecto.tsx`. El autoguardado real vive en
-  `use-form-modulo.ts`.
-- **M7**: `FormularioModulo` consume `autoguardado_debounce_ms` desde
-  `useParametrosSistema` y lo pasa a `useFormModulo` como `debounceMs`.
-
-### Pendiente en este lote
-- ALTO 6 (`window.open`): ya aplicado en el turno previo.
-- MEDIOS M1 (paginación línea a línea en `acta-pdf.dibujarFila`), M3
-  (helpers `fechaISOBogota`/`formatoFechaPlanaCO` en vencimientos y shells),
-  M4 (guard de `currentUserId` tras `fetchProfileFor`), M5 (endurecer
-  `aceptarInvitacion`), M8 (deshabilitar botones de `app.proyectos.$id`
-  durante mutaciones).
-- BAJOS B1–B3.
-
-## [1.0.15] — 2026-07-18 — Lote correo + estabilización (parcial)
-
-### Corregido (P0 — correos)
-- **Autenticación de `enviar-correo`**: la Edge Function ahora acepta como
-  fuente primaria el header `x-egixia-secret` comparado en tiempo constante
-  con el secreto de proyecto `CORREO_WEBHOOK_SECRET`. Se conservan como
-  fallback `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` y
-  `<SUPABASE_SECRET_KEYS>`. Esto elimina los 401 en producción cuando la
-  clave de servicio del proyecto es opaca (`sb_secret_*`) en lugar de un
-  JWT legacy.
-- **`enviarBatch` firma en cada request** con `x-egixia-secret` leyendo
-  `process.env.CORREO_WEBHOOK_SECRET`.
-
-### Corregido (P0.5 — feedback de envío)
-- `enviarBatch` devuelve `{ ok, edgeStatus, totalMensajes, exitosos,
-  fallidos, error? }` y ese resultado se propaga a `notificarProyecto`
-  y `notificarInvitacion`.
-- `crearInvitacion` y `reenviarInvitacion` devuelven
-  `{ correoEnviado, correoError }`. La UI de invitaciones muestra un
-  toast rojo con detalle cuando el correo no se pudo entregar, dejando
-  claro que la invitación existe pero requiere reenvío o compartir el
-  enlace manualmente.
-
-### Corregido (CRÍTICOS)
-1. **Pérdida de datos en formularios**: `useFormModulo` sólo resetea su
-   estado cuando cambia `moduloId`. Antes dependía también de
-   `definicion`/`datosIniciales`, que el padre re-crea en cada render y
-   pisaba los cambios en vuelo durante los autosaves.
-2. **Referencias estables**: las rutas `mi-proyecto/modulo/$moduloId` y
-   `app/modulo/$moduloId` memoizan `definicion`, `overrides` y
-   `datosIniciales` para no forzar re-cálculos ni volver a montar el
-   motor de formularios.
-3. **`flush()` expuesto por `FormularioModulo`**: se llama antes de
-   previsualizar o enviar a revisión, garantizando que el debounce del
-   autosave no deje cambios sin persistir.
-4. **Feedback en `mostrarFaltantes`**: además de desplazar el foco al
-   primer campo faltante, el componente muestra un toast rojo con el
-   número de campos obligatorios pendientes.
-
-### Infraestructura
-- Nuevo secreto de proyecto `CORREO_WEBHOOK_SECRET` (48 chars, generado
-  automáticamente). No requiere gestión manual.
-
-### Pendiente para próximo lote
-- CRÍTICO 5–7 y todos los ítems MEDIOS/BAJOS del pedido original
-  (helpers de fecha CO en `vencimiento-banner` y `modulo-estado`,
-  refresco automático de la tabla de invitaciones, endurecimiento de
-  `catalogo_overrides`, etc.).
+### Cambiado
+- **C2 — Revalidación con definición efectiva**: `enviarModuloARevision` y
+  `reenviarModulo` validan con `cargarDefinicionEfectiva` (catálogo +
+  overrides de campos y secciones) y `camposRequeridosFaltantes`, en lugar
+  de la definición base sin overrides; ya no se exigen campos ocultos o
+  relajados por proyecto y las tablas validan sus columnas requeridas.
+- **M1 — Acta PDF**: `dibujarFila` dibuja las líneas por bloques con salto
+  de página; un valor con más líneas de las que caben ya no se imprime
+  fuera del área (y < 0). El label solo aparece en el primer bloque.
+- **M2 — Quitar un archivo ya NO borra el binario en Storage**: el binario
+  queda como histórico, igual que las filas de `archivos`. Así, si el
+  autosave falla tras quitar, el valor guardado no queda apuntando a un
+  archivo inexistente. El botón "Quitar" se deshabilita mientras se aplica.
+- **M3 — Zona horaria**: `diasHasta` calcula "hoy" con `fechaISOBogota()` y
+  el diff con `Date.UTC` (nada de `new Date()` local); `hoyStr` del detalle
+  de módulo usa `fechaISOBogota()`; los formateos de `fecha_limite` en
+  banner de vencimiento, detalle de proyecto (admin y cliente) y shell del
+  cliente usan los helpers planos nuevos.
+- **M4 — `use-auth`**: `fetchProfileFor` descarta resultados si el usuario
+  activo cambió durante los awaits (carrera de cambio de sesión).
+- **M5 — `aceptarInvitacion`**: una cuenta inhabilitada no se reactiva ni
+  se le cambia la contraseña (rollback + error claro); el upsert de perfil
+  de un usuario existente ya no fuerza `estado: 'activo'`; si la cuenta
+  Auth se creó en esta ejecución y falla un paso posterior, se elimina
+  (rollback completo); el lookup en Auth pagina `listUsers` (hasta 25
+  páginas de 200) en vez de mirar solo la primera.
+- **M8 — Detalle de proyecto (admin)**: botones de activar/inhabilitar,
+  desvincular y eliminar proyecto se deshabilitan mientras la mutación
+  está en vuelo (sin dobles envíos).
+- **B2 — `camposConDatos`**: un valor de tabla (array) solo cuenta como
+  diligenciado si alguna fila tiene al menos una celda no vacía (`[{}]` o
+  `[""]` ya no cuentan).
+- **B3 — `campo-archivo`**: cleanup que revoca la object URL de la vista
+  previa del panel de ajuste al desmontar.
 
 ## [1.0.14] — 2026-07-17 — Remitente de correo unificado
 
