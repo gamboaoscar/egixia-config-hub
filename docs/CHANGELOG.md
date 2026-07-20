@@ -2,6 +2,52 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.20] — 2026-07-20 — Flujo de extensión de plazos + respuestas a observaciones
+
+### Añadido
+- **Flujo de extensión de plazo** para `comportamiento_vencimiento =
+  'extension_implementador'` (migración `20260720130000_extension_plazo`:
+  columnas `extension_solicitada_at`/`extension_solicitada_por` en
+  `proyecto_modulos`):
+  - `solicitarExtension` (`revision.functions.ts`): el invitado (o un
+    interno) solicita la extensión de un módulo vencido; valida
+    comportamiento, vencimiento y ausencia de solicitud pendiente;
+    audita `extension_solicitada` y notifica **solo a internos** con la
+    nueva plantilla `extension_solicitada` (asunto "Solicitud de
+    extensión de plazo — {módulo} · {proyecto}", CTA a `/app/modulo/{id}`).
+  - Concesión en `actualizarConfigModulo`: al ampliar la fecha límite
+    con solicitud pendiente se limpian los campos y se audita
+    `extension_concedida`.
+  - UI cliente: banner ámbar con botón "Solicitar extensión" en
+    `/mi-proyecto/modulo/{id}` (o estado "Extensión solicitada el
+    {fecha}") y resumen en la tarjeta del módulo del proyecto. UI
+    interna: chip ámbar "Extensión solicitada {fecha}" en la fila del
+    módulo (`/app/proyectos/{id}`) y en Configuración de
+    `/app/modulo/{id}` con nota sobre la concesión.
+- **Respuestas a observaciones (canal bidireccional)** (migración
+  `20260720130500_observacion_respuestas`: tabla `observacion_respuestas`
+  con RLS de solo lectura para internos/miembros; mutaciones solo por
+  server function):
+  - `responderObservacion`: responde a observaciones `abiertas`
+    (interno o miembro activo), audita `observacion_respondida` y
+    notifica a la contraparte con la plantilla `observacion_respondida`
+    (texto de la respuesta + CTA al módulo de cada portal).
+  - `listarRespuestasObservaciones(moduloId)`: respuestas del módulo con
+    autor resuelto (nombre + interno/cliente).
+  - Componente compartido `HiloRespuestasObservacion`
+    (`src/components/observacion-respuestas.tsx`) usado en ambos
+    portales bajo cada observación (abiertas y resueltas en el portal
+    interno), con composer "Responder…" solo en observaciones abiertas.
+- `notificarProyecto` acepta `destinatarios: "ambos" | "internos" |
+  "invitados"` para notificar solo a un grupo.
+
+### Corregido
+- **`extension_implementador` ahora bloquea la edición al vencer**:
+  `vencimientoBloqueaEdicion` (movida a `src/lib/modulo-estado.ts`, con
+  re-export en `vencimiento-banner.tsx`) devuelve `true` también para
+  ese comportamiento; antes se comportaba igual que `solo_avisar` y el
+  flujo de extensión no tenía efecto real.
+
 ## [1.0.19] — 2026-07-20 — Módulo Usuarios internos + opciones dinámicas entre módulos + agregar módulo a proyecto existente
 
 ### Añadido

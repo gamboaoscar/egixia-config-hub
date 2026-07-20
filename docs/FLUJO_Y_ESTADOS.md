@@ -148,8 +148,9 @@ componente `VencimientoBanner` muestra:
 - `bloquear` (vencido) → banner rojo + módulo en solo lectura.
 - `editable_avisar` (vencido) → banner ámbar, edición habilitada.
 - `solo_avisar` (vencido) → banner ámbar informativo.
-- `extension_implementador` (vencido) → banner ámbar indicando que
-  EGIXIA puede extender el plazo.
+- `extension_implementador` (vencido) → banner ámbar **con botón
+  "Solicitar extensión"** (o el estado de la solicitud pendiente) y
+  módulo en solo lectura hasta que se conceda la extensión.
 - **≤ 3 días** para el cierre → banner azul suave con recordatorio.
 
 El topbar del invitado muestra además una pastilla con la **fecha
@@ -176,7 +177,69 @@ cuando `fecha_limite` es superada:
 - `bloquear`: el invitado no puede seguir editando.
 - `editable_avisar`: sigue editable, se muestra un aviso.
 - `solo_avisar`: solo aviso, sin bloqueo.
-- `extension_implementador`: el implementador puede otorgar prórroga.
+- `extension_implementador`: el módulo queda en **solo lectura** al
+  vencer (igual que `bloquear`), pero el cliente puede **solicitar una
+  extensión** desde su portal; el implementador la concede ampliando la
+  fecha límite.
+
+La semántica vive en `vencimientoBloqueaEdicion`
+(`src/lib/modulo-estado.ts`): devuelve `true` para `bloquear` y
+`extension_implementador` vencidos.
+
+## Flujo de extensión de plazo (`extension_implementador`)
+
+1. El módulo vence con `comportamiento_vencimiento =
+   'extension_implementador'` → queda en solo lectura para el invitado.
+2. El invitado (o un interno en su nombre) pulsa **"Solicitar
+   extensión"** en `/mi-proyecto/modulo/{id}`. La server function
+   `solicitarExtension` (`src/lib/revision.functions.ts`) valida:
+   comportamiento correcto, módulo vencido y que no exista ya una
+   solicitud pendiente. Setea `proyecto_modulos.extension_solicitada_at
+   / extension_solicitada_por`, audita `extension_solicitada` y envía el
+   correo `extension_solicitada` **solo al equipo interno** (asunto
+   "Solicitud de extensión de plazo — {módulo} · {proyecto}", CTA a
+   `/app/modulo/{id}`).
+3. Mientras la solicitud está pendiente, el cliente ve "Extensión
+   solicitada el {fecha} — tu implementador la está revisando" (banner
+   del módulo y tarjeta del proyecto) y el equipo interno ve un chip
+   ámbar "Extensión solicitada {fecha}" en la fila del módulo
+   (`/app/proyectos/{id}`) y en la sección Configuración de
+   `/app/modulo/{id}`.
+4. **Concesión**: el interno amplía la `fecha_limite` desde la
+   configuración del módulo. `actualizarConfigModulo`
+   (`src/lib/admin.functions.ts`) detecta que la nueva fecha es
+   posterior a la anterior con solicitud pendiente, limpia
+   `extension_solicitada_at/_por` y audita `extension_concedida`
+   (fecha anterior, fecha nueva, quién y cuándo la solicitó). El módulo
+   vuelve a ser editable de inmediato.
+
+## Respuestas a observaciones (canal bidireccional)
+
+Cada observación admite un **hilo de respuestas** entre el cliente y el
+equipo EGIXIA, visible en ambos portales bajo la observación
+correspondiente (`/app/modulo/{id}` — abiertas y resueltas — y
+`/mi-proyecto/modulo/{id}`).
+
+- **Tabla `observacion_respuestas`** (`observacion_id` → observaciones
+  ON DELETE CASCADE, `autor_id` → profiles, `mensaje` 1–2000
+  caracteres, `created_at`). RLS: SELECT para internos o miembros del
+  proyecto de la observación; **sin políticas de INSERT/UPDATE/DELETE**
+  — toda mutación pasa por server function con service role.
+- **`responderObservacion`** (`src/lib/revision.functions.ts`): valida
+  acceso (interno o miembro activo), que la observación exista y esté
+  `abierta`; inserta con `supabaseAdmin`, audita
+  `observacion_respondida` (observación y longitud) y envía el correo
+  `observacion_respondida` **a la contraparte** (cliente responde →
+  internos; interno responde → invitados del proyecto) con el texto de
+  la respuesta y CTA al módulo del portal de cada grupo.
+- **`listarRespuestasObservaciones(moduloId)`**: misma autorización;
+  devuelve las respuestas de todas las observaciones del módulo con el
+  autor resuelto (nombre + interno/cliente).
+- **UI**: componente compartido `HiloRespuestasObservacion`
+  (`src/components/observacion-respuestas.tsx`) — burbujas sobrias que
+  distinguen EGIXIA (tinte primario + etiqueta "· EGIXIA") del cliente,
+  fecha en `formatoFechaHoraCO`, y textarea "Responder…" con envío solo
+  cuando la observación está `abierta`. El hilo se refresca al enviar.
 
 ## Flujo de invitación
 
