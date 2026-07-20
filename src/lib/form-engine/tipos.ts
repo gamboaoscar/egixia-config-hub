@@ -53,6 +53,18 @@ export interface OpcionCampo {
   hex?: string;
 }
 
+/**
+ * Origen dinámico de opciones: filtra las `opciones` estáticas dejando
+ * solo las seleccionadas en el campo `checkbox_multiple` de otro módulo
+ * del mismo proyecto (p. ej. los roles internos marcados en Seguridad).
+ * Si el módulo origen no existe o su selección está vacía, se muestran
+ * las opciones completas.
+ */
+export interface OpcionesDesde {
+  moduloKey: string;
+  campoKey: string;
+}
+
 /** Definición de una columna para el tipo 'tabla'. */
 export interface ColumnaTabla {
   key: string;
@@ -61,6 +73,11 @@ export interface ColumnaTabla {
   requerido?: boolean;
   /** Opciones para `tipo === 'select'`. */
   opciones?: OpcionCampo[];
+  /**
+   * Filtra las `opciones` estáticas dejando solo las seleccionadas en el
+   * campo checkbox_multiple de otro módulo del mismo proyecto.
+   */
+  opcionesDesde?: OpcionesDesde;
   /** Configuración para `tipo === 'archivo'`. */
   archivo?: ConfigArchivo;
   /** Guía contextual mostrada como popover en el encabezado. */
@@ -101,6 +118,11 @@ export interface CampoDefinicion {
   requerido?: boolean;
   guia?: GuiaCampo;
   opciones?: OpcionCampo[];
+  /**
+   * Filtra las `opciones` estáticas dejando solo las seleccionadas en el
+   * campo checkbox_multiple de otro módulo del mismo proyecto.
+   */
+  opcionesDesde?: OpcionesDesde;
   validacion?: ReglasValidacion;
   /** Placeholder del input, cuando aplique. */
   placeholder?: string;

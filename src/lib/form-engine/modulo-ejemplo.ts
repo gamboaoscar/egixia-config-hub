@@ -4,15 +4,17 @@ import type { ModuloDefinicion } from "./tipos";
 import { MODULO_IMAGEN } from "./modulos/imagen";
 import { MODULO_SOCIEDADES } from "./modulos/sociedades";
 import { MODULO_SEGURIDAD } from "./modulos/seguridad";
+import { MODULO_USUARIOS_INTERNOS } from "./modulos/usuarios-internos";
 
 /**
  * Registro de definiciones de módulos disponibles en el motor de
- * formularios (Partes 7–9): Imagen, Sociedades y Seguridad.
+ * formularios: Imagen, Sociedades, Seguridad y Usuarios internos.
  */
 const REGISTRO: Record<string, ModuloDefinicion> = {
   imagen: MODULO_IMAGEN,
   sociedades: MODULO_SOCIEDADES,
   seguridad: MODULO_SEGURIDAD,
+  usuarios_internos: MODULO_USUARIOS_INTERNOS,
 };
 
 /**
