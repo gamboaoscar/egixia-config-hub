@@ -17,7 +17,9 @@ export type TipoCorreo =
   | "invitacion"
   | "acta_envio"
   | "acta_devolucion"
-  | "acta_aprobacion";
+  | "acta_aprobacion"
+  | "extension_solicitada"
+  | "observacion_respondida";
 
 export interface ContextoCorreo {
   invitacion?: {
@@ -46,6 +48,23 @@ export interface ContextoCorreo {
   aprobacion?: {
     proyecto: string;
     moduloNombre: string;
+    urlModulo?: string;
+  };
+  extension?: {
+    proyecto: string;
+    moduloNombre: string;
+    solicitanteNombre: string;
+    /** Fecha límite vencida (YYYY-MM-DD) como texto ya formateado. */
+    fechaLimiteTexto?: string;
+    urlModulo?: string;
+  };
+  respuesta?: {
+    proyecto: string;
+    moduloNombre: string;
+    campoKey: string;
+    autorNombre: string;
+    /** Texto de la respuesta (se escapa al renderizar). */
+    mensaje: string;
     urlModulo?: string;
   };
 }
@@ -231,6 +250,55 @@ export function renderCorreo(
           : undefined,
       });
       const texto = `EGIXIA · Módulo aprobado\nMódulo: ${c.moduloNombre}\nProyecto: ${c.proyecto}\n${c.urlModulo ? `Módulo: ${c.urlModulo}\n` : ""}`;
+      return { asunto, html, texto };
+    }
+
+    case "extension_solicitada": {
+      const c = ctx.extension;
+      if (!c) throw new Error("Falta contexto de extensión.");
+      const asunto = `Solicitud de extensión de plazo — ${c.moduloNombre} · ${c.proyecto}`;
+      const meta: Array<[string, string]> = [
+        ["Proyecto", c.proyecto],
+        ["Módulo", c.moduloNombre],
+        ["Solicitada por", c.solicitanteNombre],
+        ...(c.fechaLimiteTexto
+          ? ([["Fecha límite vencida", c.fechaLimiteTexto]] as [string, string][])
+          : []),
+      ];
+      const html = envolver({
+        titulo: "Solicitud de extensión de plazo",
+        intro:
+          "El plazo del módulo venció y el cliente solicitó una extensión. Para concederla, amplía la fecha límite del módulo desde su configuración.",
+        cuerpoHtml: tablaMeta(meta),
+        cta: c.urlModulo
+          ? { texto: "Revisar módulo", url: c.urlModulo }
+          : undefined,
+      });
+      const texto = `EGIXIA · Solicitud de extensión de plazo\nMódulo: ${c.moduloNombre}\nProyecto: ${c.proyecto}\nSolicitada por: ${c.solicitanteNombre}\n${c.urlModulo ? `Módulo: ${c.urlModulo}\n` : ""}`;
+      return { asunto, html, texto };
+    }
+
+    case "observacion_respondida": {
+      const c = ctx.respuesta;
+      if (!c) throw new Error("Falta contexto de respuesta.");
+      const asunto = `EGIXIA · Nueva respuesta en una observación — ${c.moduloNombre}`;
+      const meta: Array<[string, string]> = [
+        ["Proyecto", c.proyecto],
+        ["Módulo", c.moduloNombre],
+        ["Campo observado", c.campoKey],
+        ["Respondida por", c.autorNombre],
+      ];
+      const html = envolver({
+        titulo: "Nueva respuesta en una observación",
+        intro: `${escaparHtml(c.autorNombre)} respondió a una observación del módulo:`,
+        cuerpoHtml:
+          tablaMeta(meta) +
+          `<blockquote style="margin:16px 0 0;padding:12px 16px;border-left:3px solid #0F2B8E;background:#F0F4F8;border-radius:0 10px 10px 0;font-size:14px;line-height:1.55;color:#1F2937;white-space:pre-wrap;">${escaparHtml(c.mensaje)}</blockquote>`,
+        cta: c.urlModulo
+          ? { texto: "Ver la conversación", url: c.urlModulo }
+          : undefined,
+      });
+      const texto = `EGIXIA · Nueva respuesta en una observación\nMódulo: ${c.moduloNombre}\nProyecto: ${c.proyecto}\nDe: ${c.autorNombre}\n\n${c.mensaje}\n${c.urlModulo ? `\nMódulo: ${c.urlModulo}\n` : ""}`;
       return { asunto, html, texto };
     }
   }

@@ -171,8 +171,15 @@ export async function notificarProyecto(input: {
   urlAppPath?: string;
   urlMiProyectoPath?: string;
   actorId?: string | null;
+  /**
+   * A quién notificar. Por defecto "ambos". Por ejemplo, una solicitud
+   * de extensión solo interesa al equipo interno; una respuesta a una
+   * observación solo a la contraparte de quien la escribió.
+   */
+  destinatarios?: "ambos" | "internos" | "invitados";
 }): Promise<EnvioResultado> {
   const dest = await destinatariosProyecto(input.proyectoId);
+  const alcance = input.destinatarios ?? "ambos";
   const b = await baseUrl();
   const mensajes: Mensaje[] = [];
 
@@ -189,22 +196,28 @@ export async function notificarProyecto(input: {
     }
   };
 
+  const inyectarUrl = (ctx: ContextoCorreo, url: string | undefined) => {
+    if (!url) return;
+    if (ctx.acta) ctx.acta.urlModulo = url;
+    if (ctx.observaciones) ctx.observaciones.urlModulo = url;
+    if (ctx.aprobacion) ctx.aprobacion.urlModulo = url;
+    if (ctx.extension) ctx.extension.urlModulo = url;
+    if (ctx.respuesta) ctx.respuesta.urlModulo = url;
+  };
+
   // Internos
-  {
+  if (alcance !== "invitados") {
     const ctx = structuredClone(input.contextoBase);
-    const url = input.urlAppPath ? `${b}${input.urlAppPath}` : undefined;
-    if (ctx.acta && url) ctx.acta.urlModulo = url;
-    if (ctx.observaciones && url) ctx.observaciones.urlModulo = url;
-    if (ctx.aprobacion && url) ctx.aprobacion.urlModulo = url;
+    inyectarUrl(ctx, input.urlAppPath ? `${b}${input.urlAppPath}` : undefined);
     construir(dest.internos, ctx);
   }
   // Invitados
-  {
+  if (alcance !== "internos") {
     const ctx = structuredClone(input.contextoBase);
-    const url = input.urlMiProyectoPath ? `${b}${input.urlMiProyectoPath}` : undefined;
-    if (ctx.acta && url) ctx.acta.urlModulo = url;
-    if (ctx.observaciones && url) ctx.observaciones.urlModulo = url;
-    if (ctx.aprobacion && url) ctx.aprobacion.urlModulo = url;
+    inyectarUrl(
+      ctx,
+      input.urlMiProyectoPath ? `${b}${input.urlMiProyectoPath}` : undefined,
+    );
     construir(dest.invitados, ctx);
   }
 
