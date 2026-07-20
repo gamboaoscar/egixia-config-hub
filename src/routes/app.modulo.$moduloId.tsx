@@ -51,6 +51,7 @@ import {
   type CampoOverride,
   type SeccionOverride,
 } from "@/lib/form-engine/overrides";
+import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas";
 import {
   aprobarModulo,
   devolverModuloConObservaciones,
@@ -143,6 +144,11 @@ function RevisionModuloPage() {
   const [guardando, setGuardando] = useState(false);
   const [overrides, setOverrides] = useState<CampoOverride[]>([]);
   const [seccionOverrides, setSeccionOverrides] = useState<SeccionOverride[]>([]);
+  // Datos de los módulos hermanos del proyecto (por modulo_key) para
+  // resolver `opcionesDesde` (opciones dinámicas entre módulos).
+  const [datosHermanos, setDatosHermanos] = useState<
+    Record<string, Record<string, unknown>>
+  >({});
   const [cfgFecha, setCfgFecha] = useState<string>("");
   const [cfgComp, setCfgComp] = useState<string>("solo_avisar");
   const [cfgEstado, setCfgEstado] = useState<string>("sin_iniciar");
@@ -192,7 +198,7 @@ function RevisionModuloPage() {
       setCfgEstado(data.estado as string);
     }
     if (data?.proyecto_id) {
-      const [{ data: ov }, { data: os }] = await Promise.all([
+      const [{ data: ov }, { data: os }, { data: hermanos }] = await Promise.all([
         supabase
           .from("catalogo_overrides")
           .select("modulo_key, campo_key, activo, label, requerido, guia, opciones_permitidas")
@@ -201,9 +207,19 @@ function RevisionModuloPage() {
           .from("catalogo_overrides_seccion")
           .select("modulo_key, seccion_key, habilitada, obligatoria")
           .eq("proyecto_id", data.proyecto_id),
+        supabase
+          .from("proyecto_modulos")
+          .select("modulo_key, datos")
+          .eq("proyecto_id", data.proyecto_id),
       ]);
       setOverrides((ov ?? []) as unknown as CampoOverride[]);
       setSeccionOverrides((os ?? []) as unknown as SeccionOverride[]);
+      const mapa: Record<string, Record<string, unknown>> = {};
+      for (const h of hermanos ?? []) {
+        mapa[h.modulo_key as string] =
+          (h.datos as Record<string, unknown>) ?? {};
+      }
+      setDatosHermanos(mapa);
     }
   };
 
@@ -243,12 +259,23 @@ function RevisionModuloPage() {
     }
   };
 
+  // Definición efectiva: catálogo + overrides + opciones dinámicas
+  // resueltas con los datos de los módulos hermanos del proyecto.
+  const definicionEfectiva = (moduloKey: string) =>
+    resolverOpcionesDinamicas(
+      aplicarOverrides(definicionModulo(moduloKey), overrides, seccionOverrides),
+      (k) => datosHermanos[k] ?? null,
+    );
+
   const campos = useMemo(() => {
     if (!modulo) return [] as { key: string; label: string; seccion: string }[];
-    const def = aplicarOverrides(
-      definicionModulo(modulo.modulo_key),
-      overrides,
-      seccionOverrides,
+    const def = resolverOpcionesDinamicas(
+      aplicarOverrides(
+        definicionModulo(modulo.modulo_key),
+        overrides,
+        seccionOverrides,
+      ),
+      (k) => datosHermanos[k] ?? null,
     );
     const out: { key: string; label: string; seccion: string }[] = [];
     for (const s of def.secciones) {
@@ -258,7 +285,7 @@ function RevisionModuloPage() {
       }
     }
     return out;
-  }, [modulo, overrides, seccionOverrides]);
+  }, [modulo, overrides, seccionOverrides, datosHermanos]);
 
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
@@ -283,11 +310,7 @@ function RevisionModuloPage() {
     if (!modulo) return;
     setGuardando(true);
     try {
-      const def = aplicarOverrides(
-        definicionModulo(modulo.modulo_key),
-        overrides,
-        seccionOverrides,
-      );
+      const def = definicionEfectiva(modulo.modulo_key);
       const progreso = calcularProgreso(def, datosEdit);
       await editar({
         data: { moduloId: modulo.id, datos: datosEdit, progreso },
@@ -397,11 +420,7 @@ function RevisionModuloPage() {
   const guardarSiEditando = async (): Promise<boolean> => {
     if (!modoEdicion) return true;
     try {
-      const def = aplicarOverrides(
-        definicionModulo(modulo.modulo_key),
-        overrides,
-        seccionOverrides,
-      );
+      const def = definicionEfectiva(modulo.modulo_key);
       const progreso = calcularProgreso(def, datosEdit);
       await editar({ data: { moduloId: modulo.id, datos: datosEdit, progreso } });
       return true;
@@ -677,11 +696,7 @@ function RevisionModuloPage() {
         ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={aplicarOverrides(
-          definicionModulo(modulo.modulo_key),
-          overrides,
-          seccionOverrides,
-        )}
+        definicion={definicionEfectiva(modulo.modulo_key)}
         datosIniciales={modoEdicion ? datosEdit : (modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}

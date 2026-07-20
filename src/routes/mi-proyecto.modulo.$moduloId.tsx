@@ -26,6 +26,7 @@ import {
 } from "@/components/form-engine/formulario-modulo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { aplicarOverrides } from "@/lib/form-engine/overrides";
+import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas";
 import {
   enviarModuloARevision,
   reenviarModulo,
@@ -60,6 +61,7 @@ function ModuloPage() {
     refreshModulos,
     overridesDeProyecto,
     seccionOverridesDeProyecto,
+    modulosDeProyecto,
   } = useMiProyecto();
   const modulo = moduloById(moduloId);
   const navigate = useNavigate();
@@ -89,15 +91,28 @@ function ModuloPage() {
   );
   const overridesKey = JSON.stringify(overridesTodos);
   const seccionOverridesKey = JSON.stringify(seccionOverridesTodos);
+  // Módulos hermanos del mismo proyecto: alimentan `opcionesDesde`
+  // (p. ej. el select de rol de Usuarios internos se filtra con la
+  // selección de roles del módulo Seguridad).
+  const modulosHermanos = modulosDeProyecto(
+    moduloById(moduloId)?.proyecto_id ?? "",
+  );
+  const hermanosKey = JSON.stringify(
+    modulosHermanos.map((h) => [h.modulo_key, h.datos]),
+  );
   const definicionMemo = useMemo(() => {
     if (!modKey) return { key: "", nombre: "", secciones: [] } as never;
-    return aplicarOverrides(
-      definicionModulo(modKey),
-      overridesTodos,
-      seccionOverridesTodos,
+    return resolverOpcionesDinamicas(
+      aplicarOverrides(
+        definicionModulo(modKey),
+        overridesTodos,
+        seccionOverridesTodos,
+      ),
+      (moduloKey) =>
+        modulosHermanos.find((h) => h.modulo_key === moduloKey)?.datos ?? null,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modKey, overridesKey, seccionOverridesKey]);
+  }, [modKey, overridesKey, seccionOverridesKey, hermanosKey]);
   // Datos iniciales: capturamos el snapshot al primer render del módulo
   // para NO reinyectar el estado en cada refresh del hook `useMiProyecto`
   // (que rehidrata `modulo.datos` con una referencia nueva).

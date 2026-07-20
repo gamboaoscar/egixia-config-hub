@@ -8,6 +8,7 @@ import {
   FileText,
   Loader2,
   Mail,
+  Plus,
   RefreshCw,
   Trash2,
   UserMinus,
@@ -18,13 +19,34 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerHabil } from "@/components/ui/date-picker-habil";
 import { EstadoPastilla } from "@/components/estado-pastilla";
 import { supabase } from "@/integrations/supabase/client";
-import { moduloCatalogo } from "@/lib/modulos-catalogo";
+import {
+  MODULOS_CATALOGO,
+  moduloCatalogo,
+  type ModuloKey,
+} from "@/lib/modulos-catalogo";
 import { descargarActaFirmada } from "@/lib/acta.functions";
 import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import {
   actualizarMiembroEstado,
+  agregarModuloAProyecto,
   desvincularMiembro,
   eliminarProyecto,
   listarInvitaciones,
@@ -32,7 +54,14 @@ import {
   revocarInvitacion,
 } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { formatoFechaCortaCO, formatoFechaHoraCO, formatoFechaPlanaCortaCO } from "@/lib/fechas";
+import { useParametrosSistema } from "@/hooks/use-parametros-sistema";
+import { esNoHabil, parseISOLocal } from "@/lib/festivos-co";
+import {
+  fechaISOBogota,
+  formatoFechaCortaCO,
+  formatoFechaHoraCO,
+  formatoFechaPlanaCortaCO,
+} from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/proyectos/$id")({
   component: DetalleProyecto,
@@ -111,6 +140,12 @@ function DetalleProyecto() {
   // M8: id de la mutación en vuelo (miembro o "eliminar-proyecto") para
   // deshabilitar los botones y evitar dobles envíos.
   const [mutando, setMutando] = useState<string | null>(null);
+  // Agregar módulo a un proyecto existente (Dialog interno).
+  const [dlgAgregarModulo, setDlgAgregarModulo] = useState(false);
+  const [nuevoModuloKey, setNuevoModuloKey] = useState<string>("");
+  const [nuevoModuloFecha, setNuevoModuloFecha] = useState<string>("");
+  const [nuevoModuloComp, setNuevoModuloComp] = useState<string>("solo_avisar");
+  const [agregandoModulo, setAgregandoModulo] = useState(false);
 
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
@@ -119,8 +154,11 @@ function DetalleProyecto() {
   const listarInv = useServerFn(listarInvitaciones);
   const reenviarInv = useServerFn(reenviarInvitacion);
   const revocarInv = useServerFn(revocarInvitacion);
+  const agregarModulo = useServerFn(agregarModuloAProyecto);
   const { profile } = useAuth();
+  const parametros = useParametrosSistema();
   const navigate = useNavigate();
+  const hoyStr = fechaISOBogota();
 
   const handleEliminarProyecto = async () => {
     if (!proy) return;
@@ -235,6 +273,62 @@ function DetalleProyecto() {
 
   const invitados = miembros.filter((x) => x.rol_en_proyecto === "invitado");
   const equipo = miembros.filter((x) => x.rol_en_proyecto === "implementador");
+
+  // Solo el equipo interno puede agregar módulos; se ofrecen los del
+  // catálogo que aún no están asignados al proyecto.
+  const esInterno =
+    profile?.rol === "admin" || profile?.rol === "implementador";
+  const modulosDisponibles = (
+    Object.keys(MODULOS_CATALOGO) as ModuloKey[]
+  ).filter((k) => !modulos.some((m) => m.modulo_key === k));
+
+  const handleAgregarModulo = async () => {
+    if (!nuevoModuloKey) {
+      toast.error("Selecciona el módulo a agregar.");
+      return;
+    }
+    if (nuevoModuloFecha && nuevoModuloFecha < hoyStr) {
+      toast.error("La fecha límite no puede ser anterior a hoy.");
+      return;
+    }
+    if (
+      nuevoModuloFecha &&
+      parametros.bloquear_fines_semana_festivos &&
+      esNoHabil(parseISOLocal(nuevoModuloFecha))
+    ) {
+      toast.error(
+        "La fecha no puede caer en fin de semana o festivo de Colombia.",
+      );
+      return;
+    }
+    setAgregandoModulo(true);
+    try {
+      await agregarModulo({
+        data: {
+          proyectoId: id,
+          moduloKey: nuevoModuloKey as ModuloKey,
+          fecha_limite: nuevoModuloFecha || null,
+          comportamiento_vencimiento: nuevoModuloComp as
+            | "bloquear"
+            | "editable_avisar"
+            | "solo_avisar"
+            | "extension_implementador",
+        },
+      });
+      toast.success("Módulo agregado al proyecto.");
+      setDlgAgregarModulo(false);
+      setNuevoModuloKey("");
+      setNuevoModuloFecha("");
+      setNuevoModuloComp("solo_avisar");
+      await cargar();
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo agregar el módulo.",
+      );
+    } finally {
+      setAgregandoModulo(false);
+    }
+  };
 
   const handleEstado = async (mid: string, estado: "activo" | "inhabilitado") => {
     setMutando(mid);
@@ -398,9 +492,27 @@ function DetalleProyecto() {
 
       {/* Módulos */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Módulos ({modulos.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Módulos ({modulos.length})
+          </h3>
+          {esInterno && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDlgAgregarModulo(true)}
+              disabled={modulosDisponibles.length === 0}
+              title={
+                modulosDisponibles.length === 0
+                  ? "El proyecto ya tiene todos los módulos del catálogo."
+                  : undefined
+              }
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Agregar módulo
+            </Button>
+          )}
+        </div>
         <div className="mt-4 grid gap-3">
           {modulos.map((m) => {
             const cat = moduloCatalogo(m.modulo_key);
@@ -606,6 +718,95 @@ function DetalleProyecto() {
           </ul>
         )}
       </section>
+
+      {/* Dialog: agregar módulo al proyecto (interno) */}
+      <Dialog open={dlgAgregarModulo} onOpenChange={setDlgAgregarModulo}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar módulo al proyecto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Módulo</Label>
+              <Select value={nuevoModuloKey} onValueChange={setNuevoModuloKey}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecciona un módulo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modulosDisponibles.map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {MODULOS_CATALOGO[k].nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {nuevoModuloKey && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {MODULOS_CATALOGO[nuevoModuloKey as ModuloKey]?.descripcion}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs">Fecha límite (opcional)</Label>
+              <div className="mt-1">
+                <DatePickerHabil
+                  value={nuevoModuloFecha}
+                  onChange={setNuevoModuloFecha}
+                  min={hoyStr}
+                  bloquearNoHabiles={parametros.bloquear_fines_semana_festivos}
+                />
+              </div>
+              {nuevoModuloFecha && nuevoModuloFecha < hoyStr && (
+                <p className="mt-1 text-xs text-red-600">
+                  La fecha no puede ser anterior a hoy.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs">Al vencer</Label>
+              <Select value={nuevoModuloComp} onValueChange={setNuevoModuloComp}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solo_avisar">Solo avisar</SelectItem>
+                  <SelectItem value="editable_avisar">
+                    Editable con aviso
+                  </SelectItem>
+                  <SelectItem value="bloquear">Bloquear al vencer</SelectItem>
+                  <SelectItem value="extension_implementador">
+                    Requiere extensión
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDlgAgregarModulo(false)}
+              disabled={agregandoModulo}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAgregarModulo}
+              disabled={
+                agregandoModulo ||
+                !nuevoModuloKey ||
+                (!!nuevoModuloFecha && nuevoModuloFecha < hoyStr)
+              }
+            >
+              {agregandoModulo ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-1 h-4 w-4" />
+              )}
+              Agregar módulo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

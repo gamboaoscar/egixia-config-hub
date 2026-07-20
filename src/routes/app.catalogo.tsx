@@ -156,7 +156,12 @@ function CatalogoPage() {
     return m;
   }, [ovSecciones]);
 
-  const modulos: ModuloKey[] = ["imagen", "sociedades", "seguridad"];
+  const modulos: ModuloKey[] = [
+    "imagen",
+    "sociedades",
+    "seguridad",
+    "usuarios_internos",
+  ];
 
   const tieneDato = (moduloKey: string, campoKey: string): boolean => {
     const datos = datosModulos[moduloKey] ?? {};
