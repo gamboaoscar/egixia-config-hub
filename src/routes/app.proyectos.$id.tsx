@@ -3,6 +3,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
+  CalendarClock,
   Download,
   ExternalLink,
   FileText,
@@ -81,6 +82,7 @@ interface Modulo {
   estado: string;
   progreso: number;
   fecha_limite: string | null;
+  extension_solicitada_at: string | null;
   datos: Record<string, unknown>;
   enviado_at: string | null;
   revisado_at: string | null;
@@ -184,7 +186,7 @@ function DetalleProyecto() {
       supabase
         .from("proyecto_modulos")
         .select(
-          "id, modulo_key, estado, progreso, fecha_limite, datos, enviado_at, revisado_at, updated_at, updated_por",
+          "id, modulo_key, estado, progreso, fecha_limite, extension_solicitada_at, datos, enviado_at, revisado_at, updated_at, updated_por",
         )
         .eq("proyecto_id", id)
         .order("modulo_key"),
@@ -529,6 +531,12 @@ function DetalleProyecto() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-foreground">{cat.nombre}</span>
                         <EstadoPastilla estado={m.estado as never} size="sm" />
+                        {m.extension_solicitada_at && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                            <CalendarClock className="h-3 w-3" />
+                            Extensión solicitada {formatoFechaHoraCO(m.extension_solicitada_at)}
+                          </span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Avance {m.progreso}%

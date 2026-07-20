@@ -3,6 +3,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
+  CalendarClock,
   CheckCircle2,
   Download,
   FileText,
@@ -55,10 +56,14 @@ import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas"
 import {
   aprobarModulo,
   devolverModuloConObservaciones,
+  listarRespuestasObservaciones,
   reabrirModulo,
   enviarModuloARevision,
   reenviarModulo,
+  responderObservacion,
+  type RespuestaObservacion,
 } from "@/lib/revision.functions";
+import { HiloRespuestasObservacion } from "@/components/observacion-respuestas";
 import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
 import { previsualizarActa, listarActas, descargarActaFirmada } from "@/lib/acta.functions";
 import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
@@ -98,6 +103,7 @@ interface ModuloRow {
     | "solo_avisar"
     | "extension_implementador"
     | null;
+  extension_solicitada_at: string | null;
   proyectos?: { nombre: string; empresa: string | null } | null;
 }
 
@@ -128,6 +134,9 @@ function RevisionModuloPage() {
   const aprobar = useServerFn(aprobarModulo);
   const devolver = useServerFn(devolverModuloConObservaciones);
   const reabrir = useServerFn(reabrirModulo);
+  const responderObs = useServerFn(responderObservacion);
+  const listarRespuestas = useServerFn(listarRespuestasObservaciones);
+  const [respuestas, setRespuestas] = useState<RespuestaObservacion[]>([]);
   const editar = useServerFn(editarDatosModulo);
   const actualizarConfig = useServerFn(actualizarConfigModulo);
   const enviar = useServerFn(enviarModuloARevision);
@@ -174,7 +183,7 @@ function RevisionModuloPage() {
     const { data, error } = await supabase
       .from("proyecto_modulos")
       .select(
-        "id, proyecto_id, modulo_key, estado, datos, progreso, enviado_at, revisado_at, fecha_limite, comportamiento_vencimiento, proyectos(nombre, empresa)",
+        "id, proyecto_id, modulo_key, estado, datos, progreso, enviado_at, revisado_at, fecha_limite, comportamiento_vencimiento, extension_solicitada_at, proyectos(nombre, empresa)",
       )
       .eq("id", moduloId)
       .maybeSingle();
@@ -188,6 +197,12 @@ function RevisionModuloPage() {
       .eq("proyecto_modulo_id", moduloId)
       .order("created_at", { ascending: false });
     setObservaciones((obs ?? []) as Observacion[]);
+    // Hilo de respuestas de todas las observaciones del módulo.
+    try {
+      setRespuestas(await listarRespuestas({ data: { moduloId } }));
+    } catch {
+      setRespuestas([]);
+    }
     setLoading(false);
     if (data) {
       setDatosEdit((data.datos as Record<string, unknown>) ?? {});
@@ -378,6 +393,19 @@ function RevisionModuloPage() {
     }
   };
 
+  const handleResponderObs = async (observacionId: string, mensaje: string) => {
+    try {
+      await responderObs({ data: { observacionId, mensaje } });
+      toast.success("Respuesta enviada al cliente.");
+      setRespuestas(await listarRespuestas({ data: { moduloId } }));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo enviar la respuesta.",
+      );
+      throw e;
+    }
+  };
+
   const handleGuardarConfig = async () => {
     if (!modulo) return;
     if (cfgFecha && cfgFecha < hoyStr) {
@@ -548,13 +576,28 @@ function RevisionModuloPage() {
 
       {/* Configuración del módulo (interno) */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Configuración del módulo
-        </h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Configuración del módulo
+          </h3>
+          {modulo.extension_solicitada_at && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800">
+              <CalendarClock className="h-3 w-3" />
+              Extensión solicitada {formatoFechaHoraCO(modulo.extension_solicitada_at)}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Ajusta el avance, la fecha de vencimiento y qué debe pasar cuando se
           cumpla. Los cambios quedan registrados en auditoría.
         </p>
+        {(modulo.extension_solicitada_at ||
+          modulo.comportamiento_vencimiento === "extension_implementador") && (
+          <p className="mt-1 text-xs text-amber-800">
+            Al ampliar la fecha límite se concede la extensión y se notifica
+            al registro de auditoría.
+          </p>
+        )}
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <Label className="text-xs">Estado del módulo</Label>
@@ -646,6 +689,13 @@ function RevisionModuloPage() {
                   {o.campo_key}
                 </div>
                 <p className="mt-1 text-foreground">{o.comentario}</p>
+                <HiloRespuestasObservacion
+                  respuestas={respuestas.filter(
+                    (r) => r.observacion_id === o.id,
+                  )}
+                  puedeResponder
+                  onResponder={(mensaje) => handleResponderObs(o.id, mensaje)}
+                />
               </li>
             ))}
           </ul>
@@ -940,6 +990,12 @@ function RevisionModuloPage() {
                   {o.campo_key}
                 </div>
                 <p className="mt-1 text-foreground/80">{o.comentario}</p>
+                <HiloRespuestasObservacion
+                  respuestas={respuestas.filter(
+                    (r) => r.observacion_id === o.id,
+                  )}
+                  puedeResponder={false}
+                />
               </li>
             ))}
           </ul>

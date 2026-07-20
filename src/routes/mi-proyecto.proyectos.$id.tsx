@@ -18,6 +18,7 @@ import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import {
   botonAccionModulo,
   diasHasta,
+  type ComportamientoVencimiento,
   type ModuloEstado,
 } from "@/lib/modulo-estado";
 import { esEditablePorInvitado } from "@/lib/modulo-estado";
@@ -160,6 +161,8 @@ function MiProyectoDetalle() {
                 estado={m.estado}
                 progreso={m.progreso}
                 fechaLimite={m.fecha_limite}
+                comportamiento={m.comportamiento_vencimiento}
+                extensionSolicitadaAt={m.extension_solicitada_at}
                 updatedAt={m.updated_at}
                 updatedPorNombre={m.updated_por ? autores[m.updated_por] ?? null : null}
               />
@@ -177,6 +180,8 @@ function ModuloCard({
   estado,
   progreso,
   fechaLimite,
+  comportamiento,
+  extensionSolicitadaAt,
   updatedAt,
   updatedPorNombre,
 }: {
@@ -185,12 +190,17 @@ function ModuloCard({
   estado: ModuloEstado;
   progreso: number;
   fechaLimite: string | null;
+  comportamiento: ComportamientoVencimiento | null;
+  extensionSolicitadaAt: string | null;
   updatedAt: string;
   updatedPorNombre: string | null;
 }) {
   const cat = moduloCatalogo(moduloKey);
   const Icon = cat.icon;
   const dias = diasHasta(fechaLimite);
+  const vencido = dias !== null && dias < 0;
+  const flujoExtension =
+    comportamiento === "extension_implementador" && vencido;
   const destacado = estado === "con_observaciones";
   const label = botonAccionModulo(estado);
   const bloqueado = !esEditablePorInvitado(estado);
@@ -305,6 +315,17 @@ function ModuloCard({
                   : dias <= 3
                     ? ` · faltan ${dias}d`
                     : "")}
+            </span>
+          </div>
+        )}
+
+        {flujoExtension && (
+          <div className="mt-3 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] text-amber-800">
+            <CalendarClock className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>
+              {extensionSolicitadaAt
+                ? `Extensión solicitada el ${formatoFechaHoraCO(extensionSolicitadaAt)} — tu implementador la está revisando.`
+                : "El plazo venció. Puedes solicitar una extensión a tu implementador desde el módulo."}
             </span>
           </div>
         )}

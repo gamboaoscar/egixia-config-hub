@@ -29,8 +29,13 @@ import { aplicarOverrides } from "@/lib/form-engine/overrides";
 import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas";
 import {
   enviarModuloARevision,
+  listarRespuestasObservaciones,
   reenviarModulo,
+  responderObservacion,
+  solicitarExtension,
+  type RespuestaObservacion,
 } from "@/lib/revision.functions";
+import { HiloRespuestasObservacion } from "@/components/observacion-respuestas";
 import { previsualizarActa } from "@/lib/acta.functions";
 
 /** Decodifica base64 → Uint8Array sin importar pdf-lib en el cliente. */
@@ -77,6 +82,11 @@ function ModuloPage() {
   const enviar = useServerFn(enviarModuloARevision);
   const reenviar = useServerFn(reenviarModulo);
   const previsualizar = useServerFn(previsualizarActa);
+  const solicitarExt = useServerFn(solicitarExtension);
+  const responderObs = useServerFn(responderObservacion);
+  const listarRespuestas = useServerFn(listarRespuestasObservaciones);
+  const [solicitandoExt, setSolicitandoExt] = useState(false);
+  const [respuestas, setRespuestas] = useState<RespuestaObservacion[]>([]);
 
   // Overrides y datos iniciales memoizados: la definición no debe cambiar
   // de referencia en cada render, porque `useFormModulo` sólo resetea su
@@ -137,6 +147,23 @@ function ModuloPage() {
         }
         setObservaciones((data ?? []) as Observacion[]);
       });
+  }, [moduloId]);
+
+  // Hilo de respuestas de las observaciones del módulo.
+  useEffect(() => {
+    if (!moduloId) return;
+    let cancelado = false;
+    listarRespuestas({ data: { moduloId } })
+      .then((rows) => {
+        if (!cancelado) setRespuestas(rows);
+      })
+      .catch(() => {
+        if (!cancelado) setRespuestas([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduloId]);
 
   useEffect(() => {
@@ -242,6 +269,39 @@ function ModuloPage() {
     }
   };
 
+  const handleSolicitarExtension = async () => {
+    setSolicitandoExt(true);
+    try {
+      await solicitarExt({ data: { moduloId: modulo.id } });
+      toast.success(
+        "Extensión solicitada. Tu implementador la revisará en breve.",
+      );
+      await refreshModulos();
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudo solicitar la extensión.";
+      toast.error(msg);
+    } finally {
+      setSolicitandoExt(false);
+    }
+  };
+
+  const handleResponderObs = async (observacionId: string, mensaje: string) => {
+    try {
+      await responderObs({ data: { observacionId, mensaje } });
+      toast.success("Respuesta enviada.");
+      const rows = await listarRespuestas({ data: { moduloId: modulo.id } });
+      setRespuestas(rows);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "No se pudo enviar la respuesta.";
+      toast.error(msg);
+      throw err;
+    }
+  };
+
   const handleEnviar = async () => {
     if (irAlPrimerFaltante()) return;
     if (!estadoPermiteEnviar) {
@@ -337,6 +397,9 @@ function ModuloPage() {
       <VencimientoBanner
         fechaLimite={modulo.fecha_limite}
         comportamiento={modulo.comportamiento_vencimiento}
+        extensionSolicitadaAt={modulo.extension_solicitada_at}
+        onSolicitarExtension={handleSolicitarExtension}
+        solicitandoExtension={solicitandoExt}
       />
 
       {bloqueadoPorEstado && (
@@ -368,6 +431,13 @@ function ModuloPage() {
                   {o.campo_key}
                 </div>
                 <p className="mt-1 text-sm text-foreground">{o.comentario}</p>
+                <HiloRespuestasObservacion
+                  respuestas={respuestas.filter(
+                    (r) => r.observacion_id === o.id,
+                  )}
+                  puedeResponder={o.estado === "abierta"}
+                  onResponder={(mensaje) => handleResponderObs(o.id, mensaje)}
+                />
               </li>
             ))}
           </ul>
