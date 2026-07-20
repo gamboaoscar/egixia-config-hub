@@ -59,23 +59,39 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
     // o con `resetPasswordForEmail` (usuarios que ya existían). En ambos
     // casos aquí solo tenemos que fijar la contraseña y confirmar el email.
     let userId: string | null = null;
+    let cuentaRecienCreada = false;
     const { data: lookup } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id, estado")
       .eq("email", claimed.email)
       .maybeSingle();
     if (lookup?.id) userId = lookup.id as string;
 
+    // Cuenta inhabilitada: no se reactiva ni se le cambia la contraseña
+    // por la vía de una invitación. Se restaura la invitación y se corta.
+    if (lookup?.id && lookup.estado === "inhabilitado") {
+      await rollback();
+      throw new Error("Esta cuenta está inhabilitada. Contacta a EGIXIA.");
+    }
+
     if (!userId) {
-      // Buscar en Auth por email (paginado; primer intento).
-      const { data: list } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 200,
-      });
-      const match = list?.users.find(
-        (u) => (u.email || "").toLowerCase() === claimed.email.toLowerCase(),
-      );
-      if (match) userId = match.id;
+      // Buscar en Auth por email, paginando hasta encontrarlo o agotar
+      // (corte de seguridad a 25 páginas de 200).
+      for (let page = 1; page <= 25; page++) {
+        const { data: list } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage: 200,
+        });
+        const users = list?.users ?? [];
+        const match = users.find(
+          (u) => (u.email || "").toLowerCase() === claimed.email.toLowerCase(),
+        );
+        if (match) {
+          userId = match.id;
+          break;
+        }
+        if (users.length < 200) break; // no hay más páginas
+      }
     }
 
     if (userId) {
@@ -108,22 +124,39 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
         );
       }
       userId = created.user.id;
+      cuentaRecienCreada = true;
     }
 
+    // Rollback completo: además de restaurar la invitación, elimina la
+    // cuenta Auth si fue creada en ESTA ejecución (no dejar huérfanos).
+    const rollbackTotal = async () => {
+      if (cuentaRecienCreada && userId) {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(userId);
+        } catch {
+          // best-effort: la restauración de la invitación sigue abajo.
+        }
+      }
+      await rollback();
+    };
+
     // 3. Actualizar/crear el perfil con el rol correcto de la invitación.
+    // A un usuario EXISTENTE no se le fuerza `estado: 'activo'`; solo la
+    // cuenta recién creada nace activa.
     const rolPerfil = claimed.rol_invitado === "implementador" ? "implementador" : "cliente";
+    const perfil: Record<string, unknown> = {
+      id: userId,
+      email: claimed.email,
+      nombre: data.nombre,
+      apellido: data.apellido,
+      rol: rolPerfil,
+    };
+    if (cuentaRecienCreada) perfil.estado = "activo";
     const { error: profileErr } = await supabaseAdmin
       .from("profiles")
-      .upsert({
-        id: userId,
-        email: claimed.email,
-        nombre: data.nombre,
-        apellido: data.apellido,
-        rol: rolPerfil,
-        estado: "activo",
-      });
+      .upsert(perfil as never);
     if (profileErr) {
-      await rollback();
+      await rollbackTotal();
       throw new Error("No se pudo crear el perfil del usuario.");
     }
 
@@ -142,7 +175,7 @@ export const aceptarInvitacion = createServerFn({ method: "POST" })
           { onConflict: "proyecto_id,profile_id,rol_en_proyecto" },
         );
       if (memberErr) {
-        await rollback();
+        await rollbackTotal();
         throw new Error("No se pudo vincular al usuario con el proyecto.");
       }
     }

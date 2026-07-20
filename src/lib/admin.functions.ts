@@ -489,7 +489,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       .single();
     if (error || !inv) throw new Error("No se pudo crear la invitación.");
 
-    const correoResultado = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: data.email,
       token,
       expira,
@@ -501,15 +501,45 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       email: data.email,
       rol_invitado: data.rol_invitado,
       proyecto_id: data.proyecto_id || null,
-      correo_enviado: correoResultado.ok,
-      correo_detalle: correoResultado,
     });
 
-    return {
-      id: inv.id,
-      correoEnviado: correoResultado.ok,
-      correoError: correoResultado.error ?? null,
-    };
+    return { id: inv.id };
+  });
+
+/**
+ * Listado de invitaciones para el panel interno. Se consulta con
+ * `supabaseAdmin` porque la RLS de `invitaciones` (`inv_select_admin`)
+ * es solo-admin y el implementador también necesita hacer seguimiento.
+ * NUNCA se devuelve el token.
+ */
+export const listarInvitaciones = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+
+    const { data, error } = await supabaseAdmin
+      .from("invitaciones")
+      .select(
+        "id, email, rol_invitado, proyecto_id, estado, expira_at, created_at, proyectos(nombre)",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error("No se pudieron cargar las invitaciones.");
+
+    return (data ?? []) as unknown as Array<{
+      id: string;
+      email: string;
+      rol_invitado: "implementador" | "invitado";
+      proyecto_id: string | null;
+      estado: "pendiente" | "aceptada" | "revocada" | "expirada";
+      expira_at: string;
+      created_at: string;
+      proyectos: { nombre: string } | null;
+    }>;
   });
 
 export const reenviarInvitacion = createServerFn({ method: "POST" })
@@ -538,7 +568,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       .eq("id", inv.id);
     if (error) throw new Error("No se pudo reenviar.");
 
-    const correoResultado = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: inv.email as string,
       token,
       expira,
@@ -548,15 +578,9 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
 
     await auditar(supabaseAdmin, userId, "invitacion_reenviada", "invitaciones", inv.id, {
       email: inv.email,
-      correo_enviado: correoResultado.ok,
-      correo_detalle: correoResultado,
     });
 
-    return {
-      ok: true,
-      correoEnviado: correoResultado.ok,
-      correoError: correoResultado.error ?? null,
-    };
+    return { ok: true };
   });
 
 export const revocarInvitacion = createServerFn({ method: "POST" })
@@ -618,7 +642,7 @@ async function enviarInvitacionCorreo(
     Math.round((input.expira.getTime() - Date.now()) / (24 * 3600 * 1000)),
   );
   const { notificarInvitacion } = await import("@/lib/acta/notificaciones.server");
-  const resultado = await notificarInvitacion({
+  await notificarInvitacion({
     invitacionId,
     destinatario: input.email,
     empresa,
@@ -637,12 +661,8 @@ async function enviarInvitacionCorreo(
       destinatario: input.email,
       url: urlRegistro,
       expira_at: input.expira.toISOString(),
-      correo_enviado: resultado.ok,
-      correo_detalle: resultado,
     },
   });
-
-  return resultado;
 }
 
 async function urlBaseDelPortal(): Promise<string> {
@@ -875,7 +895,19 @@ async function camposConDatos(
     if (v === null || v === undefined) return false;
     if (typeof v === "string") return v.trim().length > 0;
     if (typeof v === "number") return !Number.isNaN(v);
-    if (Array.isArray(v)) return v.length > 0;
+    if (Array.isArray(v)) {
+      // Valor de tabla: solo cuenta como diligenciado si alguna fila
+      // tiene al menos una celda con valor no vacío ([{}] o [""] no
+      // cuentan).
+      return v.some((fila) => {
+        if (fila && typeof fila === "object" && !Array.isArray(fila)) {
+          return Object.values(fila as Record<string, unknown>).some((c) =>
+            lleno(c),
+          );
+        }
+        return lleno(fila);
+      });
+    }
     if (typeof v === "object") return Object.keys(v as object).length > 0;
     return true;
   };

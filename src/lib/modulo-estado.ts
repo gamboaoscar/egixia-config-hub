@@ -1,3 +1,5 @@
+import { fechaISOBogota } from "@/lib/fechas";
+
 export type ModuloEstado =
   | "sin_iniciar"
   | "en_diligenciamiento"
@@ -59,9 +61,12 @@ export function botonAccionModulo(estado: ModuloEstado): string {
 /** Días hasta la fecha límite (negativo si ya venció). */
 export function diasHasta(fecha: string | null | undefined): number | null {
   if (!fecha) return null;
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const objetivo = new Date(fecha + "T00:00:00");
-  const diff = objetivo.getTime() - hoy.getTime();
+  // "Hoy" se calcula en zona America/Bogota y el diff en UTC puro:
+  // nada de `new Date()` local, que cambia de día según la zona del
+  // navegador o del servidor.
+  const hoy = fechaISOBogota();
+  const [hy, hm, hd] = hoy.split("-").map(Number);
+  const [fy, fm, fd] = fecha.split("-").map(Number);
+  const diff = Date.UTC(fy, fm - 1, fd) - Date.UTC(hy, hm - 1, hd);
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }

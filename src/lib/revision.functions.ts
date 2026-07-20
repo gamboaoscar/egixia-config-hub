@@ -3,11 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
-import {
-  campoActivo,
-  campoVisible,
-  valorLleno,
-} from "@/lib/form-engine/validacion";
+import { camposRequeridosFaltantes } from "@/lib/form-engine/validacion";
 import type { TipoCorreo } from "@/lib/acta/plantillas-correo";
 
 /**
@@ -122,7 +118,7 @@ async function notificar(input: {
   actaVersion?: number;
   actaUrl?: string;
   observacionesCount?: number;
-}): Promise<boolean> {
+}) {
   const { notificarProyecto } = await import("@/lib/acta/notificaciones.server");
   const urlAppPath = `/app/modulo/${input.moduloId}`;
   const urlMiProyectoPath = `/mi-proyecto/modulo/${input.moduloId}`;
@@ -154,7 +150,7 @@ async function notificar(input: {
               },
             }
           : {};
-  const res = await notificarProyecto({
+  await notificarProyecto({
     proyectoId: input.proyectoId,
     moduloId: input.moduloId,
     tipo: input.tipo,
@@ -163,7 +159,6 @@ async function notificar(input: {
     urlMiProyectoPath,
     actorId: input.actorId ?? null,
   });
-  return res.ok;
 }
 
 /**
@@ -246,19 +241,16 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       );
     }
 
-    // Revalidación server-side: todos los requeridos activos y visibles
-    // deben estar llenos.
-    const definicion = definicionModulo(modulo.modulo_key);
-    const faltantes: string[] = [];
-    for (const seccion of definicion.secciones) {
-      for (const c of seccion.campos) {
-        if (!campoActivo(c)) continue;
-        if (c.tipo === "info") continue;
-        if (!campoVisible(c, modulo.datos)) continue;
-        if (!c.requerido) continue;
-        if (!valorLleno(modulo.datos[c.key])) faltantes.push(c.key);
-      }
-    }
+    // Revalidación server-side con la definición EFECTIVA del proyecto
+    // (catálogo + overrides de campos y secciones): así no exigimos
+    // campos ocultos ni relajados para este proyecto, igual que el
+    // formulario y el acta.
+    const { cargarDefinicionEfectiva } = await import("@/lib/acta/acta.server");
+    const definicion = await cargarDefinicionEfectiva(
+      modulo.proyecto_id,
+      modulo.modulo_key,
+    );
+    const faltantes = camposRequeridosFaltantes(definicion, modulo.datos);
     if (faltantes.length > 0) {
       throw new Error(
         `Faltan ${faltantes.length} campo(s) requerido(s) por completar.`,
@@ -291,7 +283,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    const correosEnviados = await notificar({
+    await notificar({
       proyectoId: modulo.proyecto_id,
       actorId: userId,
       moduloId: modulo.id,
@@ -304,7 +296,7 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
       actaUrl: urlFirmada ?? undefined,
     });
 
-    return { ok: true, acta_version: version, correosEnviados };
+    return { ok: true, acta_version: version };
   });
 
 // ---------- Aprobar (interno) ---------------------------------------------
@@ -342,11 +334,10 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      correosEnviados = await notificar({
+      await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -358,7 +349,7 @@ export const aprobarModulo = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, correosEnviados };
+    return { ok: true };
   });
 
 // ---------- Devolver con observaciones (interno) ---------------------------
@@ -433,11 +424,10 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
         cantidad_observaciones: filas.length,
       },
     );
-    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      correosEnviados = await notificar({
+      await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -450,7 +440,7 @@ export const devolverModuloConObservaciones = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, observaciones: filas.length, correosEnviados };
+    return { ok: true, observaciones: filas.length };
   });
 
 // ---------- Reabrir un módulo aprobado (interno) ---------------------------
@@ -488,11 +478,10 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       proyecto_id: modulo.proyecto_id,
       modulo_key: modulo.modulo_key,
     });
-    let correosEnviados = true;
     {
       const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
       const actorNombre = await nombreActor(supabaseAdmin, userId);
-      correosEnviados = await notificar({
+      await notificar({
         proyectoId: modulo.proyecto_id,
       actorId: userId,
         moduloId: modulo.id,
@@ -505,7 +494,7 @@ export const reabrirModulo = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, correosEnviados };
+    return { ok: true };
   });
 
 // ---------- Reenviar tras corregir (invitado) ------------------------------
@@ -536,18 +525,14 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       throw new Error("Solo se reenvían módulos con observaciones pendientes.");
     }
 
-    // Requeridos completos.
-    const definicion = definicionModulo(modulo.modulo_key);
-    const faltantes: string[] = [];
-    for (const seccion of definicion.secciones) {
-      for (const c of seccion.campos) {
-        if (!campoActivo(c)) continue;
-        if (c.tipo === "info") continue;
-        if (!campoVisible(c, modulo.datos)) continue;
-        if (!c.requerido) continue;
-        if (!valorLleno(modulo.datos[c.key])) faltantes.push(c.key);
-      }
-    }
+    // Requeridos completos según la definición EFECTIVA del proyecto
+    // (catálogo + overrides), igual que en `enviarModuloARevision`.
+    const { cargarDefinicionEfectiva } = await import("@/lib/acta/acta.server");
+    const definicion = await cargarDefinicionEfectiva(
+      modulo.proyecto_id,
+      modulo.modulo_key,
+    );
+    const faltantes = camposRequeridosFaltantes(definicion, modulo.datos);
     if (faltantes.length > 0) {
       throw new Error(
         `Faltan ${faltantes.length} campo(s) requerido(s) por completar.`,
@@ -585,7 +570,7 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       modulo_key: modulo.modulo_key,
       acta_version: version,
     });
-    const correosEnviados = await notificar({
+    await notificar({
       proyectoId: modulo.proyecto_id,
       actorId: userId,
       moduloId: modulo.id,
@@ -598,5 +583,5 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       actaUrl: urlFirmada ?? undefined,
     });
 
-    return { ok: true, acta_version: version, correosEnviados };
+    return { ok: true, acta_version: version };
   });

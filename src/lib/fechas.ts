@@ -51,3 +51,28 @@ export function fechaISOBogota(input: Date | string | number = new Date()): stri
   // en-CA produce YYYY-MM-DD.
   return fmt.format(asDate(input));
 }
+
+/**
+ * Fecha "plana" (YYYY-MM-DD, sin componente horario, ej. `fecha_limite`)
+ * en formato largo es-CO SIN corrimiento de zona: se parsea y/m/d a mano
+ * y se formatea en UTC, de modo que "2026-07-19" siempre se muestre como
+ * "19 de julio de 2026" sin importar la zona del navegador.
+ */
+export function formatoFechaPlanaCO(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "UTC",
+    dateStyle: "long",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}
+
+/** Versión corta de `formatoFechaPlanaCO` (ej. "19 jul 2026"). */
+export function formatoFechaPlanaCortaCO(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}
