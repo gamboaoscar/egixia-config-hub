@@ -4,6 +4,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { camposRequeridosFaltantes } from "@/lib/form-engine/validacion";
+import { moduloVencido } from "@/lib/modulo-estado";
+import { formatoFechaPlanaCortaCO } from "@/lib/fechas";
 import type { TipoCorreo } from "@/lib/acta/plantillas-correo";
 
 /**
@@ -297,6 +299,273 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     });
 
     return { ok: true, acta_version: version };
+  });
+
+// ---------- Solicitar extensión de plazo (invitado o interno) --------------
+
+/**
+ * Con comportamiento `extension_implementador`, un módulo vencido queda en
+ * solo lectura hasta que el implementador amplíe la fecha límite. Esta
+ * función deja constancia de la solicitud del cliente y avisa al equipo
+ * interno por correo. La "concesión" ocurre en `actualizarConfigModulo`
+ * (admin.functions.ts) al mover la fecha límite hacia adelante.
+ */
+export const solicitarExtension = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data: modulo, error } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .select(
+        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento, extension_solicitada_at",
+      )
+      .eq("id", data.moduloId)
+      .maybeSingle();
+    if (error) throw new Error("No se pudo cargar el módulo.");
+    if (!modulo) throw new Error("El módulo no existe.");
+
+    // Autorización: miembro activo del proyecto o interno.
+    const rol = await rolDelUsuario(supabaseAdmin, userId);
+    const esInterno = rol === "admin" || rol === "implementador";
+    if (!esInterno) {
+      const miembro = await esMiembroDelProyecto(
+        supabaseAdmin,
+        userId,
+        modulo.proyecto_id,
+      );
+      if (!miembro) throw new Error("No tienes acceso a este proyecto.");
+    }
+
+    if (modulo.comportamiento_vencimiento !== "extension_implementador") {
+      throw new Error("Este módulo no usa el flujo de extensión de plazo.");
+    }
+    if (!moduloVencido(modulo.fecha_limite as string | null)) {
+      throw new Error(
+        "El módulo aún no está vencido; no necesitas una extensión.",
+      );
+    }
+    if (modulo.extension_solicitada_at) {
+      throw new Error(
+        "Ya hay una solicitud de extensión pendiente para este módulo.",
+      );
+    }
+
+    const ahora = new Date().toISOString();
+    const { error: updErr } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .update({
+        extension_solicitada_at: ahora,
+        extension_solicitada_por: userId,
+      } as never)
+      .eq("id", modulo.id);
+    if (updErr) throw new Error("No se pudo registrar la solicitud.");
+
+    await auditar(supabaseAdmin, userId, "extension_solicitada", modulo.id, {
+      proyecto_id: modulo.proyecto_id,
+      modulo_key: modulo.modulo_key,
+      fecha_limite: modulo.fecha_limite,
+    });
+
+    const meta = await metadatosProyecto(supabaseAdmin, modulo.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
+    const { notificarProyecto } = await import(
+      "@/lib/acta/notificaciones.server"
+    );
+    const envio = await notificarProyecto({
+      proyectoId: modulo.proyecto_id,
+      moduloId: modulo.id,
+      tipo: "extension_solicitada",
+      destinatarios: "internos",
+      contextoBase: {
+        extension: {
+          proyecto: meta.nombre,
+          moduloNombre: definicionModulo(modulo.modulo_key).nombre,
+          solicitanteNombre: actorNombre,
+          fechaLimiteTexto: modulo.fecha_limite
+            ? formatoFechaPlanaCortaCO(modulo.fecha_limite as string)
+            : undefined,
+        },
+      },
+      urlAppPath: `/app/modulo/${modulo.id}`,
+      actorId: userId,
+    });
+
+    return { ok: true, correosEnviados: envio.ok };
+  });
+
+// ---------- Respuestas a observaciones (canal bidireccional) ---------------
+
+const responderSchema = z.object({
+  observacionId: z.string().uuid(),
+  mensaje: z
+    .string()
+    .trim()
+    .min(1, "Escribe una respuesta.")
+    .max(2000, "La respuesta no puede superar 2000 caracteres."),
+});
+
+/**
+ * Añade una respuesta bajo una observación abierta. Puede responder el
+ * equipo interno o cualquier miembro activo del proyecto; la contraparte
+ * recibe un correo con el texto de la respuesta.
+ */
+export const responderObservacion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => responderSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data: obs, error } = await supabaseAdmin
+      .from("observaciones")
+      .select(
+        "id, campo_key, estado, proyecto_modulo_id, proyecto_modulos(id, proyecto_id, modulo_key)",
+      )
+      .eq("id", data.observacionId)
+      .maybeSingle();
+    if (error) throw new Error("No se pudo cargar la observación.");
+    if (!obs) throw new Error("La observación no existe.");
+    const mod = (obs as { proyecto_modulos?: unknown }).proyecto_modulos as {
+      id: string;
+      proyecto_id: string;
+      modulo_key: string;
+    } | null;
+    if (!mod) throw new Error("La observación no tiene módulo asociado.");
+
+    const rol = await rolDelUsuario(supabaseAdmin, userId);
+    const esInterno = rol === "admin" || rol === "implementador";
+    if (!esInterno) {
+      const miembro = await esMiembroDelProyecto(
+        supabaseAdmin,
+        userId,
+        mod.proyecto_id,
+      );
+      if (!miembro) throw new Error("No tienes acceso a este proyecto.");
+    }
+
+    if (obs.estado !== "abierta") {
+      throw new Error("Solo se puede responder a observaciones abiertas.");
+    }
+
+    const { error: insErr } = await supabaseAdmin
+      .from("observacion_respuestas")
+      .insert({
+        observacion_id: obs.id,
+        autor_id: userId,
+        mensaje: data.mensaje,
+      } as never);
+    if (insErr) throw new Error("No se pudo registrar la respuesta.");
+
+    await auditar(supabaseAdmin, userId, "observacion_respondida", mod.id, {
+      proyecto_id: mod.proyecto_id,
+      modulo_key: mod.modulo_key,
+      observacion_id: obs.id,
+      longitud: data.mensaje.length,
+    });
+
+    // Notifica a la contraparte: si respondió el cliente → internos;
+    // si respondió el equipo EGIXIA → invitados del proyecto.
+    const meta = await metadatosProyecto(supabaseAdmin, mod.proyecto_id);
+    const actorNombre = await nombreActor(supabaseAdmin, userId);
+    const { notificarProyecto } = await import(
+      "@/lib/acta/notificaciones.server"
+    );
+    const envio = await notificarProyecto({
+      proyectoId: mod.proyecto_id,
+      moduloId: mod.id,
+      tipo: "observacion_respondida",
+      destinatarios: esInterno ? "invitados" : "internos",
+      contextoBase: {
+        respuesta: {
+          proyecto: meta.nombre,
+          moduloNombre: definicionModulo(mod.modulo_key).nombre,
+          campoKey: obs.campo_key as string,
+          autorNombre: actorNombre,
+          mensaje: data.mensaje,
+        },
+      },
+      urlAppPath: `/app/modulo/${mod.id}`,
+      urlMiProyectoPath: `/mi-proyecto/modulo/${mod.id}`,
+      actorId: userId,
+    });
+
+    return { ok: true, correosEnviados: envio.ok };
+  });
+
+export interface RespuestaObservacion {
+  id: string;
+  observacion_id: string;
+  mensaje: string;
+  created_at: string;
+  autor_nombre: string;
+  /** true si el autor pertenece al equipo EGIXIA (admin/implementador). */
+  autor_interno: boolean;
+}
+
+/**
+ * Respuestas de todas las observaciones de un módulo, con el autor
+ * resuelto (nombre + si es interno o cliente). Autorización idéntica a
+ * la lectura de observaciones: interno o miembro activo del proyecto.
+ */
+export const listarRespuestasObservaciones = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }): Promise<RespuestaObservacion[]> => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const modulo = await cargarModulo(supabaseAdmin, data.moduloId);
+    const rol = await rolDelUsuario(supabaseAdmin, userId);
+    const esInterno = rol === "admin" || rol === "implementador";
+    if (!esInterno) {
+      const miembro = await esMiembroDelProyecto(
+        supabaseAdmin,
+        userId,
+        modulo.proyecto_id,
+      );
+      if (!miembro) throw new Error("No tienes acceso a este proyecto.");
+    }
+
+    const { data: obsIds } = await supabaseAdmin
+      .from("observaciones")
+      .select("id")
+      .eq("proyecto_modulo_id", modulo.id);
+    const ids = (obsIds ?? []).map((o: { id: string }) => o.id);
+    if (ids.length === 0) return [];
+
+    const { data: filas, error } = await supabaseAdmin
+      .from("observacion_respuestas")
+      .select(
+        "id, observacion_id, mensaje, created_at, profiles(nombre, apellido, email, rol)",
+      )
+      .in("observacion_id", ids)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error("No se pudieron cargar las respuestas.");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (filas ?? []).map((f: any) => {
+      const p = f.profiles as
+        | { nombre?: string; apellido?: string; email?: string; rol?: string }
+        | null;
+      const nombre = [p?.nombre, p?.apellido].filter(Boolean).join(" ");
+      return {
+        id: f.id as string,
+        observacion_id: f.observacion_id as string,
+        mensaje: f.mensaje as string,
+        created_at: f.created_at as string,
+        autor_nombre: nombre || p?.email || "Usuario",
+        autor_interno: p?.rol === "admin" || p?.rol === "implementador",
+      };
+    });
   });
 
 // ---------- Aprobar (interno) ---------------------------------------------

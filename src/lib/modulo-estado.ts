@@ -70,3 +70,32 @@ export function diasHasta(fecha: string | null | undefined): number | null {
   const diff = Date.UTC(fy, fm - 1, fd) - Date.UTC(hy, hm - 1, hd);
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }
+
+/** ¿El módulo ya venció según su fecha límite? */
+export function moduloVencido(fechaLimite: string | null | undefined): boolean {
+  const dias = diasHasta(fechaLimite);
+  return dias !== null && dias < 0;
+}
+
+/**
+ * Devuelve true si el módulo debe forzarse a solo lectura por vencimiento.
+ *
+ * Bloquean la edición al vencer:
+ *   - `bloquear`: bloqueo definitivo (solo un interno cambia la fecha).
+ *   - `extension_implementador`: bloqueo hasta que el implementador
+ *     conceda una extensión (el cliente puede solicitarla desde su
+ *     portal). Antes se comportaba igual que `solo_avisar`, lo que
+ *     dejaba el comportamiento sin efecto real.
+ */
+export function vencimientoBloqueaEdicion(
+  fechaLimite: string | null,
+  comportamiento: ComportamientoVencimiento | null,
+): boolean {
+  if (
+    !fechaLimite ||
+    (comportamiento !== "bloquear" && comportamiento !== "extension_implementador")
+  ) {
+    return false;
+  }
+  return moduloVencido(fechaLimite);
+}

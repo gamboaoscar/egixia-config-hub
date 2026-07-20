@@ -308,7 +308,7 @@ export const actualizarConfigModulo = createServerFn({ method: "POST" })
     const { data: prev } = await supabaseAdmin
       .from("proyecto_modulos")
       .select(
-        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento",
+        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento, extension_solicitada_at, extension_solicitada_por",
       )
       .eq("id", data.moduloId)
       .maybeSingle();
@@ -328,6 +328,19 @@ export const actualizarConfigModulo = createServerFn({ method: "POST" })
     }
     if (data.estado !== undefined) {
       upd.estado = data.estado;
+    }
+
+    // Concesión de extensión: si había una solicitud pendiente y la nueva
+    // fecha límite es posterior a la anterior, se limpia la solicitud y
+    // queda auditada como `extension_concedida`.
+    const extensionConcedida =
+      !!prev.extension_solicitada_at &&
+      data.fecha_limite !== undefined &&
+      !!data.fecha_limite &&
+      (!prev.fecha_limite || data.fecha_limite > prev.fecha_limite);
+    if (extensionConcedida) {
+      upd.extension_solicitada_at = null;
+      upd.extension_solicitada_por = null;
     }
 
     const { error } = await supabaseAdmin
@@ -354,7 +367,25 @@ export const actualizarConfigModulo = createServerFn({ method: "POST" })
       },
     );
 
-    return { ok: true };
+    if (extensionConcedida) {
+      await auditar(
+        supabaseAdmin,
+        userId,
+        "extension_concedida",
+        "proyecto_modulo",
+        data.moduloId,
+        {
+          proyecto_id: prev.proyecto_id,
+          modulo_key: prev.modulo_key,
+          fecha_limite_anterior: prev.fecha_limite,
+          fecha_limite_nueva: data.fecha_limite,
+          solicitada_at: prev.extension_solicitada_at,
+          solicitada_por: prev.extension_solicitada_por,
+        },
+      );
+    }
+
+    return { ok: true, extensionConcedida };
   });
 
 // ---------- Prueba de correos (envía las 4 plantillas al admin) -----------
