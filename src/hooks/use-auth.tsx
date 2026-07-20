@@ -62,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("id", userId)
       .maybeSingle();
+    // Carrera de cambio de sesión: si mientras esperábamos la consulta
+    // el usuario activo cambió, descartamos este resultado para no pisar
+    // el perfil de la nueva sesión con datos de la anterior.
+    if (currentUserId.current !== userId) return;
     if (error) {
       console.error("[auth] error cargando perfil", error);
       setProfile(null);
@@ -74,8 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAvatarUrl(null);
     if (p?.foto_perfil) {
       loadAvatarUrl(p.foto_perfil)
-        .then((url) => setAvatarUrl(url))
-        .catch(() => setAvatarUrl(null));
+        .then((url) => {
+          // Mismo guard tras el await del avatar.
+          if (currentUserId.current === userId) setAvatarUrl(url);
+        })
+        .catch(() => {
+          if (currentUserId.current === userId) setAvatarUrl(null);
+        });
     }
   }, []);
 
