@@ -496,13 +496,6 @@ function DetalleProyecto() {
         </div>
       </section>
 
-      {/* Auditoría */}
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Auditoría reciente ({auditoria.length})
-        </h3>
-      </section>
-
       {/* Invitaciones del proyecto */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-center justify-between">
@@ -590,10 +583,10 @@ function DetalleProyecto() {
         )}
       </section>
 
-      {/* (Auditoría continúa abajo) */}
+      {/* Auditoría */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Registro de auditoría
+          Auditoría reciente ({auditoria.length})
         </h3>
         {auditoria.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Sin registros aún.</p>
