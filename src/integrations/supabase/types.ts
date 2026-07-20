@@ -319,6 +319,45 @@ export type Database = {
           },
         ]
       }
+      observacion_respuestas: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          id: string
+          mensaje: string
+          observacion_id: string
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          mensaje: string
+          observacion_id: string
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          mensaje?: string
+          observacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observacion_respuestas_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observacion_respuestas_observacion_id_fkey"
+            columns: ["observacion_id"]
+            isOneToOne: false
+            referencedRelation: "observaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       observaciones: {
         Row: {
           campo_key: string
@@ -458,6 +497,8 @@ export type Database = {
           enviado_at: string | null
           enviado_por: string | null
           estado: Database["public"]["Enums"]["modulo_estado"]
+          extension_solicitada_at: string | null
+          extension_solicitada_por: string | null
           fecha_limite: string | null
           id: string
           modulo_key: string
@@ -477,6 +518,8 @@ export type Database = {
           enviado_at?: string | null
           enviado_por?: string | null
           estado?: Database["public"]["Enums"]["modulo_estado"]
+          extension_solicitada_at?: string | null
+          extension_solicitada_por?: string | null
           fecha_limite?: string | null
           id?: string
           modulo_key: string
@@ -496,6 +539,8 @@ export type Database = {
           enviado_at?: string | null
           enviado_por?: string | null
           estado?: Database["public"]["Enums"]["modulo_estado"]
+          extension_solicitada_at?: string | null
+          extension_solicitada_por?: string | null
           fecha_limite?: string | null
           id?: string
           modulo_key?: string
@@ -510,6 +555,13 @@ export type Database = {
           {
             foreignKeyName: "proyecto_modulos_enviado_por_fkey"
             columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_modulos_extension_solicitada_por_fkey"
+            columns: ["extension_solicitada_por"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
