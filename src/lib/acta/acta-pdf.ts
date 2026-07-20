@@ -422,27 +422,48 @@ async function dibujarFila(ctx: Ctx, fila: FilaActa) {
   const lineasLabel = partirEnLineas(fila.label, ctx.helvBold, 9, anchoLabel);
   const lineasValor = partirEnLineas(fila.valor, ctx.helv, 9, anchoValor);
   const nLineas = Math.max(lineasLabel.length, lineasValor.length);
-  const altoTexto = nLineas * 12 + 6;
-  asegurar(ctx, altoTexto);
+  const ALTO_LINEA = 12;
 
-  lineasLabel.forEach((ln, i) => {
-    texto(ctx, ln, {
-      x: MARGEN,
-      y: ctx.y - i * 12,
-      size: 9,
-      bold: true,
-      color: GRIS_TEXTO,
-    });
-  });
-  lineasValor.forEach((ln, i) => {
-    texto(ctx, ln, {
-      x: MARGEN + anchoLabel + 10,
-      y: ctx.y - i * 12,
-      size: 9,
-      color: GRIS_TEXTO,
-    });
-  });
-  ctx.y -= altoTexto;
+  // Dibujo por bloques con salto de página: un valor con más líneas de
+  // las que caben en una página ya no se dibuja fuera del área (y < 0).
+  // Antes de cada bloque se verifica el espacio disponible (misma lógica
+  // que `asegurar`) y, si no cabe ni una línea, se pasa a página nueva.
+  // El label solo se imprime en el primer bloque.
+  let idx = 0;
+  let primerBloque = true;
+  while (idx < nLineas) {
+    const disponible = ctx.y - (MARGEN + PIE_ALTURA);
+    const capacidad = Math.floor((disponible - 6) / ALTO_LINEA);
+    if (capacidad < 1) {
+      nuevaPagina(ctx);
+      continue;
+    }
+    const fin = Math.min(nLineas, idx + capacidad);
+    for (let j = idx; j < fin; j++) {
+      const yLinea = ctx.y - (j - idx) * ALTO_LINEA;
+      if (primerBloque && j < lineasLabel.length) {
+        texto(ctx, lineasLabel[j], {
+          x: MARGEN,
+          y: yLinea,
+          size: 9,
+          bold: true,
+          color: GRIS_TEXTO,
+        });
+      }
+      if (j < lineasValor.length) {
+        texto(ctx, lineasValor[j], {
+          x: MARGEN + anchoLabel + 10,
+          y: yLinea,
+          size: 9,
+          color: GRIS_TEXTO,
+        });
+      }
+    }
+    ctx.y -= (fin - idx) * ALTO_LINEA;
+    idx = fin;
+    primerBloque = false;
+  }
+  ctx.y -= 6;
 
   if (fila.imagen) {
     const img = await imagenEmbebida(ctx, fila.imagen);

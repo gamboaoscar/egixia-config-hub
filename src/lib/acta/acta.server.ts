@@ -204,6 +204,26 @@ async function cargarOverrides(proyectoId: string, moduloKey: string) {
   };
 }
 
+/**
+ * Definición EFECTIVA del módulo para un proyecto: definición base del
+ * catálogo + overrides de campos (`catalogo_overrides`) y de secciones
+ * (`catalogo_overrides_seccion`). Es la misma definición que ve el
+ * cliente en el formulario y la que usa el acta; toda revalidación
+ * server-side debe partir de aquí para no exigir campos ocultos o
+ * marcados como no requeridos en este proyecto.
+ */
+export async function cargarDefinicionEfectiva(
+  proyectoId: string,
+  moduloKey: string,
+): Promise<ModuloDefinicion> {
+  const overrides = await cargarOverrides(proyectoId, moduloKey);
+  return aplicarOverrides(
+    definicionModulo(moduloKey),
+    overrides.campos,
+    overrides.secciones,
+  );
+}
+
 export async function construirDatosActa(
   moduloId: string,
   actorId: string,
@@ -228,14 +248,9 @@ export async function construirDatosActa(
     .eq("id", actorId)
     .maybeSingle();
 
-  const overrides = await cargarOverrides(
+  const definicion = await cargarDefinicionEfectiva(
     modulo.proyecto_id as string,
     modulo.modulo_key as string,
-  );
-  const definicion = aplicarOverrides(
-    definicionModulo(modulo.modulo_key as string),
-    overrides.campos,
-    overrides.secciones,
   );
   const secciones = extraerFilasActa(
     definicion,
