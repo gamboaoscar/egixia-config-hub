@@ -91,7 +91,7 @@ function Invitaciones() {
       return toast.error("Selecciona el proyecto para el invitado.");
     setSending(true);
     try {
-      await crear({
+      const res = await crear({
         data: {
           email,
           rol_invitado: rol,
@@ -99,7 +99,13 @@ function Invitaciones() {
           dias_validez: 14,
         },
       });
-      toast.success("Invitación enviada.");
+      if (res.correoEnviado) {
+        toast.success("Invitación enviada.");
+      } else {
+        toast.error(
+          `La invitación quedó creada, pero el correo NO pudo enviarse: ${res.correoError ?? "motivo desconocido"}. Usa Reenviar.`,
+        );
+      }
       setEmail("");
       setProyectoId("");
       await cargar();
@@ -113,8 +119,14 @@ function Invitaciones() {
   const doReenviar = async (id: string) => {
     setAction(id);
     try {
-      await reenviar({ data: { id } });
-      toast.success("Invitación reenviada.");
+      const res = await reenviar({ data: { id } });
+      if (res.correoEnviado) {
+        toast.success("Invitación reenviada.");
+      } else {
+        toast.error(
+          `Se generó un nuevo enlace, pero el correo NO pudo enviarse: ${res.correoError ?? "motivo desconocido"}.`,
+        );
+      }
       await cargar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo reenviar.");

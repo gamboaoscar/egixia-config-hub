@@ -234,32 +234,37 @@ function DashboardAdmin() {
                 return (
                   <li
                     key={m.id}
-                    className="flex items-center gap-3 rounded-lg border border-border bg-background p-3"
                   >
-                    <cat.icon className="h-4 w-4 text-primary" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {cat.nombre}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {m.proyectos?.nombre} · {ESTADO_LABEL[m.estado as ModuloEstado]}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        dias < 0
-                          ? "bg-red-100 text-red-700"
-                          : dias <= 3
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-primary-soft text-primary"
-                      }`}
-                    >
-                      {dias < 0
-                        ? `vencido ${Math.abs(dias)} d.`
-                        : dias === 0
-                          ? "hoy"
-                          : `en ${dias} d.`}
-                    </span>
+                      <Link
+                        to="/app/modulo/$moduloId"
+                        params={{ moduloId: m.id }}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 transition hover:border-primary/40"
+                      >
+                        <cat.icon className="h-4 w-4 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {cat.nombre}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {m.proyectos?.nombre} · {ESTADO_LABEL[m.estado as ModuloEstado]}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            dias < 0
+                              ? "bg-red-100 text-red-700"
+                              : dias <= 3
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-primary-soft text-primary"
+                          }`}
+                        >
+                          {dias < 0
+                            ? `vencido ${Math.abs(dias)} d.`
+                            : dias === 0
+                              ? "hoy"
+                              : `en ${dias} d.`}
+                        </span>
+                      </Link>
                   </li>
                 );
               })}

@@ -59,7 +59,8 @@ import {
   reenviarModulo,
 } from "@/lib/revision.functions";
 import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
-import { previsualizarActa } from "@/lib/acta.functions";
+import { previsualizarActa, listarActas, descargarActaFirmada } from "@/lib/acta.functions";
+import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import { calcularProgreso } from "@/lib/form-engine/validacion";
 import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
 
@@ -131,6 +132,12 @@ function RevisionModuloPage() {
   const enviar = useServerFn(enviarModuloARevision);
   const reenviar = useServerFn(reenviarModulo);
   const previsualizar = useServerFn(previsualizarActa);
+  const listar = useServerFn(listarActas);
+  const descargarVersion = useServerFn(descargarActaFirmada);
+  const [versiones, setVersiones] = useState<
+    Array<{ version: number; generada_at: string; autor: string }>
+  >([]);
+  const [descargandoVer, setDescargandoVer] = useState<number | null>(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdit, setDatosEdit] = useState<Record<string, unknown>>({});
   const [guardando, setGuardando] = useState(false);
@@ -204,6 +211,37 @@ function RevisionModuloPage() {
     void cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduloId]);
+
+  useEffect(() => {
+    let cancelado = false;
+    listar({ data: { moduloId } })
+      .then((rows) => {
+        if (!cancelado) setVersiones(rows);
+      })
+      .catch(() => {
+        if (!cancelado) setVersiones([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduloId, modulo?.estado]);
+
+  const handleDescargarVersion = async (v: number) => {
+    setDescargandoVer(v);
+    try {
+      const res = await descargarVersion({ data: { moduloId, version: v } });
+      if (!res.base64) {
+        toast.error("No se pudo descargar esa versión.");
+        return;
+      }
+      descargarPdfBlob(res.base64, res.filename);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo descargar.");
+    } finally {
+      setDescargandoVer(null);
+    }
+  };
 
   const campos = useMemo(() => {
     if (!modulo) return [] as { key: string; label: string; seccion: string }[];
@@ -712,6 +750,50 @@ function RevisionModuloPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {/* Historial de actas */}
+      {versiones.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Versiones del acta ({versiones.length})
+          </h3>
+          <ul className="mt-3 divide-y divide-border">
+            {versiones.map((v, i) => (
+              <li
+                key={v.version}
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-foreground">
+                    Acta v{v.version}
+                    {i === 0 && (
+                      <span className="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+                        Más reciente
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Generada {formatoFechaHoraCO(v.generada_at)} · {v.autor}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDescargarVersion(v.version)}
+                  disabled={descargandoVer === v.version}
+                >
+                  {descargandoVer === v.version ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-1 h-4 w-4" />
+                  )}
+                  Descargar
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Panel de decisión */}
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">

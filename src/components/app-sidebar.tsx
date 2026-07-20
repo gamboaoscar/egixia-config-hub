@@ -46,6 +46,7 @@ const menusPorRol: Record<Rol, NavItem[]> = {
     { title: "Proyectos", url: "/app/proyectos", icon: FolderKanban },
     { title: "Revisiones pendientes", url: "/app/revisiones", icon: ClipboardCheck },
     { title: "Invitaciones", url: "/app/invitaciones", icon: Mail },
+    { title: "Catálogo de módulos", url: "/app/catalogo", icon: BookMarked },
     { title: "Mi perfil", url: "/app/mi-perfil", icon: UserRound },
   ],
   admin: [

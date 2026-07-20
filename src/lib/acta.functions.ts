@@ -16,6 +16,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 
 const idSchema = z.object({ moduloId: z.string().uuid() });
+const descargaSchema = z.object({
+  moduloId: z.string().uuid(),
+  version: z.number().int().positive().optional(),
+});
 
 export const previsualizarActa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -75,7 +79,7 @@ export const previsualizarActa = createServerFn({ method: "POST" })
 
 export const descargarActaFirmada = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idSchema.parse(input))
+  .validator((input: unknown) => descargaSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { supabaseAdmin } = await import(
@@ -109,7 +113,21 @@ export const descargarActaFirmada = createServerFn({ method: "POST" })
     const { ultimaActa, descargarBytesActa } = await import(
       "@/lib/acta/acta.server"
     );
-    let acta = await ultimaActa(data.moduloId);
+    let acta: { version: number; archivoUrl: string } | null;
+    if (data.version) {
+      const { data: row } = await supabaseAdmin
+        .from("actas")
+        .select("version, archivo_url")
+        .eq("proyecto_modulo_id", data.moduloId)
+        .eq("version", data.version)
+        .maybeSingle();
+      acta = row
+        ? { version: row.version as number, archivoUrl: row.archivo_url as string }
+        : null;
+      if (!acta) return { base64: null, version: null, filename: null };
+    } else {
+      acta = await ultimaActa(data.moduloId);
+    }
     if (!acta) {
       // Autoreparación: si el módulo ya fue enviado/aprobado pero por
       // alguna razón no quedó persistida el acta, la generamos ahora.
@@ -144,4 +162,73 @@ export const descargarActaFirmada = createServerFn({ method: "POST" })
       version: acta.version,
       filename: `acta-${data.moduloId}-v${acta.version}.pdf`,
     };
+  });
+
+/**
+ * Lista todas las versiones del acta de un módulo, resolviendo el nombre
+ * del generador. Misma autorización que `descargarActaFirmada`: rol
+ * interno o miembro activo del proyecto.
+ */
+export const listarActas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data: modulo } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .select("id, proyecto_id")
+      .eq("id", data.moduloId)
+      .maybeSingle();
+    if (!modulo) throw new Error("El módulo no existe.");
+
+    const { data: perfil } = await supabaseAdmin
+      .from("profiles")
+      .select("rol")
+      .eq("id", userId)
+      .maybeSingle();
+    const rol = perfil?.rol as "admin" | "implementador" | "cliente" | undefined;
+    if (rol !== "admin" && rol !== "implementador") {
+      const { data: mem } = await supabaseAdmin
+        .from("proyecto_miembros")
+        .select("profile_id")
+        .eq("proyecto_id", modulo.proyecto_id)
+        .eq("profile_id", userId)
+        .eq("estado", "activo")
+        .maybeSingle();
+      if (!mem) throw new Error("No tienes acceso a este proyecto.");
+    }
+
+    const { data: rows } = await supabaseAdmin
+      .from("actas")
+      .select("version, generada_at, generada_por")
+      .eq("proyecto_modulo_id", data.moduloId)
+      .order("version", { ascending: false });
+    const filas = (rows ?? []) as Array<{
+      version: number;
+      generada_at: string;
+      generada_por: string | null;
+    }>;
+    const ids = Array.from(
+      new Set(filas.map((r) => r.generada_por).filter((v): v is string => !!v)),
+    );
+    const autores: Record<string, string> = {};
+    if (ids.length > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id, nombre, apellido, email")
+        .in("id", ids);
+      for (const p of profs ?? []) {
+        const n = `${p.nombre ?? ""} ${p.apellido ?? ""}`.trim();
+        autores[p.id as string] = n || (p.email as string) || "Usuario";
+      }
+    }
+    return filas.map((r) => ({
+      version: r.version,
+      generada_at: r.generada_at,
+      autor: r.generada_por ? autores[r.generada_por] ?? "Usuario" : "Sistema",
+    }));
   });

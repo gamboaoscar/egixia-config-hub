@@ -2,6 +2,40 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.18] — 2026-07-20 — Quick wins de autogestión
+
+### Añadido
+- **Catálogo de módulos en el menú del implementador**: `AppSidebar` ya
+  incluye "Catálogo de módulos" para el rol `implementador` (la página
+  `/app/catalogo` ya era accesible para admin+implementador con los
+  candados server-side por rol).
+- **Sección "Invitaciones del proyecto" en el detalle de proyecto**
+  (`/app/proyectos/:id`): reutiliza `listarInvitaciones` con parámetro
+  `proyectoId` opcional y permite Reenviar / Revocar en línea.
+- **Historial de actas descargable**: nueva server function `listarActas`
+  (mismos permisos que `descargarActaFirmada`: interno o miembro activo
+  del proyecto). Devuelve todas las versiones con fecha y autor resuelto
+  a nombre. `descargarActaFirmada` acepta ahora `version` opcional para
+  bajar una versión específica.
+  - UI: sección "Versiones del acta" en `/app/modulo/:id` (interno) y en
+    la tarjeta bloqueada del cliente (`/mi-proyecto/proyectos/:id`) con
+    la más reciente destacada y el histórico plegado.
+
+### Cambiado
+- **Visibilidad de fallo de correo en invitaciones**: `crearInvitacion` y
+  `reenviarInvitacion` devuelven `{ correoEnviado, correoError? }`
+  propagando el resultado real de `notificarInvitacion` /`enviarBatch`.
+  La UI de `/app/invitaciones` ya no muestra "Invitación enviada" cuando
+  el correo falló: en su lugar surge un `toast.error` explicando el
+  motivo y sugiriendo "Reenviar".
+- **Dashboard interno**: cada módulo en "Próximos a vencer" es link
+  directo a `/app/modulo/:id` para actuar sin pasos intermedios.
+
+### Corregido
+- **404 real en `/app/*` desconocidos**: `app.$section.tsx` deja de
+  renderizar un placeholder; lanza `notFound()` desde el loader y cae en
+  el `notFoundComponent` del root.
+
 ## [1.0.17] — 2026-07-19 — Cierre de revisión de código + seguimiento de invitaciones para implementador
 
 ### Añadido

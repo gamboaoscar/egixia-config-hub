@@ -489,7 +489,7 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       .single();
     if (error || !inv) throw new Error("No se pudo crear la invitación.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    const envio = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: data.email,
       token,
       expira,
@@ -503,7 +503,11 @@ export const crearInvitacion = createServerFn({ method: "POST" })
       proyecto_id: data.proyecto_id || null,
     });
 
-    return { id: inv.id };
+    return {
+      id: inv.id,
+      correoEnviado: envio.ok,
+      correoError: envio.ok ? undefined : envio.error ?? "envío fallido",
+    };
   });
 
 /**
@@ -514,23 +518,31 @@ export const crearInvitacion = createServerFn({ method: "POST" })
  */
 export const listarInvitaciones = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((i: unknown) =>
+    z
+      .object({ proyectoId: z.string().uuid().optional() })
+      .optional()
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
     const { userId } = context;
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
     await exigirInterno(supabaseAdmin, userId);
 
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from("invitaciones")
       .select(
         "id, email, rol_invitado, proyecto_id, estado, expira_at, created_at, proyectos(nombre)",
       )
       .order("created_at", { ascending: false })
       .limit(200);
+    if (data?.proyectoId) q = q.eq("proyecto_id", data.proyectoId);
+    const { data: rows, error } = await q;
     if (error) throw new Error("No se pudieron cargar las invitaciones.");
 
-    return (data ?? []) as unknown as Array<{
+    return (rows ?? []) as unknown as Array<{
       id: string;
       email: string;
       rol_invitado: "implementador" | "invitado";
@@ -568,7 +580,7 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       .eq("id", inv.id);
     if (error) throw new Error("No se pudo reenviar.");
 
-    await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
+    const envio = await enviarInvitacionCorreo(supabaseAdmin, userId, inv.id, {
       email: inv.email as string,
       token,
       expira,
@@ -580,7 +592,11 @@ export const reenviarInvitacion = createServerFn({ method: "POST" })
       email: inv.email,
     });
 
-    return { ok: true };
+    return {
+      ok: true,
+      correoEnviado: envio.ok,
+      correoError: envio.ok ? undefined : envio.error ?? "envío fallido",
+    };
   });
 
 export const revocarInvitacion = createServerFn({ method: "POST" })
@@ -615,7 +631,7 @@ async function enviarInvitacionCorreo(
     proyectoId: string | null;
     rolInvitado: "implementador" | "invitado";
   },
-) {
+): Promise<{ ok: boolean; error?: string }> {
   let empresa = "tu empresa";
   let nombreProyecto: string | undefined;
   if (input.proyectoId) {
@@ -642,7 +658,7 @@ async function enviarInvitacionCorreo(
     Math.round((input.expira.getTime() - Date.now()) / (24 * 3600 * 1000)),
   );
   const { notificarInvitacion } = await import("@/lib/acta/notificaciones.server");
-  await notificarInvitacion({
+  const envio = await notificarInvitacion({
     invitacionId,
     destinatario: input.email,
     empresa,
@@ -661,8 +677,12 @@ async function enviarInvitacionCorreo(
       destinatario: input.email,
       url: urlRegistro,
       expira_at: input.expira.toISOString(),
+      ok: envio.ok,
+      error: envio.error ?? null,
     },
   });
+
+  return { ok: envio.ok, error: envio.error };
 }
 
 async function urlBaseDelPortal(): Promise<string> {

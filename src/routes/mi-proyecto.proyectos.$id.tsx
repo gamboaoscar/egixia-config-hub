@@ -21,7 +21,7 @@ import {
   type ModuloEstado,
 } from "@/lib/modulo-estado";
 import { esEditablePorInvitado } from "@/lib/modulo-estado";
-import { descargarActaFirmada } from "@/lib/acta.functions";
+import { descargarActaFirmada, listarActas } from "@/lib/acta.functions";
 import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,7 +195,31 @@ function ModuloCard({
   const label = botonAccionModulo(estado);
   const bloqueado = !esEditablePorInvitado(estado);
   const descargar = useServerFn(descargarActaFirmada);
+  const listar = useServerFn(listarActas);
   const [cargandoActa, setCargandoActa] = useState(false);
+  const [versiones, setVersiones] = useState<
+    Array<{ version: number; generada_at: string; autor: string }>
+  >([]);
+  const [descargandoVer, setDescargandoVer] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!bloqueado) {
+      setVersiones([]);
+      return;
+    }
+    let cancelado = false;
+    listar({ data: { moduloId: id } })
+      .then((rows) => {
+        if (!cancelado) setVersiones(rows);
+      })
+      .catch(() => {
+        if (!cancelado) setVersiones([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, bloqueado]);
 
   const handleVerActa = async () => {
     setCargandoActa(true);
@@ -210,6 +234,22 @@ function ModuloCard({
       toast.error(err instanceof Error ? err.message : "No se pudo abrir el acta.");
     } finally {
       setCargandoActa(false);
+    }
+  };
+
+  const handleDescargarVersion = async (v: number) => {
+    setDescargandoVer(v);
+    try {
+      const res = await descargar({ data: { moduloId: id, version: v } });
+      if (!res.base64) {
+        toast.error("No se pudo descargar esa versión.");
+        return;
+      }
+      descargarPdfBlob(res.base64, res.filename);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo descargar.");
+    } finally {
+      setDescargandoVer(null);
     }
   };
 
@@ -282,20 +322,53 @@ function ModuloCard({
       </div>
 
       {bloqueado ? (
-        <Button
-          variant="outline"
-          className="mt-5 w-full justify-between"
-          onClick={handleVerActa}
-          disabled={cargandoActa}
-        >
-          {cargandoActa ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FileText className="h-4 w-4" />
+        <div className="mt-5 space-y-2">
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={handleVerActa}
+            disabled={cargandoActa}
+          >
+            {cargandoActa ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            Descargar acta{versiones.length > 0 ? ` v${versiones[0].version}` : ""}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          {versiones.length > 1 && (
+            <details className="rounded-lg border border-border bg-background text-xs">
+              <summary className="cursor-pointer px-3 py-2 text-muted-foreground">
+                Versiones anteriores ({versiones.length - 1})
+              </summary>
+              <ul className="divide-y divide-border">
+                {versiones.slice(1).map((v) => (
+                  <li
+                    key={v.version}
+                    className="flex items-center justify-between gap-2 px-3 py-2"
+                  >
+                    <span className="text-muted-foreground">
+                      v{v.version} · {formatoFechaHoraCO(v.generada_at)}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDescargarVersion(v.version)}
+                      disabled={descargandoVer === v.version}
+                    >
+                      {descargandoVer === v.version ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
-          Descargar acta
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        </div>
       ) : (
         <Button
           asChild
