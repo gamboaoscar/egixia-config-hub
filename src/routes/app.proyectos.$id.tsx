@@ -8,10 +8,12 @@ import {
   FileText,
   Loader2,
   Mail,
+  RefreshCw,
   Trash2,
   UserMinus,
   UserX,
   UserCheck,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +27,9 @@ import {
   actualizarMiembroEstado,
   desvincularMiembro,
   eliminarProyecto,
+  listarInvitaciones,
+  reenviarInvitacion,
+  revocarInvitacion,
 } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { formatoFechaCortaCO, formatoFechaHoraCO, formatoFechaPlanaCortaCO } from "@/lib/fechas";
@@ -73,6 +78,15 @@ interface Acta {
   generada_at: string;
 }
 
+interface InvitacionProy {
+  id: string;
+  email: string;
+  rol_invitado: "implementador" | "invitado";
+  estado: "pendiente" | "aceptada" | "revocada" | "expirada";
+  expira_at: string;
+  created_at: string;
+}
+
 interface AuditoriaRow {
   id: string;
   accion: string;
@@ -92,6 +106,8 @@ function DetalleProyecto() {
   const [auditoria, setAuditoria] = useState<AuditoriaRow[]>([]);
   const [descargando, setDescargando] = useState<string | null>(null);
   const [autores, setAutores] = useState<Record<string, string>>({});
+  const [invitaciones, setInvitaciones] = useState<InvitacionProy[]>([]);
+  const [invAction, setInvAction] = useState<string | null>(null);
   // M8: id de la mutación en vuelo (miembro o "eliminar-proyecto") para
   // deshabilitar los botones y evitar dobles envíos.
   const [mutando, setMutando] = useState<string | null>(null);
@@ -100,6 +116,9 @@ function DetalleProyecto() {
   const desvincular = useServerFn(desvincularMiembro);
   const descargarActa = useServerFn(descargarActaFirmada);
   const remove = useServerFn(eliminarProyecto);
+  const listarInv = useServerFn(listarInvitaciones);
+  const reenviarInv = useServerFn(reenviarInvitacion);
+  const revocarInv = useServerFn(revocarInvitacion);
   const { profile } = useAuth();
   const navigate = useNavigate();
 
@@ -186,6 +205,13 @@ function DetalleProyecto() {
       .limit(80);
     setAuditoria((aud ?? []) as unknown as AuditoriaRow[]);
 
+    try {
+      const inv = await listarInv({ data: { proyectoId: id } });
+      setInvitaciones(inv as unknown as InvitacionProy[]);
+    } catch {
+      setInvitaciones([]);
+    }
+
     setLoading(false);
   };
 
@@ -250,6 +276,37 @@ function DetalleProyecto() {
       toast.error(e instanceof Error ? e.message : "No se pudo descargar el acta.");
     } finally {
       setDescargando(null);
+    }
+  };
+
+  const handleReenviarInv = async (invId: string) => {
+    setInvAction(invId);
+    try {
+      const res = await reenviarInv({ data: { id: invId } });
+      if (res.correoEnviado) toast.success("Invitación reenviada.");
+      else
+        toast.error(
+          `Se generó un nuevo enlace, pero el correo NO pudo enviarse: ${res.correoError ?? "motivo desconocido"}.`,
+        );
+      await cargar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo reenviar.");
+    } finally {
+      setInvAction(null);
+    }
+  };
+
+  const handleRevocarInv = async (invId: string) => {
+    if (!confirm("¿Revocar esta invitación?")) return;
+    setInvAction(invId);
+    try {
+      await revocarInv({ data: { id: invId } });
+      toast.success("Invitación revocada.");
+      await cargar();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo revocar.");
+    } finally {
+      setInvAction(null);
     }
   };
 
@@ -443,6 +500,100 @@ function DetalleProyecto() {
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Auditoría reciente ({auditoria.length})
+        </h3>
+      </section>
+
+      {/* Invitaciones del proyecto */}
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Invitaciones del proyecto ({invitaciones.length})
+          </h3>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/app/invitaciones">
+              <Mail className="mr-1 h-4 w-4" />
+              Nueva invitación
+            </Link>
+          </Button>
+        </div>
+        {invitaciones.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No hay invitaciones registradas para este proyecto.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-border">
+            {invitaciones.map((r) => {
+              const vencida = new Date(r.expira_at).getTime() < Date.now();
+              const estadoEfectivo =
+                r.estado === "pendiente" && vencida ? "expirada" : r.estado;
+              return (
+                <li
+                  key={r.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-foreground">
+                      {r.email}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.rol_invitado} · invitada el{" "}
+                      {formatoFechaHoraCO(r.created_at)} · expira{" "}
+                      {formatoFechaHoraCO(r.expira_at)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                        estadoEfectivo === "aceptada"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : estadoEfectivo === "revocada"
+                            ? "bg-red-100 text-red-700"
+                            : estadoEfectivo === "expirada"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-primary-soft text-primary"
+                      }`}
+                    >
+                      {estadoEfectivo}
+                    </span>
+                    {r.estado === "pendiente" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReenviarInv(r.id)}
+                          disabled={invAction === r.id}
+                        >
+                          {invAction === r.id ? (
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                          )}
+                          Reenviar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                          onClick={() => handleRevocarInv(r.id)}
+                          disabled={invAction === r.id}
+                        >
+                          <XCircle className="mr-1 h-3 w-3" />
+                          Revocar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* (Auditoría continúa abajo) */}
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Registro de auditoría
         </h3>
         {auditoria.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Sin registros aún.</p>
