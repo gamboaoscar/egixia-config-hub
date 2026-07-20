@@ -7,6 +7,7 @@ import {
   type CampoOverride,
   type SeccionOverride,
 } from "@/lib/form-engine/overrides";
+import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas";
 import type { ModuloDefinicion } from "@/lib/form-engine/tipos";
 import {
   extraerFilasActa,
@@ -216,11 +217,30 @@ export async function cargarDefinicionEfectiva(
   proyectoId: string,
   moduloKey: string,
 ): Promise<ModuloDefinicion> {
-  const overrides = await cargarOverrides(proyectoId, moduloKey);
-  return aplicarOverrides(
-    definicionModulo(moduloKey),
-    overrides.campos,
-    overrides.secciones,
+  const [overrides, { data: modulosProyecto }] = await Promise.all([
+    cargarOverrides(proyectoId, moduloKey),
+    supabaseAdmin
+      .from("proyecto_modulos")
+      .select("modulo_key, datos")
+      .eq("proyecto_id", proyectoId),
+  ]);
+  // Datos por modulo_key para resolver `opcionesDesde` (opciones
+  // dinámicas entre módulos): el acta y la revalidación de envío usan
+  // exactamente las mismas opciones que ve el cliente en el formulario.
+  const datosPorModulo = new Map<string, Record<string, unknown>>();
+  for (const m of modulosProyecto ?? []) {
+    datosPorModulo.set(
+      m.modulo_key as string,
+      (m.datos as Record<string, unknown>) ?? {},
+    );
+  }
+  return resolverOpcionesDinamicas(
+    aplicarOverrides(
+      definicionModulo(moduloKey),
+      overrides.campos,
+      overrides.secciones,
+    ),
+    (k) => datosPorModulo.get(k) ?? null,
   );
 }
 
