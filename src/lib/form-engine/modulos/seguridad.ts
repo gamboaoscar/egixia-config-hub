@@ -9,7 +9,12 @@ import type { ModuloDefinicion, OpcionCampo } from "../tipos";
  * personalizados adicionales.
  */
 
-const ROLES_INTERNOS: OpcionCampo[] = [
+/**
+ * Perfiles predefinidos para usuarios internos. Se reutilizan en el
+ * módulo "Usuarios internos" (columna rol), donde se filtran con
+ * `opcionesDesde` según la selección hecha en este módulo.
+ */
+export const ROLES_INTERNOS: OpcionCampo[] = [
   { valor: "configuracion", etiqueta: "Gestor de configuración", descripcion: "Administra parámetros generales del portal." },
   { valor: "contenido", etiqueta: "Gestor de contenido", descripcion: "Publica y mantiene textos, documentos y noticias." },
   { valor: "usuarios", etiqueta: "Gestor de usuarios", descripcion: "Crea, habilita e inhabilita usuarios internos." },
