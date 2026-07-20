@@ -20,7 +20,7 @@ import { MiProyectoProvider, useMiProyecto } from "@/hooks/use-mi-proyecto";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { diasHasta } from "@/lib/modulo-estado";
-import { formatoHoraCO } from "@/lib/fechas";
+import { formatoFechaPlanaCortaCO, formatoHoraCO } from "@/lib/fechas";
 
 interface Props {
   children: ReactNode;
@@ -151,10 +151,7 @@ function ClienteTopbar() {
             title="Fecha límite más próxima"
           >
             <CalendarClock className="h-3.5 w-3.5" />
-            {new Date(proximaFecha + "T00:00:00").toLocaleDateString("es", {
-              day: "2-digit",
-              month: "short",
-            })}
+            {formatoFechaPlanaCortaCO(proximaFecha)}
           </span>
         )}
       </div>

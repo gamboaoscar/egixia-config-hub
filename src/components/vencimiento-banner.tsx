@@ -1,6 +1,7 @@
 import { AlertTriangle, CalendarClock, Info, Timer } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatoFechaPlanaCortaCO } from "@/lib/fechas";
 import { diasHasta, type ComportamientoVencimiento } from "@/lib/modulo-estado";
 
 interface Props {
@@ -10,8 +11,8 @@ interface Props {
 }
 
 function formatoFecha(iso: string) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" });
+  // Fecha plana sin corrimiento de zona (helper centralizado).
+  return formatoFechaPlanaCortaCO(iso);
 }
 
 export function VencimientoBanner({ fechaLimite, comportamiento, className }: Props) {
