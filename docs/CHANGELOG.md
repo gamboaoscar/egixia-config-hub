@@ -2,6 +2,30 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.19] — 2026-07-20 — Módulo Usuarios internos + opciones dinámicas entre módulos + agregar módulo a proyecto existente
+
+### Añadido
+- **Módulo `usuarios_internos` ("Usuarios internos")**
+  (`src/lib/form-engine/modulos/usuarios-internos.ts`): tabla de usuarios
+  del portal (nombre, apellido, correo, cargo, sociedad y rol) + sección
+  "Responsable del portal" (`resp_nombre`, `resp_correo`). Registrado en
+  el motor, el catálogo (`ModuloKey`, icono `Users`), el enum de server
+  functions y las pantallas de creación de proyecto y catálogo.
+- **Opciones dinámicas entre módulos (`opcionesDesde`)**: `CampoDefinicion`
+  y `ColumnaTabla` aceptan `{ moduloKey, campoKey }` para filtrar sus
+  `opciones` estáticas con la selección `checkbox_multiple` de otro módulo
+  del mismo proyecto. Nuevo helper puro `resolverOpcionesDinamicas`
+  (`src/lib/form-engine/opciones-dinamicas.ts`), aplicado en el formulario
+  del invitado, la revisión interna y `cargarDefinicionEfectiva` (acta y
+  revalidación de envío usan las mismas opciones). Primer uso: la columna
+  "Rol" de Usuarios internos solo ofrece los roles marcados en Seguridad.
+- **Agregar módulo a proyecto existente**: server function
+  `agregarModuloAProyecto` (interno; valida unicidad proyecto+módulo,
+  inserta `sin_iniciar` con datos `{}` y progreso 0, audita
+  `modulo_agregado`) + Dialog "Agregar módulo" en `/app/proyectos/:id`
+  con select de módulos aún no asignados, `DatePickerHabil` de fecha
+  límite opcional y comportamiento al vencer.
+
 ## [1.0.18] — 2026-07-20 — Quick wins de autogestión
 
 ### Añadido

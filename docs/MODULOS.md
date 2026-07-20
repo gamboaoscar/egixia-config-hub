@@ -7,11 +7,12 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 
 ## Módulos definidos
 
-| Key           | Estado         | Archivo                                          |
-| ------------- | -------------- | ------------------------------------------------ |
-| `imagen`      | ✅ Completo    | `src/lib/form-engine/modulos/imagen.ts`          |
-| `sociedades`  | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`      |
-| `seguridad`   | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`       |
+| Key                 | Estado         | Archivo                                            |
+| ------------------- | -------------- | -------------------------------------------------- |
+| `imagen`            | ✅ Completo    | `src/lib/form-engine/modulos/imagen.ts`            |
+| `sociedades`        | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`        |
+| `seguridad`         | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`         |
+| `usuarios_internos` | ✅ Completo    | `src/lib/form-engine/modulos/usuarios-internos.ts` |
 
 ---
 
@@ -240,3 +241,67 @@ mesa de servicio de EGIXIA indicando nombre y permisos.
   validación ni progreso. Renderiza una tarjeta suave con el `label`
   como título y el `aviso` como cuerpo.
   requeridas.
+
+---
+
+## Módulo `usuarios_internos` — Usuarios internos
+
+Registra a las personas del equipo del cliente que usarán el Portal de
+Proveedores y el rol que tendrá cada una. EGIXIA crea las cuentas con
+estos datos. Se organiza en 2 secciones.
+
+### Sección 1 — Usuarios del portal (`usuarios`)
+
+Campo único `tabla_usuarios` (tipo `tabla`, **requerido**), una fila por
+persona:
+
+| Columna    | Tipo   | Req | Guía / Notas                                                          |
+| ---------- | ------ | :-: | --------------------------------------------------------------------- |
+| `nombre`   | texto  | ✅  | Nombre(s) de la persona.                                              |
+| `apellido` | texto  | ✅  | Apellido(s) de la persona.                                            |
+| `correo`   | email  | ✅  | Correo corporativo con el que iniciará sesión.                        |
+| `cargo`    | texto  | ⚪  | Cargo dentro de la organización.                                      |
+| `sociedad` | texto  | ⚪  | Razón social a la que pertenece (de las registradas en Sociedades).   |
+| `rol`      | select | ✅  | Perfil del portal. Opciones dinámicas desde Seguridad (ver abajo).    |
+
+### Sección 2 — Responsable del portal (`responsable`)
+
+| Campo         | Tipo  | Req | Notas                                                              |
+| ------------- | ----- | :-: | ------------------------------------------------------------------ |
+| `resp_nombre` | texto | ✅  | Punto de contacto principal con EGIXIA.                            |
+| `resp_correo` | email | ✅  | Correo corporativo del responsable.                                |
+
+### Opciones dinámicas entre módulos (`opcionesDesde`)
+
+La columna `rol` reutiliza las **16 opciones de `ROLES_INTERNOS`**
+(exportadas por `src/lib/form-engine/modulos/seguridad.ts`) y declara:
+
+```ts
+opcionesDesde: { moduloKey: "seguridad", campoKey: "roles_internos_seleccion" }
+```
+
+Regla (`resolverOpcionesDinamicas` en
+`src/lib/form-engine/opciones-dinamicas.ts`, helper puro):
+
+- Si el módulo `seguridad` del **mismo proyecto** tiene en
+  `datos.roles_internos_seleccion` un array no vacío, las opciones del
+  select se **filtran** a las seleccionadas allí.
+- Si el módulo origen no existe en el proyecto o la selección está
+  vacía, se muestran las opciones completas.
+- El filtro se aplica en los 3 consumidores de la definición —
+  formulario del invitado (`/mi-proyecto/modulo/:id`), revisión interna
+  (`/app/modulo/:id`) y `cargarDefinicionEfectiva` (acta PDF y
+  revalidación server-side de envío) — de modo que todos ven las mismas
+  opciones.
+
+Tanto `CampoDefinicion` como `ColumnaTabla` aceptan `opcionesDesde`, por
+lo que cualquier módulo futuro puede encadenar sus opciones a la
+selección de otro.
+
+### Persistencia y progreso
+
+- La tabla se guarda en `proyecto_modulos.datos.tabla_usuarios` como
+  array de filas; el responsable en `resp_nombre` / `resp_correo`.
+- Progreso: columnas requeridas de la tabla (`nombre`, `apellido`,
+  `correo`, `rol`) por fila + los 2 campos del responsable, con la misma
+  regla de tablas del módulo Sociedades.
