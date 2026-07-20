@@ -58,6 +58,7 @@ export function CampoArchivo({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [abriendo, setAbriendo] = useState(false);
   const [descargando, setDescargando] = useState(false);
+  const [quitando, setQuitando] = useState(false);
 
   const aceptar = useMemo(
     () => config.formatosPermitidos.join(","),
@@ -79,14 +80,16 @@ export function CampoArchivo({
     };
   }, [valorActual]);
 
-  // Cleanup del ObjectURL del panel de ajuste al desmontar el campo
-  // (por si el usuario navega mientras el panel está abierto).
+  // B3: si el componente se desmonta (o cambia la imagen) con el panel de
+  // ajuste abierto, se revoca la object URL de la vista previa para no
+  // fugar memoria. Revocar dos veces (aquí y en `cerrarAjuste`) es inocuo.
+  const ajustePreviewUrl = ajuste?.previewUrl ?? null;
   useEffect(() => {
+    if (!ajustePreviewUrl) return;
     return () => {
-      if (ajuste) URL.revokeObjectURL(ajuste.previewUrl);
+      URL.revokeObjectURL(ajustePreviewUrl);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ajustePreviewUrl]);
 
   const seleccionar = () => inputRef.current?.click();
 
@@ -96,19 +99,7 @@ export function CampoArchivo({
     try {
       const url = await firmarUrl(valorActual.bucket, valorActual.storagePath);
       if (!url) throw new Error("No se pudo obtener el enlace del archivo.");
-      // Ver abajo (abrir-pdf.ts): "noopener" fuerza retorno null y
-      // dispara falsos "popup bloqueado". Abrimos y limpiamos opener.
-      const win = window.open(url, "_blank");
-      if (win) {
-        try {
-          win.opener = null;
-        } catch {
-          // ignore
-        }
-      } else {
-        // Popup bloqueado: caemos a descarga directa.
-        window.location.href = url;
-      }
+      window.open(url, "_blank", "noopener");
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "No se pudo abrir el archivo.",
@@ -273,20 +264,15 @@ export function CampoArchivo({
     setAjuste(null);
   };
 
-  const [quitando, setQuitando] = useState(false);
-  const quitar = async () => {
-    if (!valorActual) return;
+  const quitar = () => {
+    if (!valorActual || quitando) return;
+    // NO borramos el binario en Storage: queda como histórico, igual que
+    // la fila de `archivos`. Si lo borráramos de inmediato y el autosave
+    // del formulario fallara, el valor guardado seguiría apuntando a un
+    // archivo inexistente (referencia rota). Solo se desvincula del campo.
     setQuitando(true);
-    // Persistimos primero la limpieza en el módulo (evita quedar sin
-    // binario y con la referencia todavía apuntando a él si el remove
-    // falla o la sesión expira). El borrado del binario es best-effort.
-    const bucket = valorActual.bucket;
-    const path = valorActual.storagePath;
     try {
       onChange(null);
-      await import("@/integrations/supabase/client").then(({ supabase }) =>
-        supabase.storage.from(bucket).remove([path]),
-      );
     } finally {
       setQuitando(false);
     }
@@ -391,11 +377,7 @@ export function CampoArchivo({
                     onClick={quitar}
                     className="text-muted-foreground hover:text-red-600"
                   >
-                    {quitando ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    )}
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                     Quitar
                   </Button>
                 </>
