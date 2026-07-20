@@ -61,7 +61,7 @@ import {
 import { actualizarConfigModulo, editarDatosModulo } from "@/lib/admin.functions";
 import { previsualizarActa } from "@/lib/acta.functions";
 import { calcularProgreso } from "@/lib/form-engine/validacion";
-import { formatoFechaHoraCO } from "@/lib/fechas";
+import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
 
 /** Decodifica base64 → Uint8Array sin importar pdf-lib en el cliente. */
 function base64ABytes(b64: string): Uint8Array {
@@ -153,10 +153,8 @@ function RevisionModuloPage() {
     };
   }, []);
 
-  const hoyStr = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  })();
+  // "Hoy" en zona America/Bogota (no la zona local del navegador).
+  const hoyStr = fechaISOBogota();
 
   const cargar = async () => {
     setLoading(true);
@@ -224,23 +222,6 @@ function RevisionModuloPage() {
     return out;
   }, [modulo, overrides, seccionOverrides]);
 
-  // Definición estable para <FormularioModulo>: sólo se recalcula cuando
-  // cambian los overrides o la clave del módulo, no en cada render.
-  const definicionEstable = useMemo(() => {
-    if (!modulo) return null;
-    return aplicarOverrides(
-      definicionModulo(modulo.modulo_key),
-      overrides,
-      seccionOverrides,
-    );
-  }, [modulo, overrides, seccionOverrides]);
-  // Datos iniciales estables: capturados al cambiar `moduloId`.
-  const datosInicialesEstables = useMemo(
-    () => (modulo?.datos as Record<string, unknown>) ?? {},
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [moduloId],
-  );
-
   if (loading) {
     return <div className="mx-auto h-64 max-w-4xl animate-pulse rounded-2xl bg-muted" />;
   }
@@ -286,13 +267,8 @@ function RevisionModuloPage() {
   const handleAprobar = async () => {
     setAccion("aprobar");
     try {
-      const res = await aprobar({ data: { moduloId: modulo.id } });
+      await aprobar({ data: { moduloId: modulo.id } });
       toast.success("Módulo aprobado.");
-      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
-        toast.warning(
-          "La acción se completó, pero las notificaciones por correo fallaron.",
-        );
-      }
       await cargar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo aprobar.");
@@ -315,15 +291,10 @@ function RevisionModuloPage() {
     }
     setAccion("devolver");
     try {
-      const res = await devolver({
+      await devolver({
         data: { moduloId: modulo.id, observaciones: nuevas },
       });
       toast.success("Módulo devuelto al proveedor con observaciones.");
-      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
-        toast.warning(
-          "La acción se completó, pero las notificaciones por correo fallaron.",
-        );
-      }
       setNuevas([]);
       await cargar();
     } catch (err) {
@@ -336,13 +307,8 @@ function RevisionModuloPage() {
   const handleReabrir = async () => {
     setAccion("reabrir");
     try {
-      const res = await reabrir({ data: { moduloId: modulo.id } });
+      await reabrir({ data: { moduloId: modulo.id } });
       toast.success("Módulo reabierto.");
-      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
-        toast.warning(
-          "La acción se completó, pero las notificaciones por correo fallaron.",
-        );
-      }
       await cargar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "No se pudo reabrir.");
@@ -467,16 +433,12 @@ function RevisionModuloPage() {
     if (!(await guardarSiEditando())) return;
     setEnviando(true);
     try {
-      const res = esReenvio
-        ? await reenviar({ data: { moduloId: modulo.id } })
-        : await enviar({ data: { moduloId: modulo.id } });
-      toast.success(
-        esReenvio ? "Módulo reenviado a revisión." : "Módulo enviado a revisión.",
-      );
-      if (res && (res as { correosEnviados?: boolean }).correosEnviados === false) {
-        toast.warning(
-          "La acción se completó, pero las notificaciones por correo fallaron.",
-        );
+      if (esReenvio) {
+        await reenviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo reenviado a revisión.");
+      } else {
+        await enviar({ data: { moduloId: modulo.id } });
+        toast.success("Módulo enviado a revisión.");
       }
       setModoEdicion(false);
       await cargar();
@@ -677,13 +639,12 @@ function RevisionModuloPage() {
         ref={formRef}
         moduloId={modulo.id}
         proyectoId={modulo.proyecto_id}
-        definicion={definicionEstable ?? {
-          key: modulo.modulo_key,
-          nombre: cat.nombre,
-          descripcion: cat.descripcion,
-          secciones: [],
-        }}
-        datosIniciales={modoEdicion ? datosEdit : datosInicialesEstables}
+        definicion={aplicarOverrides(
+          definicionModulo(modulo.modulo_key),
+          overrides,
+          seccionOverrides,
+        )}
+        datosIniciales={modoEdicion ? datosEdit : (modulo.datos as Record<string, unknown>) ?? {}}
         soloLectura={!modoEdicion}
         onCambio={modoEdicion ? setDatosEdit : undefined}
       />

@@ -25,7 +25,7 @@ import { descargarActaFirmada } from "@/lib/acta.functions";
 import { descargarPdfBlob } from "@/lib/acta/abrir-pdf";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { formatoFechaHoraCO } from "@/lib/fechas";
+import { formatoFechaHoraCO, formatoFechaPlanaCortaCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/mi-proyecto/proyectos/$id")({
   component: MiProyectoDetalle,
@@ -258,11 +258,7 @@ function ModuloCard({
           <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
             <CalendarClock className="h-3.5 w-3.5" />
             <span>
-              {new Date(fechaLimite + "T00:00:00").toLocaleDateString("es", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+              {formatoFechaPlanaCortaCO(fechaLimite)}
               {dias !== null &&
                 (dias < 0
                   ? " · vencido"

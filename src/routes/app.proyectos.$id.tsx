@@ -27,7 +27,7 @@ import {
   eliminarProyecto,
 } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { formatoFechaHoraCO } from "@/lib/fechas";
+import { formatoFechaCortaCO, formatoFechaHoraCO, formatoFechaPlanaCortaCO } from "@/lib/fechas";
 
 export const Route = createFileRoute("/app/proyectos/$id")({
   component: DetalleProyecto,
@@ -92,6 +92,9 @@ function DetalleProyecto() {
   const [auditoria, setAuditoria] = useState<AuditoriaRow[]>([]);
   const [descargando, setDescargando] = useState<string | null>(null);
   const [autores, setAutores] = useState<Record<string, string>>({});
+  // M8: id de la mutación en vuelo (miembro o "eliminar-proyecto") para
+  // deshabilitar los botones y evitar dobles envíos.
+  const [mutando, setMutando] = useState<string | null>(null);
 
   const actualizar = useServerFn(actualizarMiembroEstado);
   const desvincular = useServerFn(desvincularMiembro);
@@ -106,12 +109,15 @@ function DetalleProyecto() {
       `Eliminar el proyecto "${proy.nombre}"? Esta acción borra sus módulos, ` +
       `observaciones y actas. No se puede deshacer.`,
     )) return;
+    setMutando("eliminar-proyecto");
     try {
       await remove({ data: { proyectoId: proy.id } });
       toast.success("Proyecto eliminado.");
       navigate({ to: "/app/proyectos" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo eliminar.");
+    } finally {
+      setMutando(null);
     }
   };
 
@@ -205,23 +211,29 @@ function DetalleProyecto() {
   const equipo = miembros.filter((x) => x.rol_en_proyecto === "implementador");
 
   const handleEstado = async (mid: string, estado: "activo" | "inhabilitado") => {
+    setMutando(mid);
     try {
       await actualizar({ data: { miembroId: mid, estado } });
       toast.success(estado === "activo" ? "Miembro activado." : "Miembro inhabilitado.");
       await cargar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo actualizar.");
+    } finally {
+      setMutando(null);
     }
   };
 
   const handleDesvincular = async (mid: string) => {
     if (!confirm("¿Desvincular este miembro del proyecto? La cuenta no se elimina.")) return;
+    setMutando(mid);
     try {
       await desvincular({ data: { miembroId: mid } });
       toast.success("Miembro desvinculado.");
       await cargar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo desvincular.");
+    } finally {
+      setMutando(null);
     }
   };
 
@@ -290,7 +302,7 @@ function DetalleProyecto() {
             <h2 className="text-xl font-semibold text-foreground">{proy.nombre}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {proy.empresa} · creado el{" "}
-              {new Date(proy.created_at).toLocaleDateString("es-CO")}
+              {formatoFechaCortaCO(proy.created_at)}
             </p>
             <div className="mt-2">
               <span className="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-medium capitalize text-primary">
@@ -313,8 +325,13 @@ function DetalleProyecto() {
                 size="sm"
                 className="text-red-700 hover:bg-red-50 hover:text-red-800"
                 onClick={handleEliminarProyecto}
+                disabled={mutando === "eliminar-proyecto"}
               >
-                <Trash2 className="mr-1 h-4 w-4" />
+                {mutando === "eliminar-proyecto" ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-1 h-4 w-4" />
+                )}
                 Eliminar
               </Button>
             )}
@@ -347,7 +364,7 @@ function DetalleProyecto() {
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Avance {m.progreso}%
                         {m.fecha_limite
-                          ? ` · vence ${new Date(m.fecha_limite + "T00:00:00").toLocaleDateString("es-CO")}`
+                          ? ` · vence ${formatoFechaPlanaCortaCO(m.fecha_limite)}`
                           : ""}
                       </p>
                       {(m.progreso > 0 || m.estado !== "sin_iniciar") && m.updated_at && (
@@ -408,12 +425,14 @@ function DetalleProyecto() {
           <MiembrosLista
             titulo="Equipo interno"
             filas={equipo}
+            busyId={mutando}
             onEstado={handleEstado}
             onDesvincular={handleDesvincular}
           />
           <MiembrosLista
             titulo="Invitados del cliente"
             filas={invitados}
+            busyId={mutando}
             onEstado={handleEstado}
             onDesvincular={handleDesvincular}
           />
@@ -450,11 +469,13 @@ function DetalleProyecto() {
 function MiembrosLista({
   titulo,
   filas,
+  busyId,
   onEstado,
   onDesvincular,
 }: {
   titulo: string;
   filas: Miembro[];
+  busyId: string | null;
   onEstado: (id: string, estado: "activo" | "inhabilitado") => void;
   onDesvincular: (id: string) => void;
 }) {
@@ -494,8 +515,13 @@ function MiembrosLista({
                       size="sm"
                       variant="outline"
                       onClick={() => onEstado(m.id, "inhabilitado")}
+                      disabled={busyId === m.id}
                     >
-                      <UserX className="mr-1 h-4 w-4" />
+                      {busyId === m.id ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <UserX className="mr-1 h-4 w-4" />
+                      )}
                       Inhabilitar
                     </Button>
                   ) : (
@@ -503,8 +529,13 @@ function MiembrosLista({
                       size="sm"
                       variant="outline"
                       onClick={() => onEstado(m.id, "activo")}
+                      disabled={busyId === m.id}
                     >
-                      <UserCheck className="mr-1 h-4 w-4" />
+                      {busyId === m.id ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <UserCheck className="mr-1 h-4 w-4" />
+                      )}
                       Activar
                     </Button>
                   )}
@@ -513,6 +544,7 @@ function MiembrosLista({
                     variant="ghost"
                     className="text-red-700 hover:bg-red-50 hover:text-red-800"
                     onClick={() => onDesvincular(m.id)}
+                    disabled={busyId === m.id}
                   >
                     <UserMinus className="mr-1 h-4 w-4" />
                     Desvincular

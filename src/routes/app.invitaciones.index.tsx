@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import {
   crearInvitacion,
+  listarInvitaciones,
   reenviarInvitacion,
   revocarInvitacion,
 } from "@/lib/admin.functions";
@@ -48,6 +49,7 @@ function Invitaciones() {
   const { profile } = useAuth();
   const esAdmin = profile?.rol === "admin";
   const crear = useServerFn(crearInvitacion);
+  const listar = useServerFn(listarInvitaciones);
   const reenviar = useServerFn(reenviarInvitacion);
   const revocar = useServerFn(revocarInvitacion);
   const [rows, setRows] = useState<Inv[]>([]);
@@ -62,16 +64,19 @@ function Invitaciones() {
   const [action, setAction] = useState<string | null>(null);
 
   const cargar = async () => {
+    // El listado va por server function (supabaseAdmin) porque la RLS de
+    // `invitaciones` es solo-admin: así el implementador también puede
+    // hacer seguimiento. El token nunca viaja al cliente.
     const [i, p] = await Promise.all([
-      supabase
-        .from("invitaciones")
-        .select(
-          "id, email, rol_invitado, proyecto_id, estado, expira_at, created_at, proyectos(nombre)",
-        )
-        .order("created_at", { ascending: false }),
+      listar().catch((e) => {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudieron cargar las invitaciones.",
+        );
+        return [];
+      }),
       supabase.from("proyectos").select("id, nombre, empresa").order("nombre"),
     ]);
-    setRows((i.data ?? []) as unknown as Inv[]);
+    setRows((i ?? []) as unknown as Inv[]);
     setProyectos((p.data ?? []) as Proy[]);
     setLoading(false);
   };
@@ -86,7 +91,7 @@ function Invitaciones() {
       return toast.error("Selecciona el proyecto para el invitado.");
     setSending(true);
     try {
-      const res = await crear({
+      await crear({
         data: {
           email,
           rol_invitado: rol,
@@ -94,15 +99,7 @@ function Invitaciones() {
           dias_validez: 14,
         },
       });
-      if (res?.correoEnviado) {
-        toast.success("Invitación enviada por correo.");
-      } else {
-        toast.error(
-          `Invitación creada, pero el correo no se pudo entregar${
-            res?.correoError ? ` (${res.correoError})` : ""
-          }. Reenvíala desde la lista o comparte el enlace manualmente.`,
-        );
-      }
+      toast.success("Invitación enviada.");
       setEmail("");
       setProyectoId("");
       await cargar();
@@ -116,16 +113,8 @@ function Invitaciones() {
   const doReenviar = async (id: string) => {
     setAction(id);
     try {
-      const res = await reenviar({ data: { id } });
-      if (res?.correoEnviado) {
-        toast.success("Invitación reenviada por correo.");
-      } else {
-        toast.error(
-          `Invitación regenerada, pero el correo no se pudo entregar${
-            res?.correoError ? ` (${res.correoError})` : ""
-          }.`,
-        );
-      }
+      await reenviar({ data: { id } });
+      toast.success("Invitación reenviada.");
       await cargar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo reenviar.");
