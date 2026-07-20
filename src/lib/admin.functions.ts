@@ -61,7 +61,12 @@ function tokenRandom(): string {
 
 // ---------- Crear proyecto -------------------------------------------------
 
-const moduloKeyEnum = z.enum(["imagen", "sociedades", "seguridad"]);
+const moduloKeyEnum = z.enum([
+  "imagen",
+  "sociedades",
+  "seguridad",
+  "usuarios_internos",
+]);
 const comportamientoEnum = z.enum([
   "bloquear",
   "editable_avisar",
@@ -126,6 +131,77 @@ export const crearProyecto = createServerFn({ method: "POST" })
     });
 
     return { id: proy.id };
+  });
+
+// ---------- Agregar módulo a un proyecto existente -------------------------
+
+const agregarModuloSchema = z.object({
+  proyectoId: z.string().uuid(),
+  moduloKey: moduloKeyEnum,
+  fecha_limite: z.string().date().nullable().optional(),
+  comportamiento_vencimiento: comportamientoEnum.nullable().optional(),
+});
+
+export const agregarModuloAProyecto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => agregarModuloSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+
+    const { data: proy } = await supabaseAdmin
+      .from("proyectos")
+      .select("id, nombre, empresa")
+      .eq("id", data.proyectoId)
+      .maybeSingle();
+    if (!proy) throw new Error("Proyecto no encontrado.");
+
+    // Unicidad proyecto + módulo: si ya existe, error claro.
+    const { data: existente } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .select("id")
+      .eq("proyecto_id", data.proyectoId)
+      .eq("modulo_key", data.moduloKey)
+      .maybeSingle();
+    if (existente) {
+      throw new Error("Este módulo ya está asignado al proyecto.");
+    }
+
+    const { data: nuevo, error } = await supabaseAdmin
+      .from("proyecto_modulos")
+      .insert({
+        proyecto_id: data.proyectoId,
+        modulo_key: data.moduloKey,
+        estado: "sin_iniciar",
+        datos: {},
+        progreso: 0,
+        fecha_limite: data.fecha_limite || null,
+        comportamiento_vencimiento: data.comportamiento_vencimiento || null,
+      })
+      .select("id")
+      .single();
+    if (error || !nuevo) {
+      throw new Error("No se pudo agregar el módulo al proyecto.");
+    }
+
+    await auditar(
+      supabaseAdmin,
+      userId,
+      "modulo_agregado",
+      "proyecto_modulo",
+      nuevo.id,
+      {
+        proyecto_id: data.proyectoId,
+        modulo_key: data.moduloKey,
+        fecha_limite: data.fecha_limite ?? null,
+        comportamiento_vencimiento: data.comportamiento_vencimiento ?? null,
+      },
+    );
+
+    return { id: nuevo.id };
   });
 
 // ---------- Editar datos de módulo (interno, queda en auditoría) -----------

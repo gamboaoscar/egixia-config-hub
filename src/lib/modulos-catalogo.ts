@@ -1,6 +1,6 @@
-import { Image, Building2, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Image, Building2, ShieldCheck, Users, type LucideIcon } from "lucide-react";
 
-export type ModuloKey = "imagen" | "sociedades" | "seguridad";
+export type ModuloKey = "imagen" | "sociedades" | "seguridad" | "usuarios_internos";
 
 export interface ModuloCatalogo {
   key: ModuloKey;
@@ -40,6 +40,13 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
       "Roles y responsables",
       "Requisitos técnicos",
     ],
+  },
+  usuarios_internos: {
+    key: "usuarios_internos",
+    nombre: "Usuarios internos",
+    descripcion: "Personas de tu equipo que usarán el portal y su rol.",
+    icon: Users,
+    secciones: ["Usuarios del portal", "Responsable del portal"],
   },
 };
 
