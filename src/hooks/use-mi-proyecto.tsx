@@ -30,6 +30,7 @@ export interface ProyectoModulo {
   estado: ModuloEstado;
   fecha_limite: string | null;
   comportamiento_vencimiento: ComportamientoVencimiento | null;
+  extension_solicitada_at: string | null;
   datos: Record<string, unknown>;
   progreso: number;
   updated_at: string;
@@ -93,7 +94,7 @@ export function MiProyectoProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from("proyecto_modulos")
       .select(
-        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento, datos, progreso, updated_at, updated_por",
+        "id, proyecto_id, modulo_key, estado, fecha_limite, comportamiento_vencimiento, extension_solicitada_at, datos, progreso, updated_at, updated_por",
       )
       .order("modulo_key");
     if (error) {
