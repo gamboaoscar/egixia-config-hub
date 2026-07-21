@@ -19,7 +19,7 @@ import type {
   OpcionCampo,
 } from "@/lib/form-engine/tipos";
 
-import { CampoInfo } from "./campo-info";
+import { BotonAyudaCampo } from "./ayuda-campo";
 import { CampoArchivo } from "./campo-archivo";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -77,7 +77,9 @@ export function CampoRenderer({
             </span>
           )}
         </Label>
-        {campo.guia && <CampoInfo guia={campo.guia} campoLabel={campo.label} />}
+        {campo.guia && (
+          <BotonAyudaCampo label={campo.label} guia={campo.guia} />
+        )}
       </div>
 
       <CampoControl
@@ -585,7 +587,9 @@ function TablaDinamica({
                         *
                       </span>
                     )}
-                    {c.guia && <CampoInfo guia={c.guia} campoLabel={c.label} />}
+                    {c.guia && (
+                      <BotonAyudaCampo label={c.label} guia={c.guia} />
+                    )}
                   </div>
                 </th>
               ))}
