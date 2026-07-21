@@ -19,7 +19,8 @@ export type TipoCorreo =
   | "acta_devolucion"
   | "acta_aprobacion"
   | "extension_solicitada"
-  | "observacion_respondida";
+  | "observacion_respondida"
+  | "recordatorio";
 
 export interface ContextoCorreo {
   invitacion?: {
@@ -66,6 +67,17 @@ export interface ContextoCorreo {
     /** Texto de la respuesta (se escapa al renderizar). */
     mensaje: string;
     urlModulo?: string;
+  };
+  recordatorio?: {
+    proyecto: string;
+    /** Módulos pendientes: nombre + estado legible + fecha límite si tiene. */
+    modulos: Array<{
+      nombre: string;
+      estado: string;
+      fechaLimiteTexto?: string;
+    }>;
+    /** URL al portal del cliente (site_url + /mi-proyecto). */
+    urlPortal?: string;
   };
 }
 
@@ -299,6 +311,38 @@ export function renderCorreo(
           : undefined,
       });
       const texto = `EGIXIA · Nueva respuesta en una observación\nMódulo: ${c.moduloNombre}\nProyecto: ${c.proyecto}\nDe: ${c.autorNombre}\n\n${c.mensaje}\n${c.urlModulo ? `\nMódulo: ${c.urlModulo}\n` : ""}`;
+      return { asunto, html, texto };
+    }
+
+    case "recordatorio": {
+      const c = ctx.recordatorio;
+      if (!c) throw new Error("Falta contexto de recordatorio.");
+      const asunto =
+        "Recordatorio: tu configuración del Portal de Proveedores está esperando";
+      const filas = c.modulos
+        .map(
+          (m) =>
+            `<tr><td style="padding:6px 0;font-size:13px;color:#1F2937;font-weight:500;">${escaparHtml(m.nombre)}</td><td style="padding:6px 0;font-size:12px;color:#6B7280;">${escaparHtml(m.estado)}</td><td style="padding:6px 0;font-size:12px;color:#6B7280;text-align:right;">${m.fechaLimiteTexto ? `vence el ${escaparHtml(m.fechaLimiteTexto)}` : ""}</td></tr>`,
+        )
+        .join("");
+      const listaHtml = `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-top:1px solid #E5E7EB;border-bottom:1px solid #E5E7EB;margin:8px 0 4px;">${filas}</table>`;
+      const html = envolver({
+        titulo: "Tu configuración te está esperando",
+        intro: `Hola. Notamos que hace unos días no hay avances en la configuración del proyecto <strong>${escaparHtml(c.proyecto)}</strong>. Estos módulos siguen pendientes — retomarlos toma solo unos minutos y nos ayuda a mantener tu implementación al día:`,
+        cuerpoHtml: listaHtml,
+        cta: c.urlPortal
+          ? { texto: "Continuar mi configuración", url: c.urlPortal }
+          : undefined,
+        nota:
+          "Si ya retomaste el diligenciamiento o tienes dudas sobre algún módulo, escríbenos — con gusto te acompañamos.",
+      });
+      const lineas = c.modulos
+        .map(
+          (m) =>
+            `- ${m.nombre} · ${m.estado}${m.fechaLimiteTexto ? ` · vence el ${m.fechaLimiteTexto}` : ""}`,
+        )
+        .join("\n");
+      const texto = `EGIXIA · Recordatorio\nProyecto: ${c.proyecto}\n\nMódulos pendientes:\n${lineas}\n${c.urlPortal ? `\nContinúa aquí: ${c.urlPortal}\n` : ""}`;
       return { asunto, html, texto };
     }
   }

@@ -230,6 +230,35 @@ export async function notificarProyecto(input: {
 }
 
 /**
+ * Recordatorio de inactividad: envía UN correo tipo "recordatorio" a los
+ * invitados activos del proyecto con la lista de módulos rezagados.
+ * Reutiliza `destinatariosProyecto` + `enviarBatch`.
+ */
+export async function notificarRecordatorioProyecto(input: {
+  proyectoId: string;
+  contexto: NonNullable<ContextoCorreo["recordatorio"]>;
+  actorId?: string | null;
+}): Promise<EnvioResultado> {
+  const dest = await destinatariosProyecto(input.proyectoId);
+  if (dest.invitados.length === 0) {
+    return { ok: true, edgeStatus: null, totalMensajes: 0, exitosos: 0, fallidos: 0 };
+  }
+  const rendered = renderCorreo("recordatorio", { recordatorio: input.contexto });
+  const mensajes: Mensaje[] = dest.invitados.map((to) => ({
+    to,
+    subject: rendered.asunto,
+    html: rendered.html,
+    text: rendered.texto,
+  }));
+  return enviarBatch(
+    mensajes,
+    "recordatorio_correo_enviado",
+    input.proyectoId,
+    input.actorId ?? null,
+  );
+}
+
+/**
  * Envío puntual para invitaciones (Parte 4). Se llama al crear una
  * invitación por token.
  */
