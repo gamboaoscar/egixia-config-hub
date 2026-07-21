@@ -47,6 +47,7 @@ function ConfiguracionPage() {
     dias_alerta_vencimiento: 3,
     autoguardado_debounce_ms: 800,
     bloquear_fines_semana_festivos: false,
+    dias_recordatorio_inactividad: 5,
   });
 
   const esAdmin = profile?.rol === "admin";
@@ -199,6 +200,14 @@ function ConfiguracionPage() {
             <Input type="number" min={200} max={5000} step={100}
               value={parametros.autoguardado_debounce_ms} disabled={disabled}
               onChange={(e) => setParametros({ ...parametros, autoguardado_debounce_ms: Number(e.target.value) })} />
+          </Field>
+          <Field label="Días de inactividad para recordatorio">
+            <Input type="number" min={1} max={60} value={parametros.dias_recordatorio_inactividad} disabled={disabled}
+              onChange={(e) => setParametros({ ...parametros, dias_recordatorio_inactividad: Number(e.target.value) })} />
+            <p className="text-[11px] text-muted-foreground">
+              Días sin avance en un módulo para incluir al proyecto en los
+              recordatorios por correo a los invitados.
+            </p>
           </Field>
         </div>
         <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">

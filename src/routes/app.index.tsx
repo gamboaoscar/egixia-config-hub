@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   FolderKanban,
   ClipboardCheck,
   AlarmClock,
+  BellRing,
   CheckCircle2,
   Hand,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Bar,
   BarChart,
@@ -17,8 +21,10 @@ import {
   YAxis,
 } from "recharts";
 
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { enviarRecordatorios } from "@/lib/admin.functions";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { ESTADO_LABEL, type ModuloEstado } from "@/lib/modulo-estado";
 
@@ -109,6 +115,30 @@ function DashboardAdmin() {
     .filter((m) => m.estado === "en_revision")
     .slice(0, 5);
 
+  const enviarRecordatoriosFn = useServerFn(enviarRecordatorios);
+  const [enviandoRecordatorios, setEnviandoRecordatorios] = useState(false);
+  const mandarRecordatorios = async () => {
+    setEnviandoRecordatorios(true);
+    try {
+      const r = await enviarRecordatoriosFn();
+      if (r.proyectos === 0) {
+        toast.info("No hay proyectos con módulos rezagados para recordar.");
+      } else if (r.fallidos > 0) {
+        toast.warning(
+          `${r.proyectos} proyecto(s), ${r.correos} correo(s) enviados, ${r.fallidos} fallido(s).`,
+        );
+      } else {
+        toast.success(`${r.proyectos} proyecto(s), ${r.correos} correo(s) enviados.`);
+      }
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudieron enviar los recordatorios.",
+      );
+    } finally {
+      setEnviandoRecordatorios(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
@@ -154,6 +184,38 @@ function DashboardAdmin() {
           hint="Trabajo completado"
         />
       </div>
+
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <BellRing className="h-4 w-4 text-primary" />
+              Recordatorios de inactividad
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Envía un correo a los invitados de los proyectos activos con
+              módulos sin avance durante los días configurados.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              size="sm"
+              onClick={mandarRecordatorios}
+              disabled={enviandoRecordatorios}
+            >
+              {enviandoRecordatorios ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <BellRing className="mr-1 h-4 w-4" />
+              )}
+              Enviar recordatorios
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Se omiten proyectos ya recordados en las últimas 24 h.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

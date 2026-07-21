@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { CircleHelp, ImagePlus, Loader2, Lock, Settings2, X } from "lucide-react";
+import {
+  CircleHelp,
+  ImagePlus,
+  LayoutTemplate,
+  Loader2,
+  Lock,
+  Save,
+  Settings2,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,9 +31,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  aplicarPlantillaCatalogo,
+  eliminarPlantillaCatalogo,
   guardarOverrideCampo,
   guardarOverrideSeccion,
+  guardarPlantillaCatalogo,
+  listarPlantillasCatalogo,
 } from "@/lib/admin.functions";
+import { formatoFechaCortaCO } from "@/lib/fechas";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
 import { firmarUrl } from "@/lib/form-engine/archivo";
 import { moduloCatalogo, type ModuloKey } from "@/lib/modulos-catalogo";
@@ -85,6 +100,8 @@ function CatalogoPage() {
     modulo_key: string; campo: CampoDefinicion; ov?: OverrideRow;
   } | null>(null);
   const [editandoAyuda, setEditandoAyuda] = useState<EstadoAyuda | null>(null);
+  const [dialogGuardarPlantilla, setDialogGuardarPlantilla] = useState(false);
+  const [dialogAplicarPlantilla, setDialogAplicarPlantilla] = useState(false);
   // Set de claves ocupadas mientras se ejecuta una mutación de override
   // (para deshabilitar el control y evitar carreras hasta que `cargar()`
   // refresque el estado). Claves: `campo:<mod>:<key>`, `seccion:<mod>:<key>`,
@@ -315,6 +332,26 @@ function CatalogoPage() {
               ))}
             </SelectContent>
           </Select>
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!proyectoId}
+              onClick={() => setDialogGuardarPlantilla(true)}
+            >
+              <Save className="mr-1 h-4 w-4" />
+              Guardar como plantilla
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!proyectoId}
+              onClick={() => setDialogAplicarPlantilla(true)}
+            >
+              <LayoutTemplate className="mr-1 h-4 w-4" />
+              Aplicar plantilla
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -566,7 +603,262 @@ function CatalogoPage() {
         onClose={() => setEditandoAyuda(null)}
         onSaved={() => { setEditandoAyuda(null); void cargar(proyectoId); }}
       />
+
+      <GuardarPlantillaDialog
+        open={dialogGuardarPlantilla}
+        proyectoId={proyectoId}
+        onClose={() => setDialogGuardarPlantilla(false)}
+      />
+
+      <AplicarPlantillaDialog
+        open={dialogAplicarPlantilla}
+        proyectoId={proyectoId}
+        esAdmin={esAdmin}
+        onClose={() => setDialogAplicarPlantilla(false)}
+        onApplied={() => {
+          setDialogAplicarPlantilla(false);
+          void cargar(proyectoId);
+        }}
+      />
     </div>
+  );
+}
+
+// ---------- Plantillas de parametrización ---------------------------------
+
+function GuardarPlantillaDialog({
+  open, proyectoId, onClose,
+}: {
+  open: boolean;
+  proyectoId: string;
+  onClose: () => void;
+}) {
+  const guardar = useServerFn(guardarPlantillaCatalogo);
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setNombre("");
+      setDescripcion("");
+    }
+  }, [open]);
+
+  const submit = async () => {
+    if (nombre.trim().length < 2) {
+      toast.error("Escribe un nombre para la plantilla.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await guardar({
+        data: {
+          proyectoId,
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || undefined,
+        },
+      });
+      toast.success("Plantilla guardada.");
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar la plantilla.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Guardar como plantilla</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Guarda la parametrización actual del proyecto (secciones, campos,
+            opciones y guías de ayuda) para reutilizarla en otros proyectos.
+          </p>
+          <div className="space-y-1">
+            <Label>Nombre</Label>
+            <Input
+              value={nombre}
+              maxLength={120}
+              placeholder="Ej.: Alcance estándar Alimentos y Bebidas"
+              onChange={(e) => setNombre(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Descripción (opcional)</Label>
+            <Textarea
+              rows={3}
+              value={descripcion}
+              maxLength={500}
+              onChange={(e) => setDescripcion(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button onClick={submit} disabled={busy}>
+            {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+            Guardar plantilla
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface PlantillaLite {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  created_at: string;
+  creado_por_nombre: string | null;
+}
+
+function AplicarPlantillaDialog({
+  open, proyectoId, esAdmin, onClose, onApplied,
+}: {
+  open: boolean;
+  proyectoId: string;
+  esAdmin: boolean;
+  onClose: () => void;
+  onApplied: () => void;
+}) {
+  const listar = useServerFn(listarPlantillasCatalogo);
+  const aplicar = useServerFn(aplicarPlantillaCatalogo);
+  const eliminar = useServerFn(eliminarPlantillaCatalogo);
+  const [plantillas, setPlantillas] = useState<PlantillaLite[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [seleccion, setSeleccion] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  const cargarLista = async () => {
+    setCargando(true);
+    try {
+      const rows = await listar();
+      setPlantillas(rows as PlantillaLite[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudieron cargar las plantillas.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      setSeleccion("");
+      void cargarLista();
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const borrar = async (id: string) => {
+    try {
+      await eliminar({ data: { plantillaId: id } });
+      toast.success("Plantilla eliminada.");
+      if (seleccion === id) setSeleccion("");
+      await cargarLista();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar.");
+    }
+  };
+
+  const submit = async () => {
+    if (!seleccion) return;
+    setBusy(true);
+    try {
+      const r = await aplicar({
+        data: { plantillaId: seleccion, proyectoId },
+      });
+      toast.success(
+        `Aplicada: ${r.aplicados} ajustes, ${r.omitidos} omitidos por protección`,
+      );
+      onApplied();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo aplicar la plantilla.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Aplicar plantilla</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Los ajustes protegidos por datos ya diligenciados no se
+            sobreescriben.
+          </p>
+          {cargando ? (
+            <div className="h-24 animate-pulse rounded-lg bg-muted" />
+          ) : plantillas.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              Todavía no hay plantillas guardadas.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {plantillas.map((p) => (
+                <li key={p.id}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSeleccion(p.id)}
+                    onKeyDown={(e) => e.key === "Enter" && setSeleccion(p.id)}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                      seleccion === p.id
+                        ? "border-primary bg-primary-soft"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-foreground">
+                        {p.nombre}
+                      </div>
+                      {p.descripcion && (
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          {p.descripcion}
+                        </div>
+                      )}
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        {formatoFechaCortaCO(p.created_at)}
+                        {p.creado_por_nombre ? ` · ${p.creado_por_nombre}` : ""}
+                      </div>
+                    </div>
+                    {esAdmin && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Eliminar plantilla ${p.nombre}`}
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void borrar(p.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button onClick={submit} disabled={busy || !seleccion}>
+            {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+            Aplicar a este proyecto
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
