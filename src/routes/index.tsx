@@ -8,13 +8,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
+          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo.",
       },
       { property: "og:title", content: "EGIXIA · Portal de Configuración de tu Implementación" },
       {
         property: "og:description",
         content:
-          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo. Sin correos, sin archivos Excel.",
+          "Diligencia la información de tu Portal de Proveedores de forma guiada, a tu ritmo.",
       },
       { property: "og:url", content: "https://egixia-config-hub.lovable.app/" },
     ],
@@ -60,7 +60,7 @@ function LandingPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
             Diligencia la información de tu Portal de Proveedores de forma
-            guiada, a tu ritmo. Sin correos, sin archivos Excel.
+            guiada, a tu ritmo.
           </p>
           <div className="mt-10">
             <Link
