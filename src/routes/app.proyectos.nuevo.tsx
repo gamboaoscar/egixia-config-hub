@@ -59,6 +59,7 @@ function NuevoProyecto() {
     sociedades: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     seguridad: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     usuarios_internos: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
+    matriz_documental: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
   });
   const [saving, setSaving] = useState(false);
 
