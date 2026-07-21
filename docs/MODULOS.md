@@ -13,6 +13,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | `sociedades`        | ✅ Completo    | `src/lib/form-engine/modulos/sociedades.ts`        |
 | `seguridad`         | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`         |
 | `usuarios_internos` | ✅ Completo    | `src/lib/form-engine/modulos/usuarios-internos.ts` |
+| `matriz_documental` | ✅ Completo    | `src/lib/form-engine/modulos/matriz-documental.ts` |
 
 ---
 
@@ -305,3 +306,62 @@ selección de otro.
 - Progreso: columnas requeridas de la tabla (`nombre`, `apellido`,
   `correo`, `rol`) por fila + los 2 campos del responsable, con la misma
   regla de tablas del módulo Sociedades.
+
+---
+
+## Módulo `matriz_documental` — Matriz documental de proveedores
+
+Define qué documentos exigirá el portal a los proveedores, según su
+tipo, con obligatoriedad y vigencia. Se organiza en 3 secciones.
+
+### Sección 1 — Tipos de proveedor (`tipos_proveedor`)
+
+Cómo el cliente clasifica a sus proveedores; cada documento de la
+matriz aplicará a uno o varios de estos tipos. Incluye un campo `info`
+(`tipos_info`) con ejemplos habituales: Nacional de bienes, Nacional de
+servicios, Proveedor del exterior, Persona natural.
+
+Campo `tabla_tipos` (tipo `tabla`, **requerido**), una fila por tipo:
+
+| Columna       | Tipo  | Req | Guía / Notas                                   |
+| ------------- | ----- | :-: | ---------------------------------------------- |
+| `nombre`      | texto | ✅  | Nombre corto del tipo (ej. "Nacional — bienes"). |
+| `descripcion` | texto | ⚪  | Cuándo aplica esta clasificación.              |
+
+### Sección 2 — Documentos exigidos (`documentos`)
+
+La matriz de documentos que el proveedor deberá cargar al registrarse.
+Incluye un campo `info` (`documentos_info`) con documentos frecuentes en
+Colombia: RUT, Certificado de Cámara de Comercio (no mayor a 90 días),
+certificación bancaria, estados financieros, certificado SG-SST,
+certificaciones de calidad (ISO).
+
+Campo `tabla_documentos` (tipo `tabla`, **requerido**), una fila por
+documento:
+
+| Columna       | Tipo   | Req | Guía / Notas                                                                 |
+| ------------- | ------ | :-: | ---------------------------------------------------------------------------- |
+| `documento`   | texto  | ✅  | Nombre del documento (ej. "RUT actualizado").                                 |
+| `aplica_a`    | texto  | ✅  | Tipos a los que aplica, separados por coma; "Todos" si aplica a todos.        |
+| `obligatorio` | select | ✅  | `obligatorio` (para activar al proveedor) · `opcional`.                       |
+| `vigencia`    | select | ✅  | `no_vence` · `seis_meses` · `un_ano` · `dos_anos` · `personalizada` (en notas). |
+| `notas`       | texto  | ⚪  | Aclaraciones, vigencias especiales o excepciones.                             |
+
+### Sección 3 — Políticas de la matriz (`politicas`)
+
+| Campo                   | Tipo           | Req | Notas                                                                  |
+| ----------------------- | -------------- | :-: | ---------------------------------------------------------------------- |
+| `aviso_renovacion_dias` | numero         | ✅  | Días de anticipación del aviso de vencimiento. Validación `min: 1`.     |
+| `bloquear_vencidos`     | radio_tarjetas | ✅  | `bloquear` (bloquear al proveedor con documentos vencidos) · `avisar` (solo avisar sin bloquear). |
+| `responsable_correo`    | email          | ✅  | Correo del responsable de validar los documentos cargados.              |
+
+### Persistencia y progreso
+
+- Se guarda en `proyecto_modulos.datos`: `tabla_tipos` y
+  `tabla_documentos` como arrays de filas; las políticas en
+  `aviso_renovacion_dias` / `bloquear_vencidos` / `responsable_correo`.
+- Progreso: columnas requeridas por fila de ambas tablas + los 3 campos
+  de políticas, con la misma regla de tablas del módulo Sociedades. Los
+  campos `info` no cuentan para validación ni progreso.
+- La relación documento → tipos se captura en texto libre (`aplica_a`)
+  usando los nombres definidos en `tabla_tipos`.

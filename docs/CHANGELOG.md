@@ -2,6 +2,31 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.21] — 2026-07-21 — Módulo Matriz documental de proveedores
+
+### Añadido
+- **Módulo `matriz_documental` — Matriz documental de proveedores**
+  (`src/lib/form-engine/modulos/matriz-documental.ts`): define qué
+  documentos exigirá el portal a los proveedores, según su tipo, con
+  obligatoriedad y vigencia. 3 secciones:
+  - **Tipos de proveedor** (`tipos_proveedor`): tabla `tabla_tipos`
+    (nombre + descripción) con aviso de ejemplos habituales (Nacional de
+    bienes/servicios, Proveedor del exterior, Persona natural).
+  - **Documentos exigidos** (`documentos`): tabla `tabla_documentos`
+    (documento, aplica a, obligatoriedad, vigencia, notas) con aviso de
+    documentos frecuentes en Colombia (RUT, Cámara de Comercio,
+    certificación bancaria, estados financieros, SG-SST, ISO).
+  - **Políticas de la matriz** (`politicas`): días de aviso antes del
+    vencimiento (`aviso_renovacion_dias`, min 1), tratamiento de
+    documentos vencidos (`bloquear_vencidos`: bloquear / solo avisar) y
+    correo del responsable de validación (`responsable_correo`).
+- Registro completo del módulo: `REGISTRO` del motor de formularios
+  (`modulo-ejemplo.ts`), catálogo (`modulos-catalogo.ts`, icono
+  `FileCheck2`), `moduloKeyEnum` (`admin.functions.ts`), lista de
+  módulos de `/app/catalogo` y estado inicial de `/app/proyectos/nuevo`.
+  El diálogo "Agregar módulo" lo toma automáticamente del catálogo.
+- Ficha del módulo en `docs/MODULOS.md`.
+
 ## [1.0.20] — 2026-07-20 — Flujo de extensión de plazos + respuestas a observaciones
 
 ### Añadido
