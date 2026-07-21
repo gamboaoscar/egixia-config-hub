@@ -27,8 +27,33 @@ export interface FormularioModuloHandle {
    * lista de campos faltantes.
    */
   mostrarFaltantes: () => string[];
+  /**
+   * Marca todos los campos como tocados y desplaza el foco a un campo
+   * concreto (sin toast). Usado por los enlaces del resumen pre-envío.
+   */
+  irACampo: (key: string) => void;
+  /** Snapshot de los datos actuales del formulario (incluye lo no guardado). */
+  datosActuales: () => DatosModulo;
   /** Fuerza el guardado inmediato de los cambios pendientes. */
   flush: () => Promise<void>;
+}
+
+/** Desplaza y enfoca el control de un campo por su key. */
+function scrollACampo(key: string) {
+  if (typeof document === "undefined") return;
+  const el =
+    document.getElementById(`campo-${key}`) ??
+    document.querySelector(`[data-campo-key="${key}"]`);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el instanceof HTMLElement && typeof el.focus === "function") {
+      try {
+        el.focus({ preventScroll: true });
+      } catch {
+        el.focus();
+      }
+    }
+  }
 }
 
 /**
@@ -93,27 +118,18 @@ export const FormularioModulo = forwardRef<FormularioModuloHandle, Props>(functi
           );
           const primero = faltantes[0];
           // Esperamos al siguiente frame para que el DOM refleje los errores.
-          requestAnimationFrame(() => {
-            const el =
-              document.getElementById(`campo-${primero}`) ??
-              document.querySelector(`[data-campo-key="${primero}"]`);
-            if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "center" });
-              if (el instanceof HTMLElement && typeof el.focus === "function") {
-                try {
-                  el.focus({ preventScroll: true });
-                } catch {
-                  el.focus();
-                }
-              }
-            }
-          });
+          requestAnimationFrame(() => scrollACampo(primero));
         }
         return faltantes;
       },
+      irACampo: (key: string) => {
+        marcarTodosTocados();
+        requestAnimationFrame(() => scrollACampo(key));
+      },
+      datosActuales: () => datos,
       flush,
     }),
-    [faltantes, marcarTodosTocados, flush],
+    [faltantes, marcarTodosTocados, datos, flush],
   );
 
   return (

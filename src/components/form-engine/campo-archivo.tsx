@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, FileText, Loader2, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
+import { Download, Eye, FileText, Loader2, Monitor, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { MockupLogin } from "@/components/form-engine/mockup-portal";
 import { cn } from "@/lib/utils";
 import type { ConfigArchivo } from "@/lib/form-engine/tipos";
 import {
@@ -59,6 +66,7 @@ export function CampoArchivo({
   const [abriendo, setAbriendo] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [quitando, setQuitando] = useState(false);
+  const [contextoAbierto, setContextoAbierto] = useState(false);
 
   const aceptar = useMemo(
     () => config.formatosPermitidos.join(","),
@@ -285,6 +293,7 @@ export function CampoArchivo({
       <PanelAjuste
         ajuste={ajuste}
         dims={config.dimensiones}
+        previewContexto={config.previewContexto}
         subiendo={subiendo}
         error={error}
         onCancelar={() => {
@@ -353,6 +362,19 @@ export function CampoArchivo({
                 )}
                 Descargar
               </Button>
+              {config.previewContexto &&
+                valorActual.tipo.startsWith("image/") && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setContextoAbierto(true)}
+                    disabled={!previewUrl}
+                  >
+                    <Monitor className="mr-1.5 h-3.5 w-3.5" />
+                    Ver en contexto
+                  </Button>
+                )}
               {!disabled && (
                 <>
                   <Button
@@ -396,6 +418,30 @@ export function CampoArchivo({
             if (f) await procesarArchivo(f);
           }}
         />
+        {config.previewContexto && (
+          <Dialog open={contextoAbierto} onOpenChange={setContextoAbierto}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Así se verá en la pantalla de acceso del portal
+                </DialogTitle>
+              </DialogHeader>
+              {previewUrl && (
+                <MockupLogin
+                  variante={
+                    config.previewContexto === "login_logo" ? "logo" : "fondo"
+                  }
+                >
+                  <img
+                    src={previewUrl}
+                    alt={valorActual.nombre}
+                    className="h-full w-full object-cover"
+                  />
+                </MockupLogin>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     );
   }
@@ -496,6 +542,7 @@ function Miniatura({
 function PanelAjuste({
   ajuste,
   dims,
+  previewContexto,
   subiendo,
   error,
   onCancelar,
@@ -504,6 +551,7 @@ function PanelAjuste({
 }: {
   ajuste: AjusteState;
   dims: { ancho: number; alto: number };
+  previewContexto?: ConfigArchivo["previewContexto"];
   subiendo: boolean;
   error: string | null;
   onCancelar: () => void;
@@ -511,10 +559,23 @@ function PanelAjuste({
   onConfirmar: () => void;
 }) {
   // Preview: caja proporcional al target, imagen en modo cover con
-  // objectPosition controlado por dos sliders (X, Y).
+  // objectPosition controlado por dos sliders (X, Y). Si el campo declara
+  // `previewContexto`, la misma imagen se muestra dentro de un mockup de
+  // la pantalla de login del portal (los sliders siguen moviendo el
+  // encuadre vía objectPosition).
   const aspecto = dims.ancho / dims.alto;
   const previewW = Math.min(360, dims.ancho);
   const previewH = Math.round(previewW / aspecto);
+  const imagen = (
+    <img
+      src={ajuste.previewUrl}
+      alt="Vista previa"
+      className="h-full w-full object-cover"
+      style={{
+        objectPosition: `${ajuste.offset.x * 100}% ${ajuste.offset.y * 100}%`,
+      }}
+    />
+  );
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3">
@@ -522,23 +583,27 @@ function PanelAjuste({
           Ajustar imagen a {dims.ancho}×{dims.alto} px
         </div>
         <p className="text-xs text-muted-foreground">
-          La imagen se recortará automáticamente. Mueve los deslizadores para
-          reposicionar el encuadre.
+          {previewContexto
+            ? "Así se verá en la pantalla de acceso del portal. La imagen se recortará automáticamente; mueve los deslizadores para reposicionar el encuadre."
+            : "La imagen se recortará automáticamente. Mueve los deslizadores para reposicionar el encuadre."}
         </p>
       </div>
-      <div
-        className="mx-auto overflow-hidden rounded-lg border border-border bg-muted"
-        style={{ width: previewW, height: previewH }}
-      >
-        <img
-          src={ajuste.previewUrl}
-          alt="Vista previa"
-          className="h-full w-full object-cover"
-          style={{
-            objectPosition: `${ajuste.offset.x * 100}% ${ajuste.offset.y * 100}%`,
-          }}
-        />
-      </div>
+      {previewContexto ? (
+        <div className="mx-auto max-w-xl">
+          <MockupLogin
+            variante={previewContexto === "login_logo" ? "logo" : "fondo"}
+          >
+            {imagen}
+          </MockupLogin>
+        </div>
+      ) : (
+        <div
+          className="mx-auto overflow-hidden rounded-lg border border-border bg-muted"
+          style={{ width: previewW, height: previewH }}
+        >
+          {imagen}
+        </div>
+      )}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-muted-foreground">
           Horizontal
