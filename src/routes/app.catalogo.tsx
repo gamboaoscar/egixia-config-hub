@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Lock, Settings2 } from "lucide-react";
+import { CircleHelp, ImagePlus, Loader2, Lock, Settings2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,13 @@ import {
   guardarOverrideSeccion,
 } from "@/lib/admin.functions";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import { firmarUrl } from "@/lib/form-engine/archivo";
 import { moduloCatalogo, type ModuloKey } from "@/lib/modulos-catalogo";
-import type { CampoDefinicion } from "@/lib/form-engine/tipos";
+import type {
+  CampoDefinicion,
+  GuiaCampo,
+  ImagenGuia,
+} from "@/lib/form-engine/tipos";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/app/catalogo")({ component: CatalogoPage });
@@ -39,7 +44,7 @@ interface OverrideRow {
   activo: boolean;
   label: string | null;
   requerido: boolean | null;
-  guia: { que?: string; formato?: string; tamano?: string } | null;
+  guia: Partial<GuiaCampo> | null;
   opciones_permitidas: string[] | null;
 }
 interface OverrideSeccionRow {
@@ -79,6 +84,7 @@ function CatalogoPage() {
   const [editando, setEditando] = useState<{
     modulo_key: string; campo: CampoDefinicion; ov?: OverrideRow;
   } | null>(null);
+  const [editandoAyuda, setEditandoAyuda] = useState<EstadoAyuda | null>(null);
   // Set de claves ocupadas mientras se ejecuta una mutación de override
   // (para deshabilitar el control y evitar carreras hasta que `cargar()`
   // refresque el estado). Claves: `campo:<mod>:<key>`, `seccion:<mod>:<key>`,
@@ -423,8 +429,75 @@ function CatalogoPage() {
                                   >
                                     <Settings2 className="mr-1 h-4 w-4" />Editar
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    title="Editar ayuda"
+                                    onClick={() =>
+                                      setEditandoAyuda({
+                                        moduloKey: key,
+                                        campoKey: c.key,
+                                        label,
+                                        guiaDefault: c.guia,
+                                        guiaOverride: ov?.guia ?? null,
+                                      })
+                                    }
+                                  >
+                                    <CircleHelp className="mr-1 h-4 w-4" />Ayuda
+                                  </Button>
                                 </div>
                               </div>
+
+                              {c.tipo === "tabla" &&
+                                (c.columnas ?? []).some(
+                                  (col) =>
+                                    col.guia ||
+                                    ovMap.get(`${key}:${c.key}.${col.key}`)?.guia,
+                                ) && (
+                                  <div className="mt-3 rounded-md border border-dashed border-border bg-muted/30 p-3">
+                                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                      Ayuda por columna
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {(c.columnas ?? [])
+                                        .filter(
+                                          (col) =>
+                                            col.guia ||
+                                            ovMap.get(`${key}:${c.key}.${col.key}`)?.guia,
+                                        )
+                                        .map((col) => {
+                                          const ovCol = ovMap.get(
+                                            `${key}:${c.key}.${col.key}`,
+                                          );
+                                          return (
+                                            <Button
+                                              key={col.key}
+                                              size="sm"
+                                              variant="outline"
+                                              title={`Editar ayuda de la columna ${col.label}`}
+                                              onClick={() =>
+                                                setEditandoAyuda({
+                                                  moduloKey: key,
+                                                  campoKey: `${c.key}.${col.key}`,
+                                                  label: col.label,
+                                                  guiaDefault: col.guia,
+                                                  guiaOverride: ovCol?.guia ?? null,
+                                                })
+                                              }
+                                            >
+                                              <CircleHelp className="mr-1 h-3.5 w-3.5" />
+                                              {col.label}
+                                              {ovCol?.guia && (
+                                                <span className="ml-1 text-primary">
+                                                  · personalizada
+                                                </span>
+                                              )}
+                                            </Button>
+                                          );
+                                        })}
+                                    </div>
+                                  </div>
+                                )}
 
                               {c.tipo === "checkbox_multiple" && c.opciones && (
                                 <div className="mt-3 grid gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3 sm:grid-cols-2">
@@ -485,6 +558,14 @@ function CatalogoPage() {
         onClose={() => setEditando(null)}
         onSaved={() => { setEditando(null); void cargar(proyectoId); }}
       />
+
+      <EditorAyudaDialog
+        open={!!editandoAyuda}
+        proyectoId={proyectoId}
+        estado={editandoAyuda}
+        onClose={() => setEditandoAyuda(null)}
+        onSaved={() => { setEditandoAyuda(null); void cargar(proyectoId); }}
+      />
     </div>
   );
 }
@@ -501,22 +582,18 @@ function EditorCampoDialog({
   const guardar = useServerFn(guardarOverrideCampo);
   const [label, setLabel] = useState("");
   const [requerido, setRequerido] = useState(false);
-  const [guiaQue, setGuiaQue] = useState("");
-  const [guiaFormato, setGuiaFormato] = useState("");
-  const [guiaTamano, setGuiaTamano] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!estado) return;
     setLabel(estado.ov?.label ?? estado.campo.label ?? "");
     setRequerido(estado.ov?.requerido ?? estado.campo.requerido ?? false);
-    setGuiaQue(estado.ov?.guia?.que ?? estado.campo.guia?.que ?? "");
-    setGuiaFormato(estado.ov?.guia?.formato ?? estado.campo.guia?.formato ?? "");
-    setGuiaTamano(estado.ov?.guia?.tamano ?? estado.campo.guia?.tamano ?? "");
   }, [estado]);
 
   if (!estado) return null;
 
+  // La guía se edita en su propio diálogo ("Ayuda"); aquí no se envía
+  // `guia` para no sobreescribir la guía enriquecida (título + imágenes).
   const submit = async () => {
     setBusy(true);
     try {
@@ -527,9 +604,6 @@ function EditorCampoDialog({
           campoKey: estado.campo.key,
           label: label.trim() || null,
           requerido,
-          guia: (guiaQue || guiaFormato || guiaTamano)
-            ? { que: guiaQue, formato: guiaFormato || undefined, tamano: guiaTamano || undefined }
-            : null,
         },
       });
       toast.success("Cambios guardados.");
@@ -554,24 +628,291 @@ function EditorCampoDialog({
             <Switch id="req" checked={requerido} onCheckedChange={setRequerido} />
             <Label htmlFor="req">Campo obligatorio</Label>
           </div>
-          <div className="space-y-1">
-            <Label>Guía — "¿qué debo ingresar?"</Label>
-            <Textarea rows={2} value={guiaQue} onChange={(e) => setGuiaQue(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label>Formato esperado</Label>
-              <Input value={guiaFormato} onChange={(e) => setGuiaFormato(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Tamaño / medida</Label>
-              <Input value={guiaTamano} onChange={(e) => setGuiaTamano(e.target.value)} />
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            La guía de ayuda (textos e imágenes) se edita con el botón{" "}
+            <span className="font-medium">Ayuda</span> del campo.
+          </p>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button onClick={submit} disabled={busy}>
+            {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------- Editor de ayuda enriquecida (título, textos e imágenes) ------
+
+interface EstadoAyuda {
+  moduloKey: string;
+  /** Clave del campo, o `"{campoKey}.{columnaKey}"` para columnas de tabla. */
+  campoKey: string;
+  label: string;
+  guiaDefault?: GuiaCampo;
+  guiaOverride?: Partial<GuiaCampo> | null;
+}
+
+const AYUDA_MAX_IMAGENES = 3;
+const AYUDA_MAX_MB = 2;
+const AYUDA_TIPOS = ["image/png", "image/jpeg"];
+
+function slugArchivo(nombre: string): string {
+  return nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+}
+
+function EditorAyudaDialog({
+  open, proyectoId, estado, onClose, onSaved,
+}: {
+  open: boolean;
+  proyectoId: string;
+  estado: EstadoAyuda | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const guardar = useServerFn(guardarOverrideCampo);
+  const [titulo, setTitulo] = useState("");
+  const [que, setQue] = useState("");
+  const [formato, setFormato] = useState("");
+  const [tamano, setTamano] = useState("");
+  const [imagenes, setImagenes] = useState<ImagenGuia[]>([]);
+  const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
+  const [subiendo, setSubiendo] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const firmarThumb = async (img: ImagenGuia) => {
+    const url = await firmarUrl(img.bucket, img.storagePath);
+    setThumbs((prev) => ({ ...prev, [img.storagePath]: url }));
+  };
+
+  useEffect(() => {
+    if (!estado) return;
+    // Valores iniciales = guía efectiva actual (override si existe,
+    // si no la default del módulo).
+    const efectiva: Partial<GuiaCampo> = {
+      ...(estado.guiaDefault ?? {}),
+      ...(estado.guiaOverride ?? {}),
+    };
+    setTitulo(efectiva.titulo ?? "");
+    setQue(efectiva.que ?? "");
+    setFormato(efectiva.formato ?? "");
+    setTamano(efectiva.tamano ?? "");
+    const imgs = (efectiva.imagenes ?? []).filter(
+      (i) => !!i && !!i.bucket && !!i.storagePath,
+    );
+    setImagenes(imgs);
+    setThumbs({});
+    for (const img of imgs) void firmarThumb(img);
+  }, [estado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!estado) return null;
+
+  const subir = async (file: File) => {
+    if (imagenes.length >= AYUDA_MAX_IMAGENES) {
+      toast.error(`Máximo ${AYUDA_MAX_IMAGENES} imágenes por campo.`);
+      return;
+    }
+    if (!AYUDA_TIPOS.includes(file.type.toLowerCase())) {
+      toast.error("Solo se permiten imágenes PNG o JPG.");
+      return;
+    }
+    if (file.size > AYUDA_MAX_MB * 1024 * 1024) {
+      toast.error(`La imagen supera el máximo de ${AYUDA_MAX_MB} MB.`);
+      return;
+    }
+    setSubiendo(true);
+    try {
+      const base = slugArchivo(file.name) || "imagen";
+      const storagePath = `${proyectoId}/${estado.moduloKey}/${estado.campoKey}/${Date.now()}-${base}`;
+      const { error } = await supabase.storage
+        .from("ayudas")
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+      if (error) throw new Error(error.message);
+      const img: ImagenGuia = {
+        bucket: "ayudas",
+        storagePath,
+        nombre: file.name,
+        caption: "",
+      };
+      setImagenes((prev) => [...prev, img]);
+      void firmarThumb(img);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo subir la imagen.");
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  // Quitar solo remueve la referencia de la guía; el binario en Storage
+  // no se borra (puede estar referenciado por versiones previas).
+  const quitar = (storagePath: string) =>
+    setImagenes((prev) => prev.filter((i) => i.storagePath !== storagePath));
+
+  const setCaption = (storagePath: string, caption: string) =>
+    setImagenes((prev) =>
+      prev.map((i) => (i.storagePath === storagePath ? { ...i, caption } : i)),
+    );
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const imgs = imagenes.map((i) => ({
+        bucket: i.bucket,
+        storagePath: i.storagePath,
+        nombre: i.nombre || undefined,
+        caption: i.caption?.trim() || undefined,
+      }));
+      const hayContenido =
+        titulo.trim() || que.trim() || formato.trim() || tamano.trim() ||
+        imgs.length > 0;
+      await guardar({
+        data: {
+          proyectoId,
+          moduloKey: estado.moduloKey,
+          campoKey: estado.campoKey,
+          guia: hayContenido
+            ? {
+                titulo: titulo.trim(),
+                que: que.trim(),
+                formato: formato.trim(),
+                tamano: tamano.trim(),
+                imagenes: imgs,
+              }
+            : null,
+        },
+      });
+      toast.success("Ayuda guardada.");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>
+            Editar ayuda — {estado.label}{" "}
+            <code className="text-sm">{estado.campoKey}</code>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Título del popup</Label>
+            <Input
+              value={titulo}
+              maxLength={200}
+              placeholder={estado.label}
+              onChange={(e) => setTitulo(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Qué es / qué debe ingresar</Label>
+            <Textarea rows={3} value={que} maxLength={500} onChange={(e) => setQue(e.target.value)} />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Formato esperado</Label>
+              <Input value={formato} maxLength={200} onChange={(e) => setFormato(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Tamaño / recomendación</Label>
+              <Input value={tamano} maxLength={200} onChange={(e) => setTamano(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Imágenes de guía (hasta {AYUDA_MAX_IMAGENES}, PNG/JPG, máx {AYUDA_MAX_MB} MB c/u)</Label>
+            {imagenes.length > 0 && (
+              <ul className="space-y-2">
+                {imagenes.map((img) => {
+                  const thumb = thumbs[img.storagePath];
+                  return (
+                    <li
+                      key={img.storagePath}
+                      className="flex items-start gap-3 rounded-lg border border-border p-2"
+                    >
+                      {thumb === undefined ? (
+                        <div className="h-16 w-24 shrink-0 animate-pulse rounded-md bg-muted" />
+                      ) : thumb ? (
+                        <img
+                          src={thumb}
+                          alt={img.nombre ?? "Imagen de ayuda"}
+                          className="h-16 w-24 shrink-0 rounded-md border border-border object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">
+                          Sin vista previa
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        {img.nombre && (
+                          <div className="truncate text-xs text-muted-foreground">
+                            {img.nombre}
+                          </div>
+                        )}
+                        <Input
+                          value={img.caption ?? ""}
+                          maxLength={300}
+                          placeholder="Caption (se muestra debajo de la imagen)"
+                          onChange={(e) => setCaption(img.storagePath, e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Quitar imagen"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-600"
+                        onClick={() => quitar(img.storagePath)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {imagenes.length < AYUDA_MAX_IMAGENES && (
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-primary">
+                {subiendo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+                {subiendo ? "Subiendo..." : "Subir imagen"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                  className="sr-only"
+                  disabled={subiendo}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void subir(f);
+                  }}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy || subiendo}>
+            Cancelar
+          </Button>
+          <Button onClick={submit} disabled={busy || subiendo}>
             {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             Guardar
           </Button>
