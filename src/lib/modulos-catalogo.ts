@@ -1,6 +1,18 @@
-import { Image, Building2, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import {
+  Image,
+  Building2,
+  ShieldCheck,
+  Users,
+  FileCheck2,
+  type LucideIcon,
+} from "lucide-react";
 
-export type ModuloKey = "imagen" | "sociedades" | "seguridad" | "usuarios_internos";
+export type ModuloKey =
+  | "imagen"
+  | "sociedades"
+  | "seguridad"
+  | "usuarios_internos"
+  | "matriz_documental";
 
 export interface ModuloCatalogo {
   key: ModuloKey;
@@ -47,6 +59,18 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
     descripcion: "Personas de tu equipo que usarán el portal y su rol.",
     icon: Users,
     secciones: ["Usuarios del portal", "Responsable del portal"],
+  },
+  matriz_documental: {
+    key: "matriz_documental",
+    nombre: "Matriz documental de proveedores",
+    descripcion:
+      "Documentos que tu portal exigirá a los proveedores, según su tipo.",
+    icon: FileCheck2,
+    secciones: [
+      "Tipos de proveedor",
+      "Documentos exigidos",
+      "Políticas de la matriz",
+    ],
   },
 };
 
