@@ -5,16 +5,19 @@ import { MODULO_IMAGEN } from "./modulos/imagen";
 import { MODULO_SOCIEDADES } from "./modulos/sociedades";
 import { MODULO_SEGURIDAD } from "./modulos/seguridad";
 import { MODULO_USUARIOS_INTERNOS } from "./modulos/usuarios-internos";
+import { MODULO_MATRIZ_DOCUMENTAL } from "./modulos/matriz-documental";
 
 /**
  * Registro de definiciones de módulos disponibles en el motor de
- * formularios: Imagen, Sociedades, Seguridad y Usuarios internos.
+ * formularios: Imagen, Sociedades, Seguridad, Usuarios internos y
+ * Matriz documental de proveedores.
  */
 const REGISTRO: Record<string, ModuloDefinicion> = {
   imagen: MODULO_IMAGEN,
   sociedades: MODULO_SOCIEDADES,
   seguridad: MODULO_SEGURIDAD,
   usuarios_internos: MODULO_USUARIOS_INTERNOS,
+  matriz_documental: MODULO_MATRIZ_DOCUMENTAL,
 };
 
 /**
