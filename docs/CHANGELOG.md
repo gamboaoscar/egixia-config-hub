@@ -2,6 +2,35 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.23] — 2026-07-21 — Previsualización en contexto + resumen previo al envío
+
+### Añadido
+- **Previsualización en contexto (Imagen corporativa)**: nuevo campo
+  opcional `previewContexto?: "login_logo" | "login_fondo"` en
+  `ConfigArchivo` (`tipos.ts`) y nuevo componente `MockupLogin`
+  (`src/components/form-engine/mockup-portal.tsx`), un mockup CSS liviano
+  de la pantalla de login del Portal de Proveedores (marco de navegador,
+  tarjeta con placeholders y botón azul EGIXIA `#0F2B8E`). El panel de
+  ajuste de recorte (`campo-archivo.tsx`) muestra la imagen dentro del
+  mockup cuando el campo declara contexto (los sliders siguen moviendo el
+  encuadre) y la tarjeta del archivo cargado gana el botón **Ver en
+  contexto** (Dialog con la imagen firmada dentro del mockup). Aplicado a
+  `logo_login` (`login_logo`) e `img_fondo` (`login_fondo`) del módulo
+  Imagen corporativa (`modulos/imagen.ts`).
+- **Resumen previo al envío a revisión (portal cliente)**: helper puro
+  `resumenPorSeccion(definicion, datos)` en
+  `src/lib/form-engine/validacion.ts` (por sección: título,
+  completos/total y requeridos faltantes con label; solo campos activos,
+  visibles y no-info). En `mi-proyecto.modulo.$moduloId.tsx`, *Enviar a
+  revisión* y *Reenviar tras corregir* abren primero el Dialog **"Revisa
+  antes de enviar"**: avance global, lista por sección con check verde,
+  enlaces a los requeridos faltantes (cierran el diálogo y hacen scroll
+  al campo) y aviso ámbar si hay observaciones abiertas sin respuesta
+  del cliente. **Confirmar y enviar** (deshabilitado con requeridos
+  faltantes) ejecuta el flujo actual con `flush()`; **Seguir editando**
+  cierra. El handle del motor expone `datosActuales()` e
+  `irACampo(key)` (`formulario-modulo.tsx`).
+
 ## [1.0.21] — 2026-07-21 — Módulo Matriz documental de proveedores
 
 ### Añadido

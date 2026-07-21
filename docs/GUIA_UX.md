@@ -52,6 +52,34 @@ proyectos distintos.
 - **Envío a revisión**: al enviar, el usuario vuelve al detalle del
   proyecto (`/mi-proyecto/proyectos/$id`) para continuar con el
   siguiente módulo.
+- **Resumen previo al envío**: el botón *Enviar a revisión* (y el
+  *Reenviar tras corregir*) abre primero un `Dialog` **"Revisa antes de
+  enviar"** con: barra de avance global, lista por sección
+  (título + completos/total, check verde si está completa) y, si hay
+  campos obligatorios vacíos, su lista con enlaces que cierran el
+  diálogo y hacen scroll/foco al campo (`irACampo` del motor). Si hay
+  observaciones abiertas sin respuesta del cliente, se muestra un aviso
+  ámbar (*"Tienes N observaciones abiertas — respóndelas o corrige antes
+  de reenviar"*). El botón primario **Confirmar y enviar** se deshabilita
+  mientras falten requeridos y ejecuta el flujo actual (incluido el
+  `flush()` del autoguardado); **Seguir editando** cierra el diálogo.
+  El helper puro `resumenPorSeccion(definicion, datos)`
+  (`src/lib/form-engine/validacion.ts`) calcula el resumen contando solo
+  campos activos, visibles y no-info, con el mismo criterio de
+  "completo" del progreso.
+- **Previsualización en contexto (Imagen corporativa)**: los campos de
+  archivo pueden declarar `previewContexto: "login_logo" | "login_fondo"`
+  en su `ConfigArchivo`. Cuando existe, el panel de ajuste de recorte
+  muestra la imagen **dentro de un mockup CSS de la pantalla de login**
+  del Portal de Proveedores (`MockupLogin`,
+  `src/components/form-engine/mockup-portal.tsx`): marco de navegador,
+  tarjeta de login con placeholders y botón azul EGIXIA. Con
+  `login_logo` la imagen ocupa el slot del logo (proporción 400×110);
+  con `login_fondo` la imagen es el fondo detrás de la tarjeta. Los
+  sliders siguen moviendo el encuadre (`objectPosition`). En la tarjeta
+  del archivo ya cargado, el botón **Ver en contexto** (icono Monitor)
+  abre un `Dialog` con el mockup mostrando la imagen firmada actual.
+  Lo usan `logo_login` y `img_fondo` del módulo Imagen corporativa.
 - **Previsualización del acta** en un `Dialog` inline con `iframe`
   embebido y botón *Descargar PDF*, para evitar bloqueos de popups y
   de blob URLs por extensiones del navegador.
