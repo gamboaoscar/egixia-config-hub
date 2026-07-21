@@ -1,13 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Download, FileText, Loader2, Lock, MessageSquareWarning, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Download,
+  FileText,
+  Loader2,
+  Lock,
+  MessageSquareWarning,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,6 +38,10 @@ import {
   type FormularioModuloHandle,
 } from "@/components/form-engine/formulario-modulo";
 import { definicionModulo } from "@/lib/form-engine/modulo-ejemplo";
+import {
+  resumenPorSeccion,
+  type ResumenSeccion,
+} from "@/lib/form-engine/validacion";
 import { aplicarOverrides } from "@/lib/form-engine/overrides";
 import { resolverOpcionesDinamicas } from "@/lib/form-engine/opciones-dinamicas";
 import {
@@ -87,6 +104,9 @@ function ModuloPage() {
   const listarRespuestas = useServerFn(listarRespuestasObservaciones);
   const [solicitandoExt, setSolicitandoExt] = useState(false);
   const [respuestas, setRespuestas] = useState<RespuestaObservacion[]>([]);
+  // Resumen previo al envío ("Revisa antes de enviar").
+  const [resumenAbierto, setResumenAbierto] = useState(false);
+  const [resumen, setResumen] = useState<ResumenSeccion[]>([]);
 
   // Overrides y datos iniciales memoizados: la definición no debe cambiar
   // de referencia en cada render, porque `useFormModulo` sólo resetea su
@@ -302,12 +322,43 @@ function ModuloPage() {
     }
   };
 
-  const handleEnviar = async () => {
-    if (irAlPrimerFaltante()) return;
+  // Abre la pantalla de repaso "Revisa antes de enviar" (aplica tanto al
+  // primer envío como al reenvío tras observaciones).
+  const abrirResumen = () => {
     if (!estadoPermiteEnviar) {
       toast.error("Este módulo no está en un estado que permita enviarlo.");
       return;
     }
+    const datos = formRef.current?.datosActuales() ?? datosInicialesMemo;
+    setResumen(resumenPorSeccion(definicionMemo, datos));
+    setResumenAbierto(true);
+  };
+
+  // Cierra el diálogo de resumen y lleva al usuario al campo faltante.
+  const irACampoDesdeResumen = (key: string) => {
+    setResumenAbierto(false);
+    // Esperamos a que el diálogo termine de cerrarse antes de hacer scroll.
+    window.setTimeout(() => formRef.current?.irACampo(key), 200);
+  };
+
+  // Observaciones abiertas que aún no tienen ninguna respuesta del cliente.
+  const obsSinRespuesta = observaciones.filter(
+    (o) =>
+      !respuestas.some((r) => r.observacion_id === o.id && !r.autor_interno),
+  ).length;
+
+  const faltantesResumen = resumen.flatMap((s) => s.faltantes);
+
+  const handleEnviar = async () => {
+    if (!estadoPermiteEnviar) {
+      toast.error("Este módulo no está en un estado que permita enviarlo.");
+      return;
+    }
+    if (irAlPrimerFaltante()) {
+      setResumenAbierto(false);
+      return;
+    }
+    setResumenAbierto(false);
     await formRef.current?.flush();
     setEnviando(true);
     try {
@@ -477,12 +528,12 @@ function ModuloPage() {
             Previsualizar acta
           </Button>
           <Button
-            onClick={handleEnviar}
+            onClick={abrirResumen}
             disabled={enviando || soloLectura || !estadoPermiteEnviar}
             className="sm:w-auto"
             title={
               !enviableAhora && !enviando
-                ? "Al enviar te llevaremos al primer campo obligatorio que falte."
+                ? "Antes de enviar verás un resumen con los campos obligatorios que falten."
                 : undefined
             }
           >
@@ -517,6 +568,115 @@ function ModuloPage() {
               className="flex-1 w-full rounded-md border border-border bg-white"
             />
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Resumen previo al envío a revisión (también aplica al reenvío) */}
+      <Dialog open={resumenAbierto} onOpenChange={setResumenAbierto}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Revisa antes de enviar</DialogTitle>
+            <DialogDescription>
+              {esReenvio
+                ? "Repasa tu avance antes de reenviar el módulo a revisión."
+                : "Repasa tu avance antes de enviar el módulo a revisión."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Avance global */}
+          <div className="flex items-center gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${progresoLive ?? modulo.progreso}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-foreground">
+              {progresoLive ?? modulo.progreso}%
+            </span>
+          </div>
+
+          {/* Lista por sección */}
+          <ul className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+            {resumen.map((s) => {
+              const completa = s.completos === s.total;
+              return (
+                <li
+                  key={s.seccionKey}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    {completa ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                    )}
+                    <span className="truncate text-foreground">{s.titulo}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {s.completos}/{s.total}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Requeridos faltantes */}
+          {faltantesResumen.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                Campos obligatorios pendientes ({faltantesResumen.length})
+              </p>
+              <ul className="mt-2 space-y-1">
+                {faltantesResumen.map((f) => (
+                  <li key={f.key}>
+                    <button
+                      type="button"
+                      onClick={() => irACampoDesdeResumen(f.key)}
+                      className="text-sm text-red-700 underline underline-offset-2 hover:text-red-900"
+                    >
+                      {f.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Observaciones abiertas sin respuesta del cliente */}
+          {obsSinRespuesta > 0 && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Tienes {obsSinRespuesta} observaci
+                {obsSinRespuesta === 1 ? "ón abierta" : "ones abiertas"} —
+                respóndelas o corrige antes de reenviar.
+              </span>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setResumenAbierto(false)}
+              disabled={enviando}
+            >
+              Seguir editando
+            </Button>
+            <Button
+              type="button"
+              onClick={handleEnviar}
+              disabled={enviando || faltantesResumen.length > 0}
+            >
+              {enviando ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Confirmar y enviar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
