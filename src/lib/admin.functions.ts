@@ -1093,11 +1093,26 @@ const overrideSchema = z.object({
   activo: z.boolean().optional(),
   label: z.string().max(200).nullable().optional(),
   requerido: z.boolean().nullable().optional(),
+  // Guía enriquecida (jsonb): textos + título del popup + imágenes de
+  // referencia en el bucket privado `ayudas`. La regla de protección de
+  // camposConDatos NO aplica a la guía (editarla nunca toca datos).
   guia: z
     .object({
       que: z.string().max(500).optional(),
       formato: z.string().max(200).optional(),
       tamano: z.string().max(200).optional(),
+      titulo: z.string().max(200).optional(),
+      imagenes: z
+        .array(
+          z.object({
+            bucket: z.string().min(1).max(100),
+            storagePath: z.string().min(1).max(600),
+            nombre: z.string().max(255).optional(),
+            caption: z.string().max(300).optional(),
+          }),
+        )
+        .max(3)
+        .optional(),
     })
     .nullable()
     .optional(),
