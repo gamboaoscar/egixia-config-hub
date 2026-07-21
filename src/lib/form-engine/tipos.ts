@@ -109,6 +109,14 @@ export interface ConfigArchivo {
    * redimensiona con recorte centrado ("cover") antes de subir.
    */
   dimensiones?: { ancho: number; alto: number };
+  /**
+   * Renderiza la previsualización dentro de un mockup del portal
+   * (pantalla de login del Portal de Proveedores), para que el cliente
+   * vea cómo quedará la imagen en contexto:
+   * - `login_logo`: la imagen ocupa el slot del logo sobre la tarjeta.
+   * - `login_fondo`: la imagen es el fondo detrás de la tarjeta.
+   */
+  previewContexto?: "login_logo" | "login_fondo";
 }
 
 export interface CampoDefinicion {

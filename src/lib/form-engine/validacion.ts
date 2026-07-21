@@ -141,6 +141,69 @@ export function camposRequeridosFaltantes(
   return faltantes;
 }
 
+/** Resumen de diligenciamiento de una sección (para el repaso pre-envío). */
+export interface ResumenSeccion {
+  seccionKey: string;
+  titulo: string;
+  /** Campos activos, visibles y no-info de la sección. */
+  total: number;
+  /** De esos, cuántos tienen valor ("completo", mismo criterio del progreso). */
+  completos: number;
+  /** Solo los campos REQUERIDOS que aún están vacíos. */
+  faltantes: Array<{ key: string; label: string }>;
+}
+
+/** ¿El campo está "completo"? Mismo criterio que `camposRequeridosFaltantes`
+ *  para tablas con columnas requeridas; `valorLleno` para el resto. */
+function campoCompleto(campo: CampoDefinicion, datos: DatosModulo): boolean {
+  if (campo.tipo === "tabla" && campo.columnas) {
+    const reqCols = campo.columnas.filter((col) => col.requerido);
+    if (reqCols.length > 0) {
+      const filas = Array.isArray(datos[campo.key])
+        ? (datos[campo.key] as Record<string, unknown>[])
+        : [];
+      return (
+        filas.length > 0 &&
+        filas.every((fila) => reqCols.every((col) => valorLleno(fila[col.key])))
+      );
+    }
+  }
+  return valorLleno(datos[campo.key]);
+}
+
+/**
+ * Resumen por sección para la pantalla de repaso previa al envío.
+ * Cuenta solo campos activos, visibles según `mostrarSi` y no-info.
+ * Las secciones sin campos contables se omiten.
+ */
+export function resumenPorSeccion(
+  definicion: ModuloDefinicion,
+  datos: DatosModulo,
+): ResumenSeccion[] {
+  const resumen: ResumenSeccion[] = [];
+  for (const s of definicion.secciones) {
+    const contables = s.campos.filter(
+      (c) => campoActivo(c) && c.tipo !== "info" && campoVisible(c, datos),
+    );
+    if (contables.length === 0) continue;
+    let completos = 0;
+    const faltantes: Array<{ key: string; label: string }> = [];
+    for (const c of contables) {
+      const completo = campoCompleto(c, datos);
+      if (completo) completos += 1;
+      else if (c.requerido) faltantes.push({ key: c.key, label: c.label });
+    }
+    resumen.push({
+      seccionKey: s.key,
+      titulo: s.titulo,
+      total: contables.length,
+      completos,
+      faltantes,
+    });
+  }
+  return resumen;
+}
+
 /**
  * % de avance de un módulo:
  * (campos requeridos + activos con valor) ÷ (total requeridos + activos) × 100.
