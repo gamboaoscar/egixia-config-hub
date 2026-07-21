@@ -2,6 +2,54 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.25] — 2026-07-21 — Plantillas de parametrización + recordatorios de inactividad
+
+### Añadido
+- **Plantillas de parametrización del catálogo**: nueva tabla
+  `plantillas_catalogo` (migración
+  `supabase/migrations/20260721210000_plantillas_catalogo.sql`, aplicada
+  en producción; RLS SELECT solo internos, mutación solo vía server
+  functions con service role). Server functions en
+  `src/lib/admin.functions.ts`:
+  - `guardarPlantillaCatalogo` — snapshot de los overrides de campos y
+    secciones del proyecto en `contenido = { overrides, secciones }`
+    (sin ids ni `proyecto_id`; las guías conservan sus referencias a
+    imágenes tal cual). Audita `plantilla_guardada`.
+  - `listarPlantillasCatalogo` — id, nombre, descripción, fecha y autor
+    resuelto a nombre.
+  - `aplicarPlantillaCatalogo` — upsert sobre el proyecto destino
+    aplicando la regla de protección `camposConDatos` (los cambios que
+    un no-admin no podría hacer se **omiten** y se cuentan); las
+    imágenes de guía de otro proyecto se **copian** en Storage al path
+    del destino (si la copia falla, la guía queda sin esa imagen);
+    recalcula el progreso de los módulos afectados. Audita
+    `plantilla_aplicada` y devuelve `{ aplicados, omitidos }`.
+  - `eliminarPlantillaCatalogo` — solo admin, audita
+    `plantilla_eliminada`.
+- **UI del Catálogo** (`/app/catalogo`): botones "Guardar como
+  plantilla" y "Aplicar plantilla" en la barra superior junto al
+  selector de proyecto, con Dialogs (aviso "Los ajustes protegidos por
+  datos ya diligenciados no se sobreescriben", toast
+  "Aplicada: N ajustes, M omitidos por protección" y recarga; eliminar
+  con icono solo admin).
+- **Recordatorios a clientes con módulos sin avance**: parámetro
+  `configuracion_sistema.parametros.dias_recordatorio_inactividad`
+  (default 5, editable en `/app/configuracion`), plantilla de correo
+  `recordatorio` (`src/lib/acta/plantillas-correo.ts`) con proyecto,
+  módulos pendientes (nombre + estado + fecha límite) y CTA al portal
+  del cliente (`site_url` + `/mi-proyecto`), y server function
+  `enviarRecordatorios`: agrupa por proyecto activo los módulos en
+  `sin_iniciar`/`en_diligenciamiento`/`con_observaciones` con
+  `updated_at` anterior al umbral, envía UN correo a los invitados
+  activos por proyecto (`notificarRecordatorioProyecto` en
+  `notificaciones.server.ts`, infra `destinatarios`/`enviarBatch`),
+  con anti-spam de 24 h vía auditoría (`recordatorios_enviados` con
+  `{ proyectos, correos, fallidos, proyectos_ids }`).
+- **Dashboard interno** (`/app`): tarjeta "Recordatorios de
+  inactividad" con botón "Enviar recordatorios", resumen en toast
+  ("3 proyectos, 5 correos enviados") y nota "Se omiten proyectos ya
+  recordados en las últimas 24 h."
+
 ## [1.0.24] — 2026-07-21 — Ayuda enriquecida por campo
 
 ### Añadido

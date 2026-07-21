@@ -205,6 +205,32 @@ Para columnas de tabla, la fila de override usa la convención
 - RLS: los miembros del proyecto pueden leer; para insertar, un invitado
   debe cumplir `puede_editar_modulo` (regla de bloqueo por estado).
 
+### `plantillas_catalogo`
+- Plantillas reutilizables de parametrización del catálogo (migración
+  `20260721210000_plantillas_catalogo.sql`).
+- `id`, `nombre`, `descripcion` (null), `contenido` (jsonb), `creado_por
+  → profiles` (`ON DELETE SET NULL`), `created_at`.
+- `contenido = { overrides: [...], secciones: [...] }`: snapshot de
+  `catalogo_overrides` y `catalogo_overrides_seccion` de un proyecto
+  **sin** `id` ni `proyecto_id`. Las guías conservan sus referencias a
+  imágenes (`bucket` + `storagePath`); al aplicar la plantilla sobre otro
+  proyecto, los binarios se copian en Storage al path del proyecto
+  destino y se reescribe el `storagePath`.
+- RLS: `SELECT` solo internos (admin/implementador). **Sin políticas de
+  mutación**: guardar/aplicar/eliminar pasan por server functions con
+  service role (`guardarPlantillaCatalogo`, `aplicarPlantillaCatalogo`,
+  `eliminarPlantillaCatalogo` — esta última solo admin). Al aplicar se
+  respeta la regla de protección `camposConDatos` (los cambios que un
+  no-admin no podría hacer se omiten y se cuentan) y se recalcula el
+  progreso de los módulos afectados.
+
+### `configuracion_sistema` — parámetros
+- `parametros.dias_recordatorio_inactividad` (número, default `5`):
+  días sin avance (`updated_at`) de un módulo en `sin_iniciar`,
+  `en_diligenciamiento` o `con_observaciones` para que el proyecto entre
+  en los recordatorios por correo (`enviarRecordatorios`). Editable en
+  `/app/configuracion`.
+
 ### Funciones auxiliares
 - `is_project_member(uid, proyecto_id)`.
 - `puede_editar_modulo(uid, modulo_id)`.

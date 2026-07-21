@@ -74,6 +74,9 @@ El área privada `/app` está reservada a `admin` e `implementador`.
 | Reenviar o revocar invitación pendiente |   ✓   |       ✓       |
 | Inhabilitar / reactivar miembro         |   ✓   |       ✓       |
 | Desvincular invitado de un proyecto     |   ✓   |       ✓       |
+| Guardar parametrización como plantilla  |   ✓   |       ✓       |
+| Aplicar plantilla de catálogo a un proyecto |   ✓   |       ✓       |
+| Enviar recordatorios de inactividad     |   ✓   |       ✓       |
 
 > El implementador puede crear, reenviar y revocar invitaciones,
 > pero **no ve el token en claro**: la lectura de la tabla
@@ -98,6 +101,7 @@ funciones — se guarda por `PrivateShell` + validación server-side.
 | Desactivar campos/secciones con datos del cliente |  ✅   |      ❌       |
 | Quitar opciones ya seleccionadas por el cliente |  ✅   |      ❌       |
 | Configurar branding / correo / parámetros       |  ✅   |      ❌       |
+| Eliminar plantillas de catálogo                 |  ✅   |      ❌       |
 | Consultar auditoría global y exportarla         |  ✅   |      ✅       |
 | Invitar usuarios internos                       |  ✅   |      ✅       |
 
@@ -108,6 +112,12 @@ cambio que borre información visible ya diligenciada por el cliente:
 ocultar una sección con datos, desactivar un campo con dato o quitar
 una opción ya seleccionada. Estas acciones quedan reservadas al
 administrador y la UI las bloquea con un candado.
+
+Al **aplicar una plantilla de catálogo** (`aplicarPlantillaCatalogo`) la
+misma regla se aplica para cualquier rol: los ajustes protegidos por
+datos ya diligenciados no se sobreescriben — se omiten, se cuentan y se
+informan en la UI ("N ajustes, M omitidos por protección") y en la
+auditoría (`plantilla_aplicada`).
 
 Las mutaciones sensibles se ejecutan en server functions
 (`src/lib/admin.functions.ts`) que verifican el rol del llamante contra
