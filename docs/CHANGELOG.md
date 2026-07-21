@@ -2,6 +2,44 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.24] — 2026-07-21 — Ayuda enriquecida por campo
+
+### Añadido
+- **Ayuda enriquecida por campo (cliente)**: nuevo componente
+  `BotonAyudaCampo` (`src/components/form-engine/ayuda-campo.tsx`) —
+  botón discreto `CircleHelp` junto a la etiqueta de cada campo con
+  `guia` (y en el encabezado de las columnas de tabla con `guia`) que
+  abre un Dialog con título (`guia.titulo` o el label), textos
+  tipografiados (qué → párrafo; formato → "Formato"; tamano →
+  "Recomendación") e imágenes de guía a ancho completo con caption,
+  firmadas al abrir (skeleton de carga, fallback silencioso), responsive
+  en móvil (max-h con scroll). Reemplaza al popover `CampoInfo`
+  (retirado).
+- **Tipos**: `GuiaCampo` gana `titulo?: string` e
+  `imagenes?: ImagenGuia[]` (`{ bucket, storagePath, nombre?, caption? }`),
+  retrocompatible; viaja en la columna jsonb `catalogo_overrides.guia`
+  sin migración de tabla.
+- **Bucket privado `ayudas`** (migración
+  `supabase/migrations/20260721200000_bucket_ayudas.sql`, aplicada en
+  producción): ruta `{proyecto_id}/{modulo_key}/{campo_key}/…`;
+  escritura solo internos (admin/implementador), lectura internos o
+  miembros del proyecto (mismo patrón que `logos-clientes`).
+- **Editor de ayuda en el Catálogo** (`/app/catalogo`): acción **Ayuda**
+  por campo (y bloque "Ayuda por columna" en tablas, override con clave
+  `campo.columna`) con Dialog de Título, Qué es, Formato,
+  Tamaño/recomendación y gestor de hasta 3 imágenes (PNG/JPG ≤ 2 MB,
+  validado) subidas a `ayudas`, con miniatura firmada, caption y quitar
+  (solo remueve la referencia). Valores iniciales = guía efectiva
+  (override ?? default). `guardarOverrideCampo` valida la guía
+  enriquecida con zod (la protección `camposConDatos` no aplica a guía).
+
+### Cambiado
+- `aplicarOverrides` fusiona `guia` con el objeto override completo
+  (incluidos `titulo` e `imagenes`) y aplica overrides de guía por
+  columna (`aplicarGuiaColumnas`). El diálogo "Editar" del Catálogo ya
+  no edita la guía (evita pisar la guía enriquecida); se edita solo
+  desde la acción "Ayuda".
+
 ## [1.0.23] — 2026-07-21 — Previsualización en contexto + resumen previo al envío
 
 ### Añadido

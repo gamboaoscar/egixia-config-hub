@@ -108,6 +108,42 @@ código de aplicación. Todos son `SECURITY DEFINER` con
   Estructura: `{proyecto_id}/…`. Los usuarios internos (admin,
   implementador) tienen acceso total; los invitados solo si son miembros
   activos del proyecto. Borrado restringido a usuarios internos.
+- Bucket **`ayudas`** (privado) — imágenes de la "Ayuda enriquecida por
+  campo". Estructura:
+  `{proyecto_id}/{modulo_key}/{campo_key}/{timestamp}-{archivo}`.
+  INSERT/UPDATE/DELETE solo usuarios internos (admin/implementador);
+  SELECT internos o miembros activos del proyecto (el `proyecto_id` es el
+  primer segmento del path, `storage_proyecto_from_path`). El frontend
+  accede vía URLs firmadas al abrir el popup de ayuda. Migración:
+  `20260721200000_bucket_ayudas.sql`.
+
+### Estructura de `catalogo_overrides.guia` (jsonb)
+
+Guía enriquecida por campo, retrocompatible (todas las claves nuevas son
+opcionales). Se persiste como objeto completo desde el editor del
+Catálogo:
+
+```jsonc
+{
+  "titulo": "Banner del carrusel",        // título del popup (opcional; default: label)
+  "que": "Imagen principal del home…",     // párrafo principal
+  "formato": "PNG o JPG",                  // etiqueta "Formato"
+  "tamano": "1920x480 px, máx 2 MB",       // etiqueta "Recomendación"
+  "imagenes": [                             // hasta 3, bucket privado `ayudas`
+    {
+      "bucket": "ayudas",
+      "storagePath": "{proyecto}/{modulo}/{campo}/1721594400000-ejemplo.png",
+      "nombre": "ejemplo.png",             // opcional
+      "caption": "Así se verá en el home"  // opcional
+    }
+  ]
+}
+```
+
+Para columnas de tabla, la fila de override usa la convención
+`campo_key = "{campoKey}.{columnaKey}"` y solo transporta `guia`
+(la fusión la aplica `aplicarGuiaColumnas` en
+`src/lib/form-engine/overrides.ts`).
 
 ## Tablas de negocio (Parte 3)
 

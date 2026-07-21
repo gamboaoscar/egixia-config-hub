@@ -4,9 +4,10 @@
 
 1. **Simplicidad ante todo.** El cliente diligencia esto una sola vez y no es
    técnico. Interfaz limpia, poca carga visual, un módulo/sección a la vez.
-2. **Guía por campo.** Cada campo tiene un ícono de información (**i**) que
-   explica qué ingresar, formato y tamaño requerido. Fácil de encontrar, sin
-   saturar la pantalla.
+2. **Guía por campo.** Cada campo tiene un botón de ayuda que abre un popup
+   con título, qué ingresar, formato, tamaño requerido e imágenes de guía
+   parametrizables por el implementador. Fácil de encontrar, sin saturar la
+   pantalla.
 3. **Progreso siempre visible.** Porcentaje diligenciado por módulo y total.
 4. **Guardar y continuar.** Autoguardado del avance; el cliente puede salir y
    retomar donde quedó.
@@ -187,8 +188,42 @@ System font stack, para sentirse nativo en cualquier plataforma:
 - **Sidebar izquierdo colapsable** estilo Claude/Linear: ícono + texto,
   colapsable a solo íconos con botón; recuerda su estado entre sesiones. Ítem
   activo en azul suave (`--primary-soft` con texto `--primary`).
-- **Ayuda por campo**: ícono `i` a la derecha de la etiqueta, abre popover
-  con instrucciones cortas y formato esperado.
+- **Ayuda por campo**: ícono de ayuda (`CircleHelp`) a la derecha de la
+  etiqueta, abre un Dialog con título, instrucciones, formato esperado e
+  imágenes de guía (ver "Ayuda enriquecida por campo").
+
+## Ayuda enriquecida por campo
+
+Junto a cada campo del formulario (y en el encabezado de las columnas de
+tabla que tienen guía) hay un botón discreto de ayuda (ícono `CircleHelp`,
+gris, `aria-label` "Ayuda de este campo").
+
+**Cómo la ve el cliente.** Al pulsarlo se abre un popup (Dialog,
+`BotonAyudaCampo` en `src/components/form-engine/ayuda-campo.tsx`) con:
+
+- **Título**: el `titulo` parametrizado o, si no existe, el label del campo.
+- **Qué ingresar** (`que`): párrafo principal.
+- **Formato** (`formato`): con etiqueta "Formato".
+- **Recomendación** (`tamano`): con etiqueta "Recomendación", resaltada.
+- **Imágenes de guía** (`imagenes`, hasta 3): a ancho completo con su
+  caption debajo en gris pequeño. Sirven, por ejemplo, para mostrar dónde
+  se verá el banner que se pide cargar. Las imágenes viven en el bucket
+  privado `ayudas` y se firman al abrir el diálogo (skeleton mientras
+  cargan; si una imagen no se puede firmar se omite en silencio). El
+  diálogo es responsive en móvil (alto máximo con scroll interno).
+
+**Cómo la parametriza el implementador.** En el Catálogo
+(`/app/catalogo`), cada campo tiene la acción **Ayuda** (ícono
+`CircleHelp`) que abre el editor de ayuda: Título, "Qué es" (textarea),
+Formato, Tamaño/recomendación, y un gestor de imágenes para subir hasta
+3 (PNG/JPG, máx 2 MB c/u) al bucket `ayudas` bajo
+`{proyectoId}/{moduloKey}/{campoKey}/`, con miniatura, caption y botón
+quitar (quitar solo remueve la referencia; el binario no se borra). Los
+valores iniciales del editor son la guía efectiva actual (override si
+existe, si no la default del módulo). Para las tablas, el bloque "Ayuda
+por columna" permite editar la guía de cada columna que la tiene
+(override con clave `campo.columna`). Todo se persiste como objeto
+completo en `catalogo_overrides.guia` (jsonb).
 
 ## Landing pública (`/`)
 
