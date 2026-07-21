@@ -1266,6 +1266,525 @@ export const guardarOverrideSeccion = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Plantillas de parametrización del catálogo --------------------
+
+interface PlantillaOverrideCampo {
+  modulo_key: string;
+  campo_key: string;
+  activo?: boolean;
+  label?: string | null;
+  requerido?: boolean | null;
+  guia?: Record<string, unknown> | null;
+  opciones_permitidas?: string[] | null;
+}
+
+interface PlantillaOverrideSeccion {
+  modulo_key: string;
+  seccion_key: string;
+  habilitada?: boolean;
+  obligatoria?: boolean | null;
+}
+
+interface PlantillaContenido {
+  overrides: PlantillaOverrideCampo[];
+  secciones: PlantillaOverrideSeccion[];
+}
+
+const guardarPlantillaSchema = z.object({
+  proyectoId: z.string().uuid(),
+  nombre: z.string().trim().min(2).max(120),
+  descripcion: z.string().trim().max(500).optional(),
+});
+
+export const guardarPlantillaCatalogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => guardarPlantillaSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+    const admin = supabaseAdmin as Cliente;
+
+    const { data: proy } = await admin
+      .from("proyectos")
+      .select("id, nombre")
+      .eq("id", data.proyectoId)
+      .maybeSingle();
+    if (!proy) throw new Error("Proyecto no encontrado.");
+
+    // Snapshot de la parametrización sin ids ni proyecto_id. Las guías
+    // (incluidas las referencias a imágenes en Storage) se conservan tal
+    // cual; al aplicar la plantilla se copian los binarios al proyecto
+    // destino.
+    const [{ data: ov }, { data: os }] = await Promise.all([
+      admin
+        .from("catalogo_overrides")
+        .select("modulo_key, campo_key, activo, label, requerido, guia, opciones_permitidas")
+        .eq("proyecto_id", data.proyectoId),
+      admin
+        .from("catalogo_overrides_seccion")
+        .select("modulo_key, seccion_key, habilitada, obligatoria")
+        .eq("proyecto_id", data.proyectoId),
+    ]);
+
+    const contenido: PlantillaContenido = {
+      overrides: (ov ?? []) as PlantillaOverrideCampo[],
+      secciones: (os ?? []) as PlantillaOverrideSeccion[],
+    };
+
+    const { data: creada, error } = await admin
+      .from("plantillas_catalogo")
+      .insert({
+        nombre: data.nombre,
+        descripcion: data.descripcion?.trim() || null,
+        contenido,
+        creado_por: userId,
+      })
+      .select("id")
+      .single();
+    if (error || !creada) throw new Error("No se pudo guardar la plantilla.");
+
+    await auditar(supabaseAdmin, userId, "plantilla_guardada", "plantilla_catalogo", creada.id as string, {
+      proyecto_id: data.proyectoId,
+      nombre: data.nombre,
+      overrides: contenido.overrides.length,
+      secciones: contenido.secciones.length,
+    });
+
+    return { id: creada.id as string };
+  });
+
+export const listarPlantillasCatalogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+    const admin = supabaseAdmin as Cliente;
+
+    const { data: rows, error } = await admin
+      .from("plantillas_catalogo")
+      .select("id, nombre, descripcion, created_at, creado_por")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error("No se pudieron cargar las plantillas.");
+
+    const autorIds = Array.from(
+      new Set(
+        (rows ?? [])
+          .map((r: { creado_por: string | null }) => r.creado_por)
+          .filter((x: string | null): x is string => !!x),
+      ),
+    );
+    const nombres = new Map<string, string>();
+    if (autorIds.length > 0) {
+      const { data: perfiles } = await admin
+        .from("profiles")
+        .select("id, nombre, email")
+        .in("id", autorIds);
+      for (const p of perfiles ?? []) {
+        nombres.set(p.id as string, (p.nombre as string) || (p.email as string) || "");
+      }
+    }
+
+    return ((rows ?? []) as Array<{
+      id: string;
+      nombre: string;
+      descripcion: string | null;
+      created_at: string;
+      creado_por: string | null;
+    }>).map((r) => ({
+      id: r.id,
+      nombre: r.nombre,
+      descripcion: r.descripcion,
+      created_at: r.created_at,
+      creado_por_nombre: (r.creado_por && nombres.get(r.creado_por)) || null,
+    }));
+  });
+
+const aplicarPlantillaSchema = z.object({
+  plantillaId: z.string().uuid(),
+  proyectoId: z.string().uuid(),
+});
+
+export const aplicarPlantillaCatalogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => aplicarPlantillaSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+    const admin = supabaseAdmin as Cliente;
+
+    const { data: plantilla } = await admin
+      .from("plantillas_catalogo")
+      .select("id, nombre, contenido")
+      .eq("id", data.plantillaId)
+      .maybeSingle();
+    if (!plantilla) throw new Error("Plantilla no encontrada.");
+
+    const { data: proy } = await admin
+      .from("proyectos")
+      .select("id")
+      .eq("id", data.proyectoId)
+      .maybeSingle();
+    if (!proy) throw new Error("Proyecto no encontrado.");
+
+    const contenido = (plantilla.contenido ?? {}) as Partial<PlantillaContenido>;
+    const overrides = Array.isArray(contenido.overrides) ? contenido.overrides : [];
+    const secciones = Array.isArray(contenido.secciones) ? contenido.secciones : [];
+
+    // Cache de camposConDatos por módulo (regla de protección existente).
+    const cacheDatos = new Map<
+      string,
+      { set: Set<string>; datos: Record<string, unknown> }
+    >();
+    const datosDe = async (moduloKey: string) => {
+      let v = cacheDatos.get(moduloKey);
+      if (!v) {
+        v = await camposConDatos(admin, data.proyectoId, moduloKey);
+        cacheDatos.set(moduloKey, v);
+      }
+      return v;
+    };
+
+    // Copia las imágenes de una guía al Storage del proyecto destino
+    // cuando el storagePath pertenece a otro proyecto. Si la copia
+    // falla, la guía se conserva sin esa imagen.
+    const migrarGuia = async (
+      guia: Record<string, unknown> | null | undefined,
+    ): Promise<Record<string, unknown> | null | undefined> => {
+      if (!guia || typeof guia !== "object") return guia ?? null;
+      const imagenes = (guia as { imagenes?: unknown }).imagenes;
+      if (!Array.isArray(imagenes) || imagenes.length === 0) return guia;
+      const nuevas: unknown[] = [];
+      for (const img of imagenes) {
+        const i = img as { bucket?: string; storagePath?: string };
+        if (!i?.bucket || !i?.storagePath) continue;
+        const segmentos = i.storagePath.split("/");
+        if (segmentos[0] === data.proyectoId) {
+          nuevas.push(img);
+          continue;
+        }
+        const destino = [data.proyectoId, ...segmentos.slice(1)].join("/");
+        const { error: copyErr } = await admin.storage
+          .from(i.bucket)
+          .copy(i.storagePath, destino);
+        // Si el objeto ya existe en el destino (plantilla aplicada dos
+        // veces), lo tratamos como copia exitosa.
+        if (copyErr && !/exist|duplicate/i.test(copyErr.message ?? "")) {
+          continue; // se conserva la guía sin esta imagen
+        }
+        nuevas.push({ ...(img as Record<string, unknown>), storagePath: destino });
+      }
+      return { ...guia, imagenes: nuevas };
+    };
+
+    let aplicados = 0;
+    let omitidos = 0;
+    const modulosAfectados = new Set<string>();
+    const { definicionModulo } = await import("@/lib/form-engine/modulo-ejemplo");
+
+    // ----- Overrides de campo -----
+    for (const ov of overrides) {
+      if (!ov?.modulo_key || !ov?.campo_key) continue;
+      const { set: llenos, datos } = await datosDe(ov.modulo_key);
+      const row: Record<string, unknown> = {
+        proyecto_id: data.proyectoId,
+        modulo_key: ov.modulo_key,
+        campo_key: ov.campo_key,
+        updated_by: userId,
+      };
+      let cambios = 0;
+
+      if (typeof ov.activo === "boolean") {
+        if (ov.activo === false && llenos.has(ov.campo_key)) {
+          omitidos += 1; // desactivar un campo con datos: protegido
+        } else {
+          row.activo = ov.activo;
+          cambios += 1;
+        }
+      }
+      if (ov.label !== undefined) {
+        row.label = ov.label;
+        cambios += 1;
+      }
+      if (ov.requerido !== undefined) {
+        row.requerido = ov.requerido;
+        cambios += 1;
+      }
+      if (ov.opciones_permitidas !== undefined) {
+        if (Array.isArray(ov.opciones_permitidas) && llenos.has(ov.campo_key)) {
+          const permitidas = new Set(ov.opciones_permitidas);
+          const val = datos[ov.campo_key];
+          const seleccionadas: string[] = Array.isArray(val)
+            ? ((val as unknown[]).filter((x) => typeof x === "string") as string[])
+            : typeof val === "string" && val.length > 0
+              ? [val]
+              : [];
+          const excluidas = seleccionadas.filter((s) => !permitidas.has(s));
+          if (excluidas.length > 0) {
+            omitidos += 1; // quitar opciones ya seleccionadas: protegido
+          } else {
+            row.opciones_permitidas = ov.opciones_permitidas;
+            cambios += 1;
+          }
+        } else {
+          row.opciones_permitidas = ov.opciones_permitidas;
+          cambios += 1;
+        }
+      }
+      if (ov.guia !== undefined) {
+        row.guia = await migrarGuia(ov.guia);
+        cambios += 1;
+      }
+
+      if (cambios === 0) continue;
+      const { error } = await admin
+        .from("catalogo_overrides")
+        .upsert(row, { onConflict: "proyecto_id,modulo_key,campo_key" });
+      if (error) throw new Error("No se pudo aplicar la plantilla (campos).");
+      aplicados += 1;
+      modulosAfectados.add(ov.modulo_key);
+    }
+
+    // ----- Overrides de sección -----
+    for (const os of secciones) {
+      if (!os?.modulo_key || !os?.seccion_key) continue;
+      const row: Record<string, unknown> = {
+        proyecto_id: data.proyectoId,
+        modulo_key: os.modulo_key,
+        seccion_key: os.seccion_key,
+        updated_by: userId,
+      };
+      let cambios = 0;
+
+      if (typeof os.habilitada === "boolean") {
+        let protegida = false;
+        if (os.habilitada === false) {
+          const def = definicionModulo(os.modulo_key);
+          const seccion = def.secciones.find((s) => s.key === os.seccion_key);
+          if (seccion) {
+            const { set: llenos } = await datosDe(os.modulo_key);
+            protegida = seccion.campos.some(
+              (c) => c.tipo !== "info" && llenos.has(c.key),
+            );
+          }
+        }
+        if (protegida) {
+          omitidos += 1; // ocultar una sección con datos: protegido
+        } else {
+          row.habilitada = os.habilitada;
+          cambios += 1;
+        }
+      }
+      if (os.obligatoria !== undefined) {
+        row.obligatoria = os.obligatoria;
+        cambios += 1;
+      }
+
+      if (cambios === 0) continue;
+      const { error } = await admin
+        .from("catalogo_overrides_seccion")
+        .upsert(row, { onConflict: "proyecto_id,modulo_key,seccion_key" });
+      if (error) throw new Error("No se pudo aplicar la plantilla (secciones).");
+      aplicados += 1;
+      modulosAfectados.add(os.modulo_key);
+    }
+
+    for (const moduloKey of modulosAfectados) {
+      await recalcularProgresoModulo(supabaseAdmin, data.proyectoId, moduloKey);
+    }
+
+    await auditar(
+      supabaseAdmin,
+      userId,
+      "plantilla_aplicada",
+      "plantilla_catalogo",
+      data.plantillaId,
+      { plantillaId: data.plantillaId, proyecto_id: data.proyectoId, aplicados, omitidos },
+    );
+
+    return { aplicados, omitidos };
+  });
+
+export const eliminarPlantillaCatalogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) => z.object({ plantillaId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirAdmin(supabaseAdmin, userId);
+    const admin = supabaseAdmin as Cliente;
+
+    const { data: p } = await admin
+      .from("plantillas_catalogo")
+      .select("nombre")
+      .eq("id", data.plantillaId)
+      .maybeSingle();
+    if (!p) throw new Error("Plantilla no encontrada.");
+
+    const { error } = await admin
+      .from("plantillas_catalogo")
+      .delete()
+      .eq("id", data.plantillaId);
+    if (error) throw new Error("No se pudo eliminar la plantilla.");
+
+    await auditar(supabaseAdmin, userId, "plantilla_eliminada", "plantilla_catalogo", data.plantillaId, {
+      nombre: p.nombre,
+    });
+    return { ok: true };
+  });
+
+// ---------- Recordatorios de inactividad ----------------------------------
+
+const ESTADOS_PROYECTO_ACTIVO = ["nuevo", "en_proceso", "en_revision"];
+const ESTADOS_MODULO_REZAGADO = [
+  "sin_iniciar",
+  "en_diligenciamiento",
+  "con_observaciones",
+];
+
+export const enviarRecordatorios = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((i: unknown) =>
+    z
+      .object({ proyectoId: z.string().uuid().optional() })
+      .optional()
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    await exigirInterno(supabaseAdmin, userId);
+    const admin = supabaseAdmin as Cliente;
+
+    // Días de inactividad configurables (default 5).
+    const { data: cfg } = await admin
+      .from("configuracion_sistema")
+      .select("valor")
+      .eq("clave", "parametros")
+      .maybeSingle();
+    const crudo = (cfg?.valor as { dias_recordatorio_inactividad?: unknown } | null)
+      ?.dias_recordatorio_inactividad;
+    const dias =
+      typeof crudo === "number" && Number.isFinite(crudo) && crudo >= 1
+        ? Math.round(crudo)
+        : 5;
+    const cutoff = new Date(Date.now() - dias * 24 * 3600 * 1000).toISOString();
+
+    // Módulos rezagados de proyectos activos.
+    let q = admin
+      .from("proyecto_modulos")
+      .select(
+        "id, proyecto_id, modulo_key, estado, fecha_limite, updated_at, proyectos!inner(id, nombre, empresa, estado)",
+      )
+      .in("estado", ESTADOS_MODULO_REZAGADO)
+      .lt("updated_at", cutoff);
+    if (data?.proyectoId) q = q.eq("proyecto_id", data.proyectoId);
+    const { data: mods, error } = await q;
+    if (error) throw new Error("No se pudieron consultar los módulos rezagados.");
+
+    interface FilaRezagada {
+      proyecto_id: string;
+      modulo_key: string;
+      estado: string;
+      fecha_limite: string | null;
+      proyectos: { nombre: string; estado: string } | null;
+    }
+    const rezagados = ((mods ?? []) as unknown as FilaRezagada[]).filter(
+      (m) => m.proyectos && ESTADOS_PROYECTO_ACTIVO.includes(m.proyectos.estado),
+    );
+
+    // Anti-spam: proyectos ya recordados en las últimas 24 h (auditoría).
+    const desde = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: previos } = await admin
+      .from("auditoria")
+      .select("detalle")
+      .eq("accion", "recordatorios_enviados")
+      .gte("created_at", desde);
+    const yaRecordados = new Set<string>();
+    for (const r of previos ?? []) {
+      const ids = (r.detalle as { proyectos_ids?: unknown } | null)?.proyectos_ids;
+      if (Array.isArray(ids)) {
+        for (const id of ids) if (typeof id === "string") yaRecordados.add(id);
+      }
+    }
+
+    // Agrupar por proyecto.
+    const porProyecto = new Map<string, { nombre: string; modulos: FilaRezagada[] }>();
+    for (const m of rezagados) {
+      if (yaRecordados.has(m.proyecto_id)) continue;
+      const g = porProyecto.get(m.proyecto_id) ?? {
+        nombre: m.proyectos?.nombre ?? "",
+        modulos: [],
+      };
+      g.modulos.push(m);
+      porProyecto.set(m.proyecto_id, g);
+    }
+
+    const { moduloCatalogo } = await import("@/lib/modulos-catalogo");
+    const { ESTADO_LABEL } = await import("@/lib/modulo-estado");
+    const { formatoFechaCO } = await import("@/lib/fechas");
+    const { notificarRecordatorioProyecto } = await import(
+      "@/lib/acta/notificaciones.server"
+    );
+    const base = await urlBaseDelPortal();
+
+    let correos = 0;
+    let fallidos = 0;
+    const proyectosIds: string[] = [];
+
+    for (const [proyectoId, g] of porProyecto) {
+      const contexto = {
+        proyecto: g.nombre,
+        modulos: g.modulos.map((m) => ({
+          nombre: moduloCatalogo(m.modulo_key).nombre,
+          estado: ESTADO_LABEL[m.estado as keyof typeof ESTADO_LABEL] ?? m.estado,
+          fechaLimiteTexto: m.fecha_limite
+            ? formatoFechaCO(`${m.fecha_limite}T00:00:00`)
+            : undefined,
+        })),
+        urlPortal: `${base}/mi-proyecto`,
+      };
+      const envio = await notificarRecordatorioProyecto({
+        proyectoId,
+        contexto,
+        actorId: userId,
+      });
+      if (envio.totalMensajes > 0) {
+        proyectosIds.push(proyectoId);
+        correos += envio.exitosos;
+        fallidos += envio.fallidos;
+      }
+    }
+
+    const resumen = { proyectos: proyectosIds.length, correos, fallidos };
+
+    if (proyectosIds.length > 0) {
+      await auditar(
+        supabaseAdmin,
+        userId,
+        "recordatorios_enviados",
+        "notificacion_correo",
+        userId,
+        { ...resumen, proyectos_ids: proyectosIds },
+      );
+    }
+
+    return resumen;
+  });
+
 // ---------- Configuración del sistema ------------------------------------
 
 const configSchema = z.object({
