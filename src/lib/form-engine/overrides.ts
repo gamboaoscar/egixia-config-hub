@@ -58,6 +58,7 @@ export function aplicarOverrides(
         ...s,
         campos: s.campos.map((c) => {
           let campo = aplicarACampo(c, map.get(c.key));
+          campo = aplicarGuiaColumnas(campo, map);
           if (forzarNoRequerido && campo.requerido) {
             campo = { ...campo, requerido: false };
           }
@@ -79,6 +80,10 @@ function aplicarACampo(
   if (typeof o.label === "string" && o.label.trim().length > 0) next.label = o.label;
   if (typeof o.requerido === "boolean") next.requerido = o.requerido;
   if (o.guia && typeof o.guia === "object") {
+    // Fusión con el objeto override COMPLETO: el spread transporta todas
+    // las claves de la guía enriquecida (que, formato, tamano, titulo,
+    // imagenes). Una clave presente en el override —aunque sea cadena
+    // vacía o arreglo vacío— reemplaza a la de la definición estática.
     next.guia = { ...(campo.guia ?? { que: "" }), ...o.guia } as GuiaCampo;
   }
   if (Array.isArray(o.opciones_permitidas) && Array.isArray(campo.opciones)) {
@@ -86,4 +91,27 @@ function aplicarACampo(
     next.opciones = campo.opciones.filter((op) => permitidas.has(op.valor));
   }
   return next;
+}
+
+/**
+ * Overrides de guía para columnas de tabla. Convención: la fila de
+ * `catalogo_overrides` usa `campo_key = "<campoKey>.<columnaKey>"` y solo
+ * transporta `guia`. Cualquier otra propiedad de esas filas se ignora.
+ */
+function aplicarGuiaColumnas(
+  campo: CampoDefinicion,
+  map: Map<string, CampoOverride>,
+): CampoDefinicion {
+  if (campo.tipo !== "tabla" || !campo.columnas?.length) return campo;
+  let cambio = false;
+  const columnas = campo.columnas.map((col) => {
+    const o = map.get(`${campo.key}.${col.key}`);
+    if (!o?.guia || typeof o.guia !== "object") return col;
+    cambio = true;
+    return {
+      ...col,
+      guia: { ...(col.guia ?? { que: "" }), ...o.guia } as GuiaCampo,
+    };
+  });
+  return cambio ? { ...campo, columnas } : campo;
 }

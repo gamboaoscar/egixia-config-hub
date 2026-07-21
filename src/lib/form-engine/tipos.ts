@@ -35,14 +35,35 @@ export interface ReglasValidacion {
   longitud?: number;
 }
 
-/** Guía contextual del botón "i" al lado de la etiqueta. */
+/** Imagen de guía almacenada en Storage (bucket privado `ayudas`). */
+export interface ImagenGuia {
+  /** Bucket de Storage donde vive el binario (normalmente "ayudas"). */
+  bucket: string;
+  /** Ruta dentro del bucket: {proyecto_id}/{modulo_key}/{campo_key}/... */
+  storagePath: string;
+  /** Nombre original del archivo (informativo). */
+  nombre?: string;
+  /** Leyenda mostrada debajo de la imagen en el popup de ayuda. */
+  caption?: string;
+}
+
+/**
+ * Guía contextual del botón de ayuda al lado de la etiqueta.
+ * Retrocompatible: los campos nuevos (`titulo`, `imagenes`) son
+ * opcionales y viajan en la misma columna jsonb
+ * `catalogo_overrides.guia` sin migración adicional.
+ */
 export interface GuiaCampo {
+  /** Título del popup de ayuda. Si falta, se usa el label del campo. */
+  titulo?: string;
   /** Qué debe ingresar el usuario en el campo. */
   que: string;
   /** Formato esperado del valor (ej. "PNG con transparencia"). */
   formato?: string;
   /** Tamaño / medida recomendada (ej. "512x512 px", "máx 2 MB"). */
   tamano?: string;
+  /** Imágenes de guía (URLs firmadas al abrir el popup). */
+  imagenes?: ImagenGuia[];
 }
 
 export interface OpcionCampo {
