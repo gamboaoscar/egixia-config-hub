@@ -92,7 +92,8 @@ export const MODULO_IMAGEN: ModuloDefinicion = {
           label: "Logo — Pantalla de acceso",
           tipo: "archivo",
           requerido: true,
-          archivo: imgLogo(400, 110),
+          // Previsualización en contexto: slot del logo del login.
+          archivo: { ...imgLogo(400, 110), previewContexto: "login_logo" },
           guia: {
             que: "Logotipo visible en la pantalla de acceso al portal.",
             formato: "PNG o SVG con fondo transparente.",
@@ -153,6 +154,8 @@ export const MODULO_IMAGEN: ModuloDefinicion = {
             formatosPermitidos: IMG_RASTER,
             tamanoMaxMB: 5,
             dimensiones: { ancho: 1360, alto: 635 },
+            // Previsualización en contexto: fondo de la pantalla de login.
+            previewContexto: "login_fondo",
           },
           guia: {
             que: "Cubre la mitad izquierda de la pantalla de inicio de sesión.",
