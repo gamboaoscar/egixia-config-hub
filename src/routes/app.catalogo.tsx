@@ -185,6 +185,7 @@ function CatalogoPage() {
     "seguridad",
     "usuarios_internos",
     "matriz_documental",
+    "integracion_erp",
   ];
 
   const tieneDato = (moduloKey: string, campoKey: string): boolean => {

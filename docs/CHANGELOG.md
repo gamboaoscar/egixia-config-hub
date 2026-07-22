@@ -2,32 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
-## [1.0.27] — 2026-07-22 — Módulo Maestros de compras
+## [1.0.28] — 2026-07-22 — Módulo Integración ERP / SAP
 
 ### Añadido
-- **Nuevo módulo `maestros_compras` — Maestros de compras**
-  (`src/lib/form-engine/modulos/maestros-compras.ts`,
-  `MODULO_MAESTROS_COMPRAS`). Define los catálogos base que el Portal de
-  Proveedores usa de forma transversal en solicitudes, órdenes y
-  facturación, en 4 secciones:
-  - `categorias` — categorías/familias de compra (tabla requerida:
-    `nombre`, `codigo`, `descripcion`) con campo `info` de ejemplos.
-  - `monedas` — `moneda_principal` (select COP/USD/EUR, requerido) y
-    tabla opcional `tabla_monedas_adicionales` (moneda
-    COP/USD/EUR/MXN/BRL/PEN/CLP + uso).
-  - `condiciones_pago` — tabla requerida `tabla_condiciones` (`nombre`,
-    `dias` con `min: 0`, `notas`) con campo `info`.
-  - `impuestos` — tabla requerida `tabla_impuestos` (`nombre`, `tipo`
-    impuesto/retención, `tarifa`, `aplica_a`) más
-    `responsable_tributario_correo` (email); campo `info` con el marco
-    tributario colombiano habitual (IVA, ReteFuente, ReteIVA, ReteICA).
-- **Registro del módulo**: entrada en el `REGISTRO` de
-  `src/lib/form-engine/modulo-ejemplo.ts`; `ModuloKey` y catálogo con
-  icono `Coins` en `src/lib/modulos-catalogo.ts`; `moduloKeyEnum` en
-  `src/lib/admin.functions.ts`; lista de módulos del catálogo en
-  `src/routes/app.catalogo.tsx`; estado inicial tipado del diálogo
-  "Agregar módulo" en `src/routes/app.proyectos.nuevo.tsx`.
-- **Documentación**: ficha del módulo en `docs/MODULOS.md`.
+- **Nuevo módulo `integracion_erp`** — "Integración ERP / SAP"
+  (`src/lib/form-engine/modulos/integracion-erp.ts`). Tres secciones:
+  - **Tu ERP**: `tiene_integracion` (radio_tarjetas Sí/No), `sistema`
+    (select SAP ECC / S/4HANA / Oracle / Dynamics / Siesa / World
+    Office / Otro), `version`. Los dos últimos condicionados por
+    `mostrarSi { campo: "tiene_integracion", igualA: "si" }`.
+  - **Alcance**: `interfaces` (checkbox_multiple con proveedores,
+    órdenes, entradas, facturas, pagos, contratos) + aviso
+    informativo de que el alcance definitivo se confirma en el
+    levantamiento técnico con EGIXIA.
+  - **Ambientes y conexión**: aviso destacado de que **no se deben
+    escribir contraseñas, tokens ni llaves privadas** (se solicitan
+    por canal cifrado), `tabla_ambientes` (ambiente QA/Prod, tipo de
+    conexión API/OData/RFC/SFTP/archivo, host, notas) y contactos de
+    TI (nombre y correo). Todo condicionado a `tiene_integracion = si`.
+- **Registro**: entrada en `modulo-ejemplo.ts` (REGISTRO),
+  `modulos-catalogo.ts` (`ModuloKey` + `MODULOS_CATALOGO` con icono
+  `Plug` de `lucide-react`), `admin.functions.ts` (`moduloKeyEnum`),
+  `src/routes/app.catalogo.tsx` (lista `modulos`) y
+  `src/routes/app.proyectos.nuevo.tsx` (estado inicial con
+  `activo: false` para respetar la nota de diseño: pensado para
+  ocultarse por proyecto vía la parametrización M8 cuando el cliente
+  no requiere integración).
+- **Documentación**: ficha del módulo añadida a `docs/MODULOS.md`.
 
 ## [1.0.26] — 2026-07-22 — Robustez del acta ante imágenes inválidas
 

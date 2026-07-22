@@ -7,6 +7,7 @@ import { MODULO_SEGURIDAD } from "./modulos/seguridad";
 import { MODULO_USUARIOS_INTERNOS } from "./modulos/usuarios-internos";
 import { MODULO_MATRIZ_DOCUMENTAL } from "./modulos/matriz-documental";
 import { MODULO_MAESTROS_COMPRAS } from "./modulos/maestros-compras";
+import { MODULO_INTEGRACION_ERP } from "./modulos/integracion-erp";
 
 /**
  * Registro de definiciones de módulos disponibles en el motor de
@@ -20,6 +21,7 @@ const REGISTRO: Record<string, ModuloDefinicion> = {
   usuarios_internos: MODULO_USUARIOS_INTERNOS,
   matriz_documental: MODULO_MATRIZ_DOCUMENTAL,
   maestros_compras: MODULO_MAESTROS_COMPRAS,
+  integracion_erp: MODULO_INTEGRACION_ERP,
 };
 
 /**

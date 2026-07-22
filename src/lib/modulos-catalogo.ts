@@ -4,7 +4,7 @@ import {
   ShieldCheck,
   Users,
   FileCheck2,
-  Coins,
+  Plug,
   type LucideIcon,
 } from "lucide-react";
 
@@ -14,7 +14,7 @@ export type ModuloKey =
   | "seguridad"
   | "usuarios_internos"
   | "matriz_documental"
-  | "maestros_compras";
+  | "integracion_erp";
 
 export interface ModuloCatalogo {
   key: ModuloKey;
@@ -74,18 +74,13 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
       "Políticas de la matriz",
     ],
   },
-  maestros_compras: {
-    key: "maestros_compras",
-    nombre: "Maestros de compras",
+  integracion_erp: {
+    key: "integracion_erp",
+    nombre: "Integración ERP / SAP",
     descripcion:
-      "Categorías, monedas, condiciones de pago e impuestos del portal.",
-    icon: Coins,
-    secciones: [
-      "Categorías / familias de compra",
-      "Monedas",
-      "Condiciones de pago",
-      "Impuestos y retenciones (Colombia)",
-    ],
+      "Datos técnicos para conectar el portal con tu ERP (SAP u otro).",
+    icon: Plug,
+    secciones: ["Tu ERP", "Alcance de la integración", "Ambientes y conexión"],
   },
 };
 

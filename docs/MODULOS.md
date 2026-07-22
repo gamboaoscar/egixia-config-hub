@@ -14,7 +14,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | `seguridad`         | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`         |
 | `usuarios_internos` | ✅ Completo    | `src/lib/form-engine/modulos/usuarios-internos.ts` |
 | `matriz_documental` | ✅ Completo    | `src/lib/form-engine/modulos/matriz-documental.ts` |
-| `maestros_compras`  | ✅ Completo    | `src/lib/form-engine/modulos/maestros-compras.ts`  |
+| `integracion_erp`   | ✅ Completo    | `src/lib/form-engine/modulos/integracion-erp.ts`   |
 
 ---
 
@@ -369,89 +369,60 @@ documento:
 
 ---
 
-## Módulo `maestros_compras` — Maestros de compras
+## Módulo `integracion_erp` — Integración ERP / SAP
 
-Define los catálogos base que el Portal de Proveedores usará de forma
-transversal en solicitudes, órdenes y facturación: categorías/familias
-de compra, monedas, condiciones de pago e impuestos/retenciones. Se
-organiza en 4 secciones.
+Recoge los datos técnicos necesarios para conectar el Portal de
+Proveedores con el ERP del cliente (SAP u otro). Pensado para el
+equipo de TI del cliente. Puede ocultarse por proyecto vía la
+parametrización M8 (`/app/catalogo`) cuando el alcance contratado no
+incluye integración, y en `/app/proyectos/nuevo` no se marca por
+defecto.
 
-### Sección 1 — Categorías / familias de compra (`categorias`)
+**Seguridad:** el formulario NO solicita contraseñas, tokens ni llaves
+privadas. Esos secretos se coordinan con EGIXIA por canal cifrado; hay
+un aviso destacado en la sección "Ambientes y conexión".
 
-Cómo el cliente agrupa lo que compra; se usan para clasificar
-solicitudes y proveedores. Incluye un campo `info` (`categorias_info`)
-con ejemplos: Materia prima, Servicios profesionales, Tecnología,
-Mantenimiento, Logística.
+### Sección 1 — Tu ERP (`erp`)
 
-Campo `tabla_categorias` (tipo `tabla`, **requerido**), una fila por
-categoría:
+| Campo               | Tipo            | Req | Notas                                                                            |
+| ------------------- | --------------- | :-: | -------------------------------------------------------------------------------- |
+| `tiene_integracion` | radio_tarjetas  | ✅  | `si` (requiere integración) · `no` (sin integración por ahora).                  |
+| `sistema`           | select          | ⚪  | `sap_ecc` · `sap_s4` · `oracle` · `dynamics` · `siesa` · `world_office` · `otro`. Solo si `tiene_integracion = si`. |
+| `version`           | texto           | ⚪  | Versión y release del ERP. Solo si `tiene_integracion = si`.                     |
 
-| Columna       | Tipo  | Req | Guía / Notas                              |
-| ------------- | ----- | :-: | ----------------------------------------- |
-| `nombre`      | texto | ✅  | Nombre de la categoría (ej. "Materia prima"). |
-| `codigo`      | texto | ⚪  | Código interno si maneja uno (opcional).  |
-| `descripcion` | texto | ⚪  | Descripción libre.                        |
+### Sección 2 — Alcance de la integración (`alcance`)
 
-### Sección 2 — Monedas (`monedas`)
+| Campo         | Tipo               | Req | Notas                                                                        |
+| ------------- | ------------------ | :-: | ---------------------------------------------------------------------------- |
+| `interfaces`  | checkbox_multiple  | ⚪  | `proveedores` · `ordenes` · `entradas` · `facturas` · `pagos` · `contratos`. Solo si `tiene_integracion = si`. |
 
-Monedas en las que se manejarán cotizaciones, órdenes y facturas.
+El alcance definitivo se confirma en el levantamiento técnico con
+EGIXIA (aviso informativo `alcance_info`).
 
-| Campo              | Tipo   | Req | Notas                                                       |
-| ------------------ | ------ | :-: | ----------------------------------------------------------- |
-| `moneda_principal` | select | ✅  | `COP` · `USD` · `EUR`. Moneda por defecto del portal.        |
+### Sección 3 — Ambientes y conexión (`ambientes`)
 
-Campo `tabla_monedas_adicionales` (tipo `tabla`, opcional), una fila por
-moneda extra habilitada:
+`tabla_ambientes` (visible solo si `tiene_integracion = si`) con
+columnas por fila:
 
-| Columna  | Tipo   | Req | Guía / Notas                                              |
-| -------- | ------ | :-: | --------------------------------------------------------- |
-| `moneda` | select | ⚪  | `COP` · `USD` · `EUR` · `MXN` · `BRL` · `PEN` · `CLP`.     |
-| `uso`    | texto  | ⚪  | Para qué se usará esta moneda.                            |
+| Columna         | Tipo   | Req | Guía / Notas                                                     |
+| --------------- | ------ | :-: | ---------------------------------------------------------------- |
+| `ambiente`      | select | ✅  | `qa` (QA / Pruebas) · `prod` (Producción).                       |
+| `tipo_conexion` | select | ✅  | `api` · `odata` · `rfc` · `sftp` · `archivo`.                    |
+| `host`          | texto  | ⚪  | Host o endpoint base, sin credenciales.                          |
+| `notas`         | texto  | ⚪  | Observaciones adicionales.                                        |
 
-### Sección 3 — Condiciones de pago (`condiciones_pago`)
-
-Plazos de pago que el cliente ofrecerá a sus proveedores. Incluye un
-campo `info` (`condiciones_info`) con ejemplos: Contado, 30 días, 60
-días, 90 días.
-
-Campo `tabla_condiciones` (tipo `tabla`, **requerido**), una fila por
-condición:
-
-| Columna  | Tipo   | Req | Guía / Notas                                    |
-| -------- | ------ | :-: | ----------------------------------------------- |
-| `nombre` | texto  | ✅  | Nombre de la condición (ej. "30 días").          |
-| `dias`   | numero | ✅  | Días de plazo desde la fecha de factura.         |
-| `notas`  | texto  | ⚪  | Aclaraciones.                                   |
-
-### Sección 4 — Impuestos y retenciones (Colombia) (`impuestos`)
-
-Impuestos y retenciones que el portal debe calcular o registrar.
-Incluye un campo `info` (`impuestos_info`) con lo habitual en Colombia:
-IVA (19%), ReteFuente, ReteIVA, ReteICA.
-
-Campo `tabla_impuestos` (tipo `tabla`, **requerido**), una fila por
-impuesto o retención:
-
-| Columna     | Tipo   | Req | Guía / Notas                                    |
-| ----------- | ------ | :-: | ----------------------------------------------- |
-| `nombre`    | texto  | ✅  | Nombre del impuesto/retención (ej. "IVA").       |
-| `tipo`      | select | ✅  | `impuesto` · `retencion`.                       |
-| `tarifa`    | texto  | ✅  | Porcentaje o base (ej. "19%" o "2.5%").          |
-| `aplica_a`  | texto  | ⚪  | Bienes, servicios o casos donde aplica.          |
-
-| Campo                            | Tipo  | Req | Notas                                                    |
-| -------------------------------- | ----- | :-: | -------------------------------------------------------- |
-| `responsable_tributario_correo`  | email | ⚪  | Correo del responsable tributario, para dudas de config. |
+| Campo                 | Tipo   | Req | Notas                                                                    |
+| --------------------- | ------ | :-: | ------------------------------------------------------------------------ |
+| `contacto_ti_nombre`  | texto  | ⚪  | Responsable técnico de la integración en tu organización.                |
+| `contacto_ti_correo`  | email  | ⚪  | Correo del responsable técnico. Solo si `tiene_integracion = si`.         |
 
 ### Persistencia y progreso
 
-- Se guarda en `proyecto_modulos.datos`: `tabla_categorias`,
-  `tabla_monedas_adicionales`, `tabla_condiciones` y `tabla_impuestos`
-  como arrays de filas; `moneda_principal` y
-  `responsable_tributario_correo` como valores simples.
-- Progreso: `moneda_principal` + columnas requeridas por fila de las
-  tablas requeridas (`tabla_categorias`, `tabla_condiciones`,
-  `tabla_impuestos`), con la misma regla de tablas del módulo
-  Sociedades. La tabla de monedas adicionales y el correo del
-  responsable tributario son opcionales; los campos `info` no cuentan
-  para validación ni progreso.
+- Se guarda en `proyecto_modulos.datos`; `tabla_ambientes` como array
+  de filas.
+- Los campos `info` (`alcance_info`, `seguridad_info`) no cuentan para
+  validación ni progreso.
+- La visibilidad de `sistema`, `version`, `interfaces`,
+  `tabla_ambientes` y los contactos de TI depende de
+  `tiene_integracion = si` vía `mostrarSi`; cuando el cliente elige
+  `no`, esos campos se ocultan y no cuentan para el progreso.
