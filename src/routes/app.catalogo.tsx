@@ -185,6 +185,7 @@ function CatalogoPage() {
     "seguridad",
     "usuarios_internos",
     "matriz_documental",
+    "maestros_compras",
     "integracion_erp",
   ];
 
