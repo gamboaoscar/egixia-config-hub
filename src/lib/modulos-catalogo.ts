@@ -4,6 +4,7 @@ import {
   ShieldCheck,
   Users,
   FileCheck2,
+  Coins,
   Plug,
   type LucideIcon,
 } from "lucide-react";
@@ -14,6 +15,7 @@ export type ModuloKey =
   | "seguridad"
   | "usuarios_internos"
   | "matriz_documental"
+  | "maestros_compras"
   | "integracion_erp";
 
 export interface ModuloCatalogo {
@@ -72,6 +74,19 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
       "Tipos de proveedor",
       "Documentos exigidos",
       "Políticas de la matriz",
+    ],
+  },
+  maestros_compras: {
+    key: "maestros_compras",
+    nombre: "Maestros de compras",
+    descripcion:
+      "Categorías, monedas, condiciones de pago e impuestos del portal.",
+    icon: Coins,
+    secciones: [
+      "Categorías / familias de compra",
+      "Monedas",
+      "Condiciones de pago",
+      "Impuestos y retenciones",
     ],
   },
   integracion_erp: {
