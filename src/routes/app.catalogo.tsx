@@ -187,6 +187,7 @@ function CatalogoPage() {
     "matriz_documental",
     "maestros_compras",
     "integracion_erp",
+    "notificaciones",
   ];
 
   const tieneDato = (moduloKey: string, campoKey: string): boolean => {

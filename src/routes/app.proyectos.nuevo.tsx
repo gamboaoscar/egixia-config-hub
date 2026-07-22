@@ -62,6 +62,7 @@ function NuevoProyecto() {
     matriz_documental: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     maestros_compras: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
     integracion_erp: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
+    notificaciones: { activo: false, fecha_limite: "", comportamiento: "solo_avisar" },
   });
   const [saving, setSaving] = useState(false);
 
