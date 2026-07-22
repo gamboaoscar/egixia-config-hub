@@ -402,6 +402,7 @@ async function imagenEmbebida(
   const mime = (img.mime || "").toLowerCase();
   const nombre = (img.nombre || "").toLowerCase();
   const pareceP = mime.includes("png") || nombre.endsWith(".png");
+  if (!img.bytes || img.bytes.length === 0) return null;
   try {
     if (pareceP) return await ctx.doc.embedPng(img.bytes);
     return await ctx.doc.embedJpg(img.bytes);
@@ -411,6 +412,9 @@ async function imagenEmbebida(
         ? await ctx.doc.embedJpg(img.bytes)
         : await ctx.doc.embedPng(img.bytes);
     } catch {
+      // Formato no soportado (webp, gif, heic, svg, corrupto...): se omite
+      // la imagen y el llamador dibuja una nota "imagen no disponible" en
+      // su lugar. No abortamos la generación del acta completa.
       return null;
     }
   }
@@ -503,6 +507,28 @@ async function dibujarFila(ctx: Ctx, fila: FilaActa) {
         color: GRIS_SUAVE,
       });
       ctx.y -= captionH;
+    } else {
+      // Nota de reemplazo cuando la imagen no se pudo incrustar
+      // (formato no soportado por pdf-lib, archivo corrupto, etc.).
+      const captionH = 26;
+      asegurar(ctx, captionH + 4);
+      const xNota = MARGEN + anchoLabel + 10;
+      const nombre = fila.imagen.nombre ?? "";
+      const nota = nombre
+        ? `Imagen no disponible: ${nombre} (formato no soportado o archivo dañado).`
+        : "Imagen no disponible (formato no soportado o archivo dañado).";
+      const lineas = partirEnLineas(
+        nota,
+        ctx.helv,
+        8,
+        ANCHO - MARGEN - xNota,
+      );
+      let yNota = ctx.y - 4;
+      for (const ln of lineas) {
+        texto(ctx, ln, { x: xNota, y: yNota, size: 8, color: GRIS_SUAVE });
+        yNota -= 10;
+      }
+      ctx.y = yNota - 2;
     }
   }
 
