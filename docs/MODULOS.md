@@ -14,7 +14,9 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | `seguridad`         | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`         |
 | `usuarios_internos` | ✅ Completo    | `src/lib/form-engine/modulos/usuarios-internos.ts` |
 | `matriz_documental` | ✅ Completo    | `src/lib/form-engine/modulos/matriz-documental.ts` |
+| `maestros_compras`  | ✅ Completo    | `src/lib/form-engine/modulos/maestros-compras.ts`  |
 | `integracion_erp`   | ✅ Completo    | `src/lib/form-engine/modulos/integracion-erp.ts`   |
+| `notificaciones`    | ✅ Completo    | `src/lib/form-engine/modulos/notificaciones.ts`    |
 
 ---
 
@@ -223,8 +225,10 @@ proveedores.
 ### Sección 4 — Roles personalizados
 
 Nota informativa (campo tipo `info`, sin valor): se pueden habilitar
-hasta **3 roles personalizados adicionales**, que se solicitan por la
-mesa de servicio de EGIXIA indicando nombre y permisos.
+hasta **3 roles personalizados adicionales**. Los roles disponibles en
+tu portal los define el **equipo implementador de EGIXIA** durante la
+configuración del proyecto, según el alcance contratado. Si necesitas un
+rol adicional, se coordina con tu implementador.
 
 ### Persistencia y progreso
 
@@ -366,6 +370,98 @@ documento:
   campos `info` no cuentan para validación ni progreso.
 - La relación documento → tipos se captura en texto libre (`aplica_a`)
   usando los nombres definidos en `tabla_tipos`.
+
+---
+
+## Módulo `maestros_compras` — Maestros de compras
+
+Define los catálogos base que el Portal de Proveedores usará de forma
+transversal en solicitudes, órdenes y facturación: categorías/familias
+de compra, monedas, condiciones de pago e impuestos/retenciones. Cada
+catálogo se captura como tabla dinámica para que el cliente lo adapte a
+su operación; los impuestos parten del marco tributario colombiano. Se
+organiza en 4 secciones.
+
+### Sección 1 — Categorías / familias de compra (`categorias`)
+
+Cómo el cliente agrupa lo que compra; se usarán para clasificar
+solicitudes y proveedores. Incluye un campo `info` (`categorias_info`)
+con ejemplos: Materia prima, Servicios profesionales, Tecnología,
+Mantenimiento, Logística.
+
+Campo `tabla_categorias` (tipo `tabla`, **requerido**), una fila por
+categoría o familia de compra:
+
+| Columna       | Tipo  | Req | Guía / Notas                                                        |
+| ------------- | ----- | :-: | ------------------------------------------------------------------- |
+| `nombre`      | texto | ✅  | Nombre de la categoría o familia de compra (ej. "Materia prima").   |
+| `codigo`      | texto | ⚪  | Código interno si el cliente maneja uno.                            |
+| `descripcion` | texto | ⚪  | Descripción de la categoría.                                        |
+
+### Sección 2 — Monedas (`monedas`)
+
+Monedas en las que se manejarán cotizaciones, órdenes y facturas.
+
+| Campo              | Tipo   | Req | Notas                                                           |
+| ------------------ | ------ | :-: | --------------------------------------------------------------- |
+| `moneda_principal` | select | ✅  | Moneda por defecto del portal. Opciones: `COP` (Peso colombiano) · `USD` (Dólar) · `EUR` (Euro). |
+
+Campo `tabla_monedas_adicionales` (tipo `tabla`, opcional), otras
+monedas habilitadas; una fila por moneda:
+
+| Columna  | Tipo   | Req | Guía / Notas                                                                                             |
+| -------- | ------ | :-: | -------------------------------------------------------------------------------------------------------- |
+| `moneda` | select | ⚪  | `COP` (Peso colombiano) · `USD` (Dólar) · `EUR` (Euro) · `MXN` (Peso mexicano) · `BRL` (Real) · `PEN` (Sol) · `CLP` (Peso chileno). |
+| `uso`    | texto  | ⚪  | Para qué se usará esta moneda.                                                                            |
+
+### Sección 3 — Condiciones de pago (`condiciones_pago`)
+
+Plazos de pago que el cliente ofrecerá a sus proveedores. Incluye un
+campo `info` (`condiciones_info`) con ejemplos frecuentes: Contado, 30
+días, 60 días, 90 días.
+
+Campo `tabla_condiciones` (tipo `tabla`, **requerido**), una fila por
+condición de pago:
+
+| Columna  | Tipo   | Req | Guía / Notas                                                    |
+| -------- | ------ | :-: | --------------------------------------------------------------- |
+| `nombre` | texto  | ✅  | Nombre de la condición tal como se mostrará (ej. "30 días").    |
+| `dias`   | numero | ✅  | Días de plazo desde la fecha de factura.                        |
+| `notas`  | texto  | ⚪  | Aclaraciones sobre la condición.                                |
+
+### Sección 4 — Impuestos y retenciones (Colombia) (`impuestos`)
+
+Impuestos y retenciones que el portal debe calcular o registrar.
+Incluye un campo `info` (`impuestos_info`): en Colombia lo habitual es
+IVA (19%), ReteFuente, ReteIVA, ReteICA; se ajusta según la operación.
+
+Campo `tabla_impuestos` (tipo `tabla`, **requerido**), una fila por
+impuesto o retención:
+
+| Columna    | Tipo   | Req | Guía / Notas                                                    |
+| ---------- | ------ | :-: | --------------------------------------------------------------- |
+| `nombre`   | texto  | ✅  | Nombre del impuesto o retención (ej. "IVA").                    |
+| `tipo`     | select | ✅  | `impuesto` (Impuesto) · `retencion` (Retención).                |
+| `tarifa`   | texto  | ✅  | Porcentaje o base. Ej.: 19% o 2.5%.                             |
+| `aplica_a` | texto  | ⚪  | Bienes, servicios o casos donde aplica.                         |
+
+| Campo                            | Tipo  | Req | Notas                                                             |
+| -------------------------------- | ----- | :-: | ----------------------------------------------------------------- |
+| `responsable_tributario_correo`  | email | ⚪  | Correo del responsable tributario del cliente, para dudas de configuración. |
+
+### Persistencia y progreso
+
+- Se guarda en `proyecto_modulos.datos`: `tabla_categorias`,
+  `tabla_monedas_adicionales`, `tabla_condiciones` y `tabla_impuestos`
+  como arrays de filas; `moneda_principal` y
+  `responsable_tributario_correo` como campos simples.
+- Progreso: `moneda_principal` + las columnas requeridas por fila de las
+  tablas requeridas (`tabla_categorias`, `tabla_condiciones`,
+  `tabla_impuestos`), con la misma regla de tablas del módulo Sociedades.
+  La tabla `tabla_monedas_adicionales` y el correo del responsable son
+  opcionales y no penalizan el progreso.
+- Los campos `info` (`categorias_info`, `condiciones_info`,
+  `impuestos_info`) no cuentan para validación ni progreso.
 
 ---
 
