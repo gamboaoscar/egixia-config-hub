@@ -6,6 +6,7 @@ import {
   FileCheck2,
   Coins,
   Plug,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -16,7 +17,8 @@ export type ModuloKey =
   | "usuarios_internos"
   | "matriz_documental"
   | "maestros_compras"
-  | "integracion_erp";
+  | "integracion_erp"
+  | "notificaciones";
 
 export interface ModuloCatalogo {
   key: ModuloKey;
@@ -96,6 +98,17 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
       "Datos técnicos para conectar el portal con tu ERP (SAP u otro).",
     icon: Plug,
     secciones: ["Tu ERP", "Alcance de la integración", "Ambientes y conexión"],
+  },
+  notificaciones: {
+    key: "notificaciones",
+    nombre: "Notificaciones y comunicaciones",
+    descripcion: "Remitente, eventos y textos de los correos del portal.",
+    icon: Bell,
+    secciones: [
+      "Remitente de los correos",
+      "Eventos que notifican",
+      "Textos personalizados",
+    ],
   },
 };
 
