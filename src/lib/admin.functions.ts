@@ -67,6 +67,7 @@ const moduloKeyEnum = z.enum([
   "seguridad",
   "usuarios_internos",
   "matriz_documental",
+  "maestros_compras",
 ]);
 const comportamientoEnum = z.enum([
   "bloquear",
