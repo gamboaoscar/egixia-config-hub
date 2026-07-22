@@ -14,6 +14,7 @@ usando la interfaz `ModuloDefinicion`. Cada módulo se registra en
 | `seguridad`         | ✅ Completo    | `src/lib/form-engine/modulos/seguridad.ts`         |
 | `usuarios_internos` | ✅ Completo    | `src/lib/form-engine/modulos/usuarios-internos.ts` |
 | `matriz_documental` | ✅ Completo    | `src/lib/form-engine/modulos/matriz-documental.ts` |
+| `integracion_erp`   | ✅ Completo    | `src/lib/form-engine/modulos/integracion-erp.ts`   |
 
 ---
 
@@ -365,3 +366,63 @@ documento:
   campos `info` no cuentan para validación ni progreso.
 - La relación documento → tipos se captura en texto libre (`aplica_a`)
   usando los nombres definidos en `tabla_tipos`.
+
+---
+
+## Módulo `integracion_erp` — Integración ERP / SAP
+
+Recoge los datos técnicos necesarios para conectar el Portal de
+Proveedores con el ERP del cliente (SAP u otro). Pensado para el
+equipo de TI del cliente. Puede ocultarse por proyecto vía la
+parametrización M8 (`/app/catalogo`) cuando el alcance contratado no
+incluye integración, y en `/app/proyectos/nuevo` no se marca por
+defecto.
+
+**Seguridad:** el formulario NO solicita contraseñas, tokens ni llaves
+privadas. Esos secretos se coordinan con EGIXIA por canal cifrado; hay
+un aviso destacado en la sección "Ambientes y conexión".
+
+### Sección 1 — Tu ERP (`erp`)
+
+| Campo               | Tipo            | Req | Notas                                                                            |
+| ------------------- | --------------- | :-: | -------------------------------------------------------------------------------- |
+| `tiene_integracion` | radio_tarjetas  | ✅  | `si` (requiere integración) · `no` (sin integración por ahora).                  |
+| `sistema`           | select          | ⚪  | `sap_ecc` · `sap_s4` · `oracle` · `dynamics` · `siesa` · `world_office` · `otro`. Solo si `tiene_integracion = si`. |
+| `version`           | texto           | ⚪  | Versión y release del ERP. Solo si `tiene_integracion = si`.                     |
+
+### Sección 2 — Alcance de la integración (`alcance`)
+
+| Campo         | Tipo               | Req | Notas                                                                        |
+| ------------- | ------------------ | :-: | ---------------------------------------------------------------------------- |
+| `interfaces`  | checkbox_multiple  | ⚪  | `proveedores` · `ordenes` · `entradas` · `facturas` · `pagos` · `contratos`. Solo si `tiene_integracion = si`. |
+
+El alcance definitivo se confirma en el levantamiento técnico con
+EGIXIA (aviso informativo `alcance_info`).
+
+### Sección 3 — Ambientes y conexión (`ambientes`)
+
+`tabla_ambientes` (visible solo si `tiene_integracion = si`) con
+columnas por fila:
+
+| Columna         | Tipo   | Req | Guía / Notas                                                     |
+| --------------- | ------ | :-: | ---------------------------------------------------------------- |
+| `ambiente`      | select | ✅  | `qa` (QA / Pruebas) · `prod` (Producción).                       |
+| `tipo_conexion` | select | ✅  | `api` · `odata` · `rfc` · `sftp` · `archivo`.                    |
+| `host`          | texto  | ⚪  | Host o endpoint base, sin credenciales.                          |
+| `notas`         | texto  | ⚪  | Observaciones adicionales.                                        |
+
+| Campo                 | Tipo   | Req | Notas                                                                    |
+| --------------------- | ------ | :-: | ------------------------------------------------------------------------ |
+| `contacto_ti_nombre`  | texto  | ⚪  | Responsable técnico de la integración en tu organización.                |
+| `contacto_ti_correo`  | email  | ⚪  | Correo del responsable técnico. Solo si `tiene_integracion = si`.         |
+
+### Persistencia y progreso
+
+- Se guarda en `proyecto_modulos.datos`; `tabla_ambientes` como array
+  de filas.
+- Los campos `info` (`alcance_info`, `seguridad_info`) no cuentan para
+  validación ni progreso.
+- La visibilidad de `sistema`, `version`, `interfaces`,
+  `tabla_ambientes` y los contactos de TI depende de
+  `tiene_integracion = si` vía `mostrarSi`; cuando el cliente elige
+  `no`, esos campos se ocultan y no cuentan para el progreso.
