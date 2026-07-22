@@ -2,6 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.27] — 2026-07-22 — Módulo Maestros de compras
+
+### Añadido
+- **Nuevo módulo `maestros_compras` — Maestros de compras**
+  (`src/lib/form-engine/modulos/maestros-compras.ts`,
+  `MODULO_MAESTROS_COMPRAS`). Define los catálogos base que el Portal de
+  Proveedores usa de forma transversal en solicitudes, órdenes y
+  facturación, en 4 secciones:
+  - `categorias` — categorías/familias de compra (tabla requerida:
+    `nombre`, `codigo`, `descripcion`) con campo `info` de ejemplos.
+  - `monedas` — `moneda_principal` (select COP/USD/EUR, requerido) y
+    tabla opcional `tabla_monedas_adicionales` (moneda
+    COP/USD/EUR/MXN/BRL/PEN/CLP + uso).
+  - `condiciones_pago` — tabla requerida `tabla_condiciones` (`nombre`,
+    `dias` con `min: 0`, `notas`) con campo `info`.
+  - `impuestos` — tabla requerida `tabla_impuestos` (`nombre`, `tipo`
+    impuesto/retención, `tarifa`, `aplica_a`) más
+    `responsable_tributario_correo` (email); campo `info` con el marco
+    tributario colombiano habitual (IVA, ReteFuente, ReteIVA, ReteICA).
+- **Registro del módulo**: entrada en el `REGISTRO` de
+  `src/lib/form-engine/modulo-ejemplo.ts`; `ModuloKey` y catálogo con
+  icono `Coins` en `src/lib/modulos-catalogo.ts`; `moduloKeyEnum` en
+  `src/lib/admin.functions.ts`; lista de módulos del catálogo en
+  `src/routes/app.catalogo.tsx`; estado inicial tipado del diálogo
+  "Agregar módulo" en `src/routes/app.proyectos.nuevo.tsx`.
+- **Documentación**: ficha del módulo en `docs/MODULOS.md`.
+
 ## [1.0.26] — 2026-07-22 — Robustez del acta ante imágenes inválidas
 
 ### Corregido
