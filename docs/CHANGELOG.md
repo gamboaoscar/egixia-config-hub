@@ -2,6 +2,19 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.26] — 2026-07-22 — Robustez del acta ante imágenes inválidas
+
+### Corregido
+- **`src/lib/acta/acta-pdf.ts`**: `generarActaPDF` ya no aborta cuando
+  una imagen adjunta del cliente está corrupta o en un formato no
+  soportado por `pdf-lib` (webp, gif, heic, svg…). `imagenEmbebida`
+  envuelve ambos intentos (`embedPng` / `embedJpg`) en `try/catch` y
+  rechaza además bytes vacíos. Cuando la incrustación falla,
+  `dibujarFila` dibuja en su lugar una nota "Imagen no disponible:
+  {nombre} (formato no soportado o archivo dañado)." con el mismo
+  ancho del bloque de valor, respetando la paginación (`asegurar`),
+  de modo que el resto de secciones y anexos se generan igual.
+
 ## [1.0.25] — 2026-07-21 — Plantillas de parametrización + recordatorios de inactividad
 
 ### Añadido

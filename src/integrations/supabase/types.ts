@@ -406,6 +406,41 @@ export type Database = {
           },
         ]
       }
+      plantillas_catalogo: {
+        Row: {
+          contenido: Json
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          contenido: Json
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          contenido?: Json
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plantillas_catalogo_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           apellido: string
