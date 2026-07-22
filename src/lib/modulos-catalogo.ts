@@ -4,6 +4,7 @@ import {
   ShieldCheck,
   Users,
   FileCheck2,
+  Plug,
   type LucideIcon,
 } from "lucide-react";
 
@@ -12,7 +13,8 @@ export type ModuloKey =
   | "sociedades"
   | "seguridad"
   | "usuarios_internos"
-  | "matriz_documental";
+  | "matriz_documental"
+  | "integracion_erp";
 
 export interface ModuloCatalogo {
   key: ModuloKey;
@@ -71,6 +73,14 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
       "Documentos exigidos",
       "Políticas de la matriz",
     ],
+  },
+  integracion_erp: {
+    key: "integracion_erp",
+    nombre: "Integración ERP / SAP",
+    descripcion:
+      "Datos técnicos para conectar el portal con tu ERP (SAP u otro).",
+    icon: Plug,
+    secciones: ["Tu ERP", "Alcance de la integración", "Ambientes y conexión"],
   },
 };
 
