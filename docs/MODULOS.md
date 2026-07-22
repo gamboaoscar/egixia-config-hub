@@ -426,3 +426,53 @@ columnas por fila:
   `tabla_ambientes` y los contactos de TI depende de
   `tiene_integracion = si` vía `mostrarSi`; cuando el cliente elige
   `no`, esos campos se ocultan y no cuentan para el progreso.
+
+---
+
+## Módulo `notificaciones` — Notificaciones y comunicaciones
+
+Define cómo el Portal de Proveedores se comunicará con los proveedores
+del cliente: la identidad del remitente de los correos, los eventos del
+portal que disparan una notificación automática y los textos
+personalizados. Si el cliente no personaliza los textos, el portal usa
+el copy estándar de EGIXIA. Es el octavo (y último) módulo de formulario
+del roadmap.
+
+**Nota:** el dominio del correo remitente debe verificarse (SPF/DKIM)
+antes de la salida en vivo; EGIXIA acompaña ese paso (aviso destacado en
+la sección "Remitente de los correos").
+
+### Sección 1 — Remitente de los correos (`remitente`)
+
+| Campo              | Tipo  | Req | Notas                                                              |
+| ------------------ | ----- | :-: | ------------------------------------------------------------------ |
+| `nombre_remitente` | texto | ✅  | Nombre visible en el 'De' de los correos. Ej.: "Compras ACME".     |
+| `correo_remitente` | email | ✅  | Correo emisor de las notificaciones; dominio verificable.          |
+
+Aviso informativo `remitente_info`: el dominio debe verificarse
+(SPF/DKIM) antes de la salida en vivo.
+
+### Sección 2 — Eventos que notifican (`eventos`)
+
+| Campo                     | Tipo               | Req | Notas                                                                                     |
+| ------------------------- | ------------------ | :-: | ----------------------------------------------------------------------------------------- |
+| `eventos`                 | checkbox_multiple  | ⚪  | `registro` · `solicitud` · `orden` · `doc_por_vencer` · `doc_vencido` · `pago`.           |
+| `frecuencia_recordatorio` | numero             | ⚪  | Días entre recordatorios de pendientes. `min: 0`; `0` = sin recordatorios.                |
+
+### Sección 3 — Textos personalizados (opcional) (`textos`)
+
+| Campo           | Tipo     | Req | Notas                                                           |
+| --------------- | -------- | :-: | --------------------------------------------------------------- |
+| `saludo`        | textarea | ⚪  | Encabezado/saludo para los correos a proveedores.               |
+| `firma`         | textarea | ⚪  | Firma o pie de los correos (área, datos de contacto).           |
+| `canal_soporte` | texto    | ⚪  | Correo o canal donde el proveedor puede pedir ayuda.            |
+
+Si esta sección se deja vacía, el portal usa el texto estándar de
+EGIXIA.
+
+### Persistencia y progreso
+
+- Se guarda en `proyecto_modulos.datos`.
+- El campo `info` (`remitente_info`) no cuenta para validación ni
+  progreso.
+- Los tres campos de la sección "Textos personalizados" son opcionales.

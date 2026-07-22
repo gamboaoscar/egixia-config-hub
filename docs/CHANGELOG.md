@@ -2,6 +2,30 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.29] — 2026-07-23 — Módulo Notificaciones y comunicaciones
+
+### Añadido
+- **Nuevo módulo `notificaciones`** — "Notificaciones y comunicaciones"
+  (`src/lib/form-engine/modulos/notificaciones.ts`). Con este módulo se
+  completa el roadmap de módulos de formulario (8 módulos). Tres
+  secciones:
+  - **Remitente de los correos**: `nombre_remitente` (texto, requerido),
+    `correo_remitente` (email, requerido) y aviso informativo de que el
+    dominio debe verificarse (SPF/DKIM) antes de la salida en vivo.
+  - **Eventos que notifican**: `eventos` (checkbox_multiple con registro,
+    solicitud, orden, documento por vencer, documento vencido y pago) y
+    `frecuencia_recordatorio` (numero, `min: 0`, `0` = sin
+    recordatorios).
+  - **Textos personalizados (opcional)**: `saludo` y `firma` (textarea) y
+    `canal_soporte` (texto). Si se dejan vacíos, se usa el texto estándar
+    de EGIXIA.
+- **Registro**: entrada en `modulo-ejemplo.ts` (REGISTRO),
+  `modulos-catalogo.ts` (`ModuloKey` + `MODULOS_CATALOGO` con icono
+  `Bell` de `lucide-react`), `admin.functions.ts` (`moduloKeyEnum`),
+  `src/routes/app.catalogo.tsx` (lista `modulos`) y
+  `src/routes/app.proyectos.nuevo.tsx` (estado inicial con
+  `activo: false`).
+
 ## [1.0.28] — 2026-07-22 — Módulo Integración ERP / SAP
 
 ### Añadido
