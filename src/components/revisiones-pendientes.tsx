@@ -5,6 +5,10 @@ import { ArrowRight, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloCatalogo } from "@/lib/modulos-catalogo";
 import { EstadoPastilla } from "@/components/estado-pastilla";
+import {
+  ControlesPaginacion,
+  usePaginacion,
+} from "@/components/ui/paginacion";
 
 interface Fila {
   id: string;
@@ -18,6 +22,7 @@ interface Fila {
 export function RevisionesPendientes() {
   const [filas, setFilas] = useState<Fila[]>([]);
   const [loading, setLoading] = useState(true);
+  const pag = usePaginacion(filas, "revisiones");
 
   useEffect(() => {
     supabase
@@ -56,7 +61,7 @@ export function RevisionesPendientes() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-3">
-      {filas.map((f) => {
+      {pag.itemsPagina.map((f) => {
         const cat = moduloCatalogo(f.modulo_key);
         const Icon = cat.icon;
         return (
@@ -88,6 +93,7 @@ export function RevisionesPendientes() {
           </Link>
         );
       })}
+      <ControlesPaginacion {...pag} />
     </div>
   );
 }
