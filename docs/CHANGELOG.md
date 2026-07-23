@@ -2,6 +2,46 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.31] — 2026-07-23 — Paginación estándar (5/10/20, default 5) en todos los grids
+
+### Añadido
+- **Componente/hook reutilizable de paginación** (`src/components/ui/paginacion.tsx`):
+  - `usePaginacion<T>(items, gridId, defaultSize = 5)` — paginación en
+    cliente sobre listas ya cargadas en memoria. Devuelve `pagina`,
+    `setPagina`, `tamano`, `setTamano`, `totalPaginas`, `itemsPagina`,
+    `rangoTexto` y `total`. Acota la página al rango válido, resetea a la
+    página 1 al cambiar el tamaño y persiste la preferencia por `gridId` en
+    `localStorage` (clave `egixia:pageSize:<gridId>`), con acceso protegido
+    (`try/catch` + guard `typeof window`) y fallback a 5 si no hay valor o
+    es inválido.
+  - `<ControlesPaginacion>` — selector de tamaño (Select shadcn, opciones
+    5/10/20 con etiqueta "N por página") + indicador de rango
+    "X–Y de N · Página X de Y" + botones Anterior/Siguiente (iconos
+    `ChevronLeft`/`ChevronRight`), deshabilitados en los extremos.
+
+### Cambiado
+- **Paginación estándar aplicada a todos los grids** con volumen variable,
+  siempre después del filtro/orden existente y sin tocar la lógica de datos
+  ni las server functions:
+  - `src/routes/app.proyectos.index.tsx` — listado de proyectos
+    (`gridId: "proyectos"`).
+  - `src/routes/app.usuarios.tsx` — usuarios del sistema (`"usuarios"`).
+  - `src/routes/app.invitaciones.index.tsx` — invitaciones global
+    (`"invitaciones"`).
+  - `src/routes/app.auditoria.tsx` — auditoría global (`"auditoria-global"`).
+  - `src/components/revisiones-pendientes.tsx` — cola de revisiones
+    (`"revisiones"`).
+  - `src/routes/mi-proyecto.proyectos.index.tsx` — proyectos del cliente
+    (`"mis-proyectos"`).
+- **Unificación en `src/routes/app.proyectos.$id.tsx`**: la paginación
+  propia v1.0.30 (cliente, 10 fijo, componente `Paginador` local) de
+  "Invitaciones del proyecto" (`"proyecto-invitaciones"`) y "Auditoría
+  reciente" (`"proyecto-auditoria"`) se reemplaza por el hook/componente
+  estándar (default 5 + selector 5/10/20). Se conserva íntegro el
+  enriquecimiento de auditoría (usuario, rol, acción legible, módulo,
+  detalle expandible) y las acciones por fila de invitaciones
+  (Reenviar/Revocar).
+
 ## [1.0.30] — 2026-07-23 — Paginación en invitaciones y auditoría del detalle de proyecto + auditoría enriquecida (usuario, acción legible, módulo, detalle expandible)
 
 ### Añadido

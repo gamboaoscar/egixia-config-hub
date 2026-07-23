@@ -192,6 +192,33 @@ System font stack, para sentirse nativo en cualquier plataforma:
   etiqueta, abre un Dialog con título, instrucciones, formato esperado e
   imágenes de guía (ver "Ayuda enriquecida por campo").
 
+## Paginación estándar de grids
+
+Todas las listas/grids/tablas con volumen variable usan la misma paginación,
+implementada en `src/components/ui/paginacion.tsx` (`usePaginacion` +
+`<ControlesPaginacion>`). Es paginación **en cliente** sobre datos ya cargados
+en memoria, aplicada siempre **después** de los filtros y el orden del grid.
+
+- **Tamaño por defecto = 5** registros por página.
+- **Selector (combo box)** con opciones **5 / 10 / 20** ("N por página"),
+  construido sobre el `Select` de shadcn. Al cambiar el tamaño la vista
+  **vuelve a la página 1**.
+- **Controles Anterior/Siguiente** (iconos `ChevronLeft`/`ChevronRight`),
+  deshabilitados en los extremos, más el **indicador de rango**
+  "X–Y de N · Página X de Y".
+- **Preferencia recordada por grid**: el tamaño elegido se guarda en
+  `localStorage` con la clave estable `egixia:pageSize:<gridId>` (acceso
+  protegido con `try/catch` y guard `typeof window`), con **fallback a 5** si
+  no hay valor o es inválido. Cada grid tiene un `gridId` único
+  (p. ej. `proyectos`, `usuarios`, `invitaciones`, `auditoria-global`,
+  `proyecto-invitaciones`, `proyecto-auditoria`, `revisiones`,
+  `mis-proyectos`).
+- Aunque el total sea ≤ 5 se muestra igualmente el selector, con los botones
+  Anterior/Siguiente deshabilitados.
+
+No se paginan listas intrínsecamente cortas y fijas (secciones de formulario,
+tabs, menús o el catálogo de módulos parametrizables).
+
 ## Ayuda enriquecida por campo
 
 Junto a cada campo del formulario (y en el encabezado de las columnas de
