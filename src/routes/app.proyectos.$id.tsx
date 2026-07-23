@@ -4,6 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
   CalendarClock,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Download,
   ExternalLink,
   FileText,
@@ -20,6 +23,7 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -120,11 +124,64 @@ interface InvitacionProy {
 
 interface AuditoriaRow {
   id: string;
+  actor_id: string | null;
   accion: string;
   entidad: string;
   entidad_id: string;
   detalle: Record<string, unknown> | null;
   created_at: string;
+}
+
+type RolPerfil = "admin" | "implementador" | "cliente";
+
+interface ActorAudit {
+  nombre: string;
+  rol: RolPerfil | null;
+}
+
+const PAGE_SIZE = 10;
+
+// Etiquetas legibles en español para los códigos de `accion` de auditoría.
+const ACCION_LABELS: Record<string, string> = {
+  modulo_datos_actualizados: "Datos del módulo actualizados",
+  modulo_editado_admin: "Módulo editado por equipo interno",
+  archivo_subido: "Archivo cargado",
+  acta_generada: "Acta generada",
+  modulo_enviado_revision: "Módulo enviado a revisión",
+  enviado_a_revision: "Módulo enviado a revisión",
+  modulo_aprobado: "Módulo aprobado",
+  modulo_devuelto: "Módulo devuelto con observaciones",
+  devuelto_con_observaciones: "Módulo devuelto con observaciones",
+  observacion_respondida: "Respuesta a observación",
+  extension_solicitada: "Extensión solicitada",
+  extension_concedida: "Extensión concedida",
+  invitacion_creada: "Invitación creada",
+  invitacion_correo_enviado: "Correo de invitación",
+  notificacion_invitacion_enviada: "Correo de invitación",
+  recordatorios_enviados: "Recordatorios enviados",
+  plantilla_aplicada: "Plantilla aplicada",
+  modulo_agregado: "Módulo agregado",
+};
+
+function accionLegible(accion: string): string {
+  const found = ACCION_LABELS[accion];
+  if (found) return found;
+  const limpio = accion.replace(/_/g, " ").trim();
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+}
+
+const ROL_LABELS: Record<RolPerfil, string> = {
+  admin: "Admin",
+  implementador: "Implementador",
+  cliente: "Cliente",
+};
+
+function rolBadgeVariant(
+  rol: RolPerfil | null,
+): "default" | "secondary" | "outline" {
+  if (rol === "admin") return "default";
+  if (rol === "implementador") return "secondary";
+  return "outline";
 }
 
 function DetalleProyecto() {
@@ -135,10 +192,16 @@ function DetalleProyecto() {
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [actas, setActas] = useState<Acta[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRow[]>([]);
+  const [actoresAudit, setActoresAudit] = useState<Record<string, ActorAudit>>(
+    {},
+  );
   const [descargando, setDescargando] = useState<string | null>(null);
   const [autores, setAutores] = useState<Record<string, string>>({});
   const [invitaciones, setInvitaciones] = useState<InvitacionProy[]>([]);
   const [invAction, setInvAction] = useState<string | null>(null);
+  // Paginación en cliente (10 por página) para invitaciones y auditoría.
+  const [invPage, setInvPage] = useState(1);
+  const [audPage, setAudPage] = useState(1);
   // M8: id de la mutación en vuelo (miembro o "eliminar-proyecto") para
   // deshabilitar los botones y evitar dobles envíos.
   const [mutando, setMutando] = useState<string | null>(null);
@@ -239,11 +302,40 @@ function DetalleProyecto() {
     // Auditoría: filtrar por detalle->>proyecto_id o entidad_id = id
     const { data: aud } = await supabase
       .from("auditoria")
-      .select("id, accion, entidad, entidad_id, detalle, created_at")
+      .select("id, actor_id, accion, entidad, entidad_id, detalle, created_at")
       .or(`entidad_id.eq.${id},detalle->>proyecto_id.eq.${id}`)
       .order("created_at", { ascending: false })
-      .limit(80);
-    setAuditoria((aud ?? []) as unknown as AuditoriaRow[]);
+      .limit(100);
+    const audRows = (aud ?? []) as unknown as AuditoriaRow[];
+    setAuditoria(audRows);
+    setAudPage(1);
+
+    // Resolver los actor_id distintos de la auditoría en UNA sola consulta,
+    // trayendo también el rol para la pastilla.
+    const actorIds = Array.from(
+      new Set(
+        audRows
+          .map((x) => x.actor_id)
+          .filter((v): v is string => !!v),
+      ),
+    );
+    if (actorIds.length > 0) {
+      const { data: actProfs } = await supabase
+        .from("profiles")
+        .select("id, nombre, apellido, email, rol")
+        .in("id", actorIds);
+      const amap: Record<string, ActorAudit> = {};
+      for (const p of actProfs ?? []) {
+        const n = `${p.nombre ?? ""} ${p.apellido ?? ""}`.trim();
+        amap[p.id] = {
+          nombre: n || p.email || "Usuario",
+          rol: (p.rol as RolPerfil | null) ?? null,
+        };
+      }
+      setActoresAudit(amap);
+    } else {
+      setActoresAudit({});
+    }
 
     try {
       const inv = await listarInv({ data: { proyectoId: id } });
@@ -251,6 +343,7 @@ function DetalleProyecto() {
     } catch {
       setInvitaciones([]);
     }
+    setInvPage(1);
 
     setLoading(false);
   };
@@ -267,6 +360,30 @@ function DetalleProyecto() {
     }
     return map;
   }, [actas]);
+
+  // Paginación en cliente: la lista completa ya está en memoria, así que
+  // solo cortamos la página visible sin nuevas consultas.
+  const invTotalPages = Math.max(1, Math.ceil(invitaciones.length / PAGE_SIZE));
+  const invPageClamped = Math.min(invPage, invTotalPages);
+  const invVisibles = useMemo(
+    () =>
+      invitaciones.slice(
+        (invPageClamped - 1) * PAGE_SIZE,
+        invPageClamped * PAGE_SIZE,
+      ),
+    [invitaciones, invPageClamped],
+  );
+
+  const audTotalPages = Math.max(1, Math.ceil(auditoria.length / PAGE_SIZE));
+  const audPageClamped = Math.min(audPage, audTotalPages);
+  const audVisibles = useMemo(
+    () =>
+      auditoria.slice(
+        (audPageClamped - 1) * PAGE_SIZE,
+        audPageClamped * PAGE_SIZE,
+      ),
+    [auditoria, audPageClamped],
+  );
 
   if (loading) {
     return <div className="mx-auto h-64 max-w-5xl animate-pulse rounded-2xl bg-muted" />;
@@ -635,7 +752,7 @@ function DetalleProyecto() {
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-border">
-            {invitaciones.map((r) => {
+            {invVisibles.map((r) => {
               const vencida = new Date(r.expira_at).getTime() < Date.now();
               const estadoEfectivo =
                 r.estado === "pendiente" && vencida ? "expirada" : r.estado;
@@ -701,6 +818,15 @@ function DetalleProyecto() {
             })}
           </ul>
         )}
+        {invitaciones.length > PAGE_SIZE && (
+          <Paginador
+            page={invPageClamped}
+            totalPages={invTotalPages}
+            total={invitaciones.length}
+            onPrev={() => setInvPage((p) => Math.max(1, p - 1))}
+            onNext={() => setInvPage((p) => Math.min(invTotalPages, p + 1))}
+          />
+        )}
       </section>
 
       {/* Auditoría */}
@@ -711,19 +837,26 @@ function DetalleProyecto() {
         {auditoria.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Sin registros aún.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-border text-sm">
-            {auditoria.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <div>
-                  <span className="font-medium text-foreground">{a.accion}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">{a.entidad}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {formatoFechaHoraCO(a.created_at)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="mt-3 divide-y divide-border text-sm">
+              {audVisibles.map((a) => (
+                <AuditoriaFila
+                  key={a.id}
+                  row={a}
+                  actor={a.actor_id ? actoresAudit[a.actor_id] : undefined}
+                />
+              ))}
+            </ul>
+            {auditoria.length > PAGE_SIZE && (
+              <Paginador
+                page={audPageClamped}
+                totalPages={audTotalPages}
+                total={auditoria.length}
+                onPrev={() => setAudPage((p) => Math.max(1, p - 1))}
+                onNext={() => setAudPage((p) => Math.min(audTotalPages, p + 1))}
+              />
+            )}
+          </>
         )}
       </section>
 
@@ -907,6 +1040,264 @@ function MiembrosLista({
             );
           })}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function Paginador({
+  page,
+  totalPages,
+  total,
+  onPrev,
+  onNext,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const desde = (page - 1) * PAGE_SIZE + 1;
+  const hasta = Math.min(page * PAGE_SIZE, total);
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground">
+        {desde}–{hasta} de {total} · Página {page} de {totalPages}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onPrev}
+          disabled={page <= 1}
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Anterior
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onNext}
+          disabled={page >= totalPages}
+        >
+          Siguiente
+          <ChevronRight className="ml-1 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Campos de `detalle` que se renderizan de forma amigable arriba y se
+// excluyen del bloque JSON de respaldo. Se ocultan ids crudos e internos.
+const DETALLE_OCULTOS = new Set([
+  "actor_id",
+  "proyecto_id",
+  "modulo_id",
+  "proyecto_modulo_id",
+  "invitacion_id",
+  "acta_id",
+  "user_id",
+  "entidad_id",
+]);
+
+function esEstadoOk(v: unknown): boolean {
+  const s = String(v).toLowerCase();
+  return ["ok", "enviado", "sent", "success", "200", "true"].includes(s);
+}
+
+function AuditoriaFila({
+  row,
+  actor,
+}: {
+  row: AuditoriaRow;
+  actor: ActorAudit | undefined;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const detalle = (row.detalle ?? {}) as Record<string, unknown>;
+  const moduloKey =
+    typeof detalle.modulo_key === "string" ? detalle.modulo_key : null;
+  const moduloNombre = moduloKey ? moduloCatalogo(moduloKey).nombre : null;
+  const nombreActor = row.actor_id
+    ? (actor?.nombre ?? "Usuario")
+    : "Sistema";
+  const rolActor = row.actor_id ? (actor?.rol ?? null) : null;
+  const hayDetalle = Object.keys(detalle).length > 0;
+
+  return (
+    <li className="py-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-foreground">
+              {accionLegible(row.accion)}
+            </span>
+            {moduloNombre && (
+              <span className="text-xs text-muted-foreground">
+                · {moduloNombre}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>{nombreActor}</span>
+            {rolActor && (
+              <Badge variant={rolBadgeVariant(rolActor)} className="text-[10px]">
+                {ROL_LABELS[rolActor]}
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {formatoFechaHoraCO(row.created_at)}
+          </span>
+          {hayDetalle && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs text-muted-foreground"
+              onClick={() => setAbierto((v) => !v)}
+            >
+              <ChevronDown
+                className={`mr-1 h-4 w-4 transition-transform ${
+                  abierto ? "rotate-180" : ""
+                }`}
+              />
+              Ver detalle
+            </Button>
+          )}
+        </div>
+      </div>
+      {abierto && hayDetalle && (
+        <DetalleAuditoria detalle={detalle} />
+      )}
+    </li>
+  );
+}
+
+function DetalleAuditoria({
+  detalle,
+}: {
+  detalle: Record<string, unknown>;
+}) {
+  const usados = new Set<string>();
+  const marcar = (...keys: string[]) => keys.forEach((k) => usados.add(k));
+
+  const campos = Array.isArray(detalle.campos_modificados)
+    ? (detalle.campos_modificados as unknown[]).map(String)
+    : null;
+  if (campos) marcar("campos_modificados");
+
+  const nombreArchivo =
+    (typeof detalle.nombre_original === "string" && detalle.nombre_original) ||
+    (typeof detalle.nombre === "string" && detalle.nombre) ||
+    (typeof detalle.archivo === "string" && detalle.archivo) ||
+    null;
+  if (nombreArchivo) marcar("nombre_original", "nombre", "archivo");
+
+  const version =
+    detalle.version != null ? String(detalle.version) : null;
+  if (version) marcar("version");
+
+  const estadoCorreo: unknown =
+    detalle.edge_status != null
+      ? detalle.edge_status
+      : detalle.estado != null
+        ? detalle.estado
+        : null;
+  if (estadoCorreo !== null) marcar("edge_status", "estado");
+
+  const destinatarios = Array.isArray(detalle.destinatarios)
+    ? (detalle.destinatarios as unknown[]).map(String)
+    : typeof detalle.destinatarios === "string"
+      ? [detalle.destinatarios]
+      : null;
+  if (destinatarios) marcar("destinatarios");
+
+  const motivo =
+    typeof detalle.motivo === "string" ? detalle.motivo : null;
+  if (motivo) marcar("motivo");
+
+  // Resto de campos como bloque JSON legible (key: value), sin ids crudos.
+  const resto = Object.entries(detalle).filter(
+    ([k]) => !usados.has(k) && !DETALLE_OCULTOS.has(k) && k !== "modulo_key",
+  );
+
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-xs">
+      {campos && campos.length > 0 && (
+        <div>
+          <div className="mb-1 font-medium text-foreground">
+            Campos modificados
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {campos.map((c, i) => (
+              <span
+                key={i}
+                className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] text-primary"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {nombreArchivo && (
+        <div>
+          <span className="font-medium text-foreground">Archivo: </span>
+          <span className="text-muted-foreground">{nombreArchivo}</span>
+        </div>
+      )}
+      {version && (
+        <div>
+          <span className="font-medium text-foreground">Versión: </span>
+          <span className="text-muted-foreground">v{version}</span>
+        </div>
+      )}
+      {estadoCorreo !== null && (
+        <div>
+          <span className="font-medium text-foreground">Estado: </span>
+          <span
+            className={
+              esEstadoOk(estadoCorreo)
+                ? "font-medium text-emerald-600"
+                : "font-medium text-red-600"
+            }
+          >
+            {String(estadoCorreo)}
+          </span>
+        </div>
+      )}
+      {destinatarios && destinatarios.length > 0 && (
+        <div>
+          <span className="font-medium text-foreground">Destinatarios: </span>
+          <span className="text-muted-foreground">
+            {destinatarios.join(", ")}
+          </span>
+        </div>
+      )}
+      {motivo && (
+        <div>
+          <span className="font-medium text-foreground">Motivo: </span>
+          <span className="text-muted-foreground">{motivo}</span>
+        </div>
+      )}
+      {resto.length > 0 && (
+        <div className="space-y-0.5 border-t border-border pt-2">
+          {resto.map(([k, v]) => (
+            <div key={k} className="flex gap-2">
+              <span className="font-medium text-foreground">
+                {k.replace(/_/g, " ")}:
+              </span>
+              <span className="break-all text-muted-foreground">
+                {typeof v === "object" && v !== null
+                  ? JSON.stringify(v)
+                  : String(v)}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
