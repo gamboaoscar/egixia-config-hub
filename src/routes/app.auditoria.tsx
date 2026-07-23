@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  ControlesPaginacion, usePaginacion,
+} from "@/components/ui/paginacion";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminOnly } from "@/components/admin-only";
 import { fechaISOBogota, formatoFechaHoraCO } from "@/lib/fechas";
@@ -95,6 +98,8 @@ function AuditoriaPage() {
     });
   }, [rows, q, entidadFiltro]);
 
+  const pag = usePaginacion(filtradas, "auditoria-global");
+
   const exportarCsv = () => {
     const encabezado = ["fecha", "actor", "accion", "entidad", "entidad_id", "detalle"];
     const lineas = [encabezado.join(",")];
@@ -178,7 +183,7 @@ function AuditoriaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtradas.map((r) => (
+                {pag.itemsPagina.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/20">
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {formatoFechaHoraCO(r.created_at)}
@@ -202,6 +207,9 @@ function AuditoriaPage() {
                 ))}
               </tbody>
             </table>
+            <div className="border-t border-border p-4">
+              <ControlesPaginacion {...pag} className="mt-0" />
+            </div>
           </div>
         )}
       </section>

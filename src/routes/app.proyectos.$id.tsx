@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   CalendarClock,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Download,
   ExternalLink,
   FileText,
@@ -39,6 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ControlesPaginacion,
+  usePaginacion,
+} from "@/components/ui/paginacion";
 import { DatePickerHabil } from "@/components/ui/date-picker-habil";
 import { EstadoPastilla } from "@/components/estado-pastilla";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,8 +141,6 @@ interface ActorAudit {
   rol: RolPerfil | null;
 }
 
-const PAGE_SIZE = 10;
-
 // Etiquetas legibles en español para los códigos de `accion` de auditoría.
 const ACCION_LABELS: Record<string, string> = {
   modulo_datos_actualizados: "Datos del módulo actualizados",
@@ -199,9 +199,6 @@ function DetalleProyecto() {
   const [autores, setAutores] = useState<Record<string, string>>({});
   const [invitaciones, setInvitaciones] = useState<InvitacionProy[]>([]);
   const [invAction, setInvAction] = useState<string | null>(null);
-  // Paginación en cliente (10 por página) para invitaciones y auditoría.
-  const [invPage, setInvPage] = useState(1);
-  const [audPage, setAudPage] = useState(1);
   // M8: id de la mutación en vuelo (miembro o "eliminar-proyecto") para
   // deshabilitar los botones y evitar dobles envíos.
   const [mutando, setMutando] = useState<string | null>(null);
@@ -308,7 +305,6 @@ function DetalleProyecto() {
       .limit(100);
     const audRows = (aud ?? []) as unknown as AuditoriaRow[];
     setAuditoria(audRows);
-    setAudPage(1);
 
     // Resolver los actor_id distintos de la auditoría en UNA sola consulta,
     // trayendo también el rol para la pastilla.
@@ -343,7 +339,6 @@ function DetalleProyecto() {
     } catch {
       setInvitaciones([]);
     }
-    setInvPage(1);
 
     setLoading(false);
   };
@@ -361,29 +356,11 @@ function DetalleProyecto() {
     return map;
   }, [actas]);
 
-  // Paginación en cliente: la lista completa ya está en memoria, así que
-  // solo cortamos la página visible sin nuevas consultas.
-  const invTotalPages = Math.max(1, Math.ceil(invitaciones.length / PAGE_SIZE));
-  const invPageClamped = Math.min(invPage, invTotalPages);
-  const invVisibles = useMemo(
-    () =>
-      invitaciones.slice(
-        (invPageClamped - 1) * PAGE_SIZE,
-        invPageClamped * PAGE_SIZE,
-      ),
-    [invitaciones, invPageClamped],
-  );
-
-  const audTotalPages = Math.max(1, Math.ceil(auditoria.length / PAGE_SIZE));
-  const audPageClamped = Math.min(audPage, audTotalPages);
-  const audVisibles = useMemo(
-    () =>
-      auditoria.slice(
-        (audPageClamped - 1) * PAGE_SIZE,
-        audPageClamped * PAGE_SIZE,
-      ),
-    [auditoria, audPageClamped],
-  );
+  // Paginación en cliente estándar (default 5 + selector 5/10/20) sobre las
+  // listas ya cargadas en memoria, sin nuevas consultas. Cada grid conserva
+  // su preferencia de tamaño por separado vía localStorage.
+  const invPag = usePaginacion(invitaciones, "proyecto-invitaciones");
+  const audPag = usePaginacion(auditoria, "proyecto-auditoria");
 
   if (loading) {
     return <div className="mx-auto h-64 max-w-5xl animate-pulse rounded-2xl bg-muted" />;
@@ -752,7 +729,7 @@ function DetalleProyecto() {
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-border">
-            {invVisibles.map((r) => {
+            {invPag.itemsPagina.map((r) => {
               const vencida = new Date(r.expira_at).getTime() < Date.now();
               const estadoEfectivo =
                 r.estado === "pendiente" && vencida ? "expirada" : r.estado;
@@ -818,15 +795,7 @@ function DetalleProyecto() {
             })}
           </ul>
         )}
-        {invitaciones.length > PAGE_SIZE && (
-          <Paginador
-            page={invPageClamped}
-            totalPages={invTotalPages}
-            total={invitaciones.length}
-            onPrev={() => setInvPage((p) => Math.max(1, p - 1))}
-            onNext={() => setInvPage((p) => Math.min(invTotalPages, p + 1))}
-          />
-        )}
+        {invitaciones.length > 0 && <ControlesPaginacion {...invPag} />}
       </section>
 
       {/* Auditoría */}
@@ -839,7 +808,7 @@ function DetalleProyecto() {
         ) : (
           <>
             <ul className="mt-3 divide-y divide-border text-sm">
-              {audVisibles.map((a) => (
+              {audPag.itemsPagina.map((a) => (
                 <AuditoriaFila
                   key={a.id}
                   row={a}
@@ -847,15 +816,7 @@ function DetalleProyecto() {
                 />
               ))}
             </ul>
-            {auditoria.length > PAGE_SIZE && (
-              <Paginador
-                page={audPageClamped}
-                totalPages={audTotalPages}
-                total={auditoria.length}
-                onPrev={() => setAudPage((p) => Math.max(1, p - 1))}
-                onNext={() => setAudPage((p) => Math.min(audTotalPages, p + 1))}
-              />
-            )}
+            {auditoria.length > 0 && <ControlesPaginacion {...audPag} />}
           </>
         )}
       </section>
@@ -1041,50 +1002,6 @@ function MiembrosLista({
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-function Paginador({
-  page,
-  totalPages,
-  total,
-  onPrev,
-  onNext,
-}: {
-  page: number;
-  totalPages: number;
-  total: number;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  const desde = (page - 1) * PAGE_SIZE + 1;
-  const hasta = Math.min(page * PAGE_SIZE, total);
-  return (
-    <div className="mt-4 flex items-center justify-between gap-3">
-      <span className="text-xs text-muted-foreground">
-        {desde}–{hasta} de {total} · Página {page} de {totalPages}
-      </span>
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onPrev}
-          disabled={page <= 1}
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Anterior
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onNext}
-          disabled={page >= totalPages}
-        >
-          Siguiente
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </div>
     </div>
   );
 }

@@ -2,6 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, FolderKanban, Inbox } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  ControlesPaginacion,
+  usePaginacion,
+} from "@/components/ui/paginacion";
 import { useMiProyecto } from "@/hooks/use-mi-proyecto";
 
 export const Route = createFileRoute("/mi-proyecto/proyectos/")({
@@ -11,6 +15,7 @@ export const Route = createFileRoute("/mi-proyecto/proyectos/")({
 
 function MisProyectos() {
   const { proyectos, modulosDeProyecto, loading } = useMiProyecto();
+  const pag = usePaginacion(proyectos, "mis-proyectos");
 
   if (loading) {
     return (
@@ -48,7 +53,7 @@ function MisProyectos() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {proyectos.map((p) => {
+        {pag.itemsPagina.map((p) => {
           const modulos = modulosDeProyecto(p.id);
           const total = modulos.length;
           const aprobados = modulos.filter((m) => m.estado === "aprobado").length;
@@ -102,6 +107,8 @@ function MisProyectos() {
           );
         })}
       </div>
+
+      <ControlesPaginacion {...pag} />
     </div>
   );
 }

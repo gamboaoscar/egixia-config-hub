@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  ControlesPaginacion, usePaginacion,
+} from "@/components/ui/paginacion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -78,6 +81,8 @@ function UsuariosPage() {
       );
     });
   }, [perfiles, q, rolFiltro]);
+
+  const pag = usePaginacion(filtrados, "usuarios");
 
   const handleEstado = async (p: Perfil, estado: "activo" | "inhabilitado") => {
     setBusy(p.id);
@@ -168,7 +173,7 @@ function UsuariosPage() {
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {filtrados.map((p) => {
+            {pag.itemsPagina.map((p) => {
               const nombre = `${p.nombre} ${p.apellido}`.trim() || p.email;
               const esYo = p.id === yo?.id;
               return (
@@ -237,6 +242,11 @@ function UsuariosPage() {
               );
             })}
           </ul>
+        )}
+        {!loading && filtrados.length > 0 && (
+          <div className="border-t border-border p-4">
+            <ControlesPaginacion {...pag} className="mt-0" />
+          </div>
         )}
       </section>
 

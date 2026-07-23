@@ -11,6 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ControlesPaginacion,
+  usePaginacion,
+} from "@/components/ui/paginacion";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app/proyectos/")({
@@ -118,6 +122,8 @@ function ProyectosLista() {
     );
   };
 
+  const pag = usePaginacion(filtradas, "proyectos");
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -195,7 +201,7 @@ function ProyectosLista() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {filtradas.map((r) => {
+          {pag.itemsPagina.map((r) => {
             const pf = proximaFecha(r);
             const avance = avanceProm(r);
             return (
@@ -238,6 +244,7 @@ function ProyectosLista() {
               </Link>
             );
           })}
+          <ControlesPaginacion {...pag} />
         </div>
       )}
     </div>

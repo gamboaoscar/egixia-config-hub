@@ -14,6 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ControlesPaginacion,
+  usePaginacion,
+} from "@/components/ui/paginacion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   crearInvitacion,
@@ -62,6 +66,8 @@ function Invitaciones() {
   const [proyectoId, setProyectoId] = useState<string>("");
   const [sending, setSending] = useState(false);
   const [action, setAction] = useState<string | null>(null);
+
+  const pag = usePaginacion(rows, "invitaciones");
 
   const cargar = async () => {
     // El listado va por server function (supabaseAdmin) porque la RLS de
@@ -233,7 +239,7 @@ function Invitaciones() {
           <p className="mt-4 text-sm text-muted-foreground">Aún no hay invitaciones.</p>
         ) : (
           <ul className="mt-4 divide-y divide-border">
-            {rows.map((r) => {
+            {pag.itemsPagina.map((r) => {
               const vencida = new Date(r.expira_at).getTime() < Date.now();
               const estadoEfectivo =
                 r.estado === "pendiente" && vencida ? "expirada" : r.estado;
@@ -303,6 +309,7 @@ function Invitaciones() {
             })}
           </ul>
         )}
+        {!loading && rows.length > 0 && <ControlesPaginacion {...pag} />}
       </section>
     </div>
   );
