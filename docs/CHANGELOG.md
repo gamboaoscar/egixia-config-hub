@@ -2,6 +2,33 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [1.0.30] — 2026-07-23 — Paginación en invitaciones y auditoría del detalle de proyecto + auditoría enriquecida (usuario, acción legible, módulo, detalle expandible)
+
+### Añadido
+- **Paginación en "Invitaciones del proyecto"** (`src/routes/app.proyectos.$id.tsx`)
+  — 10 registros por página, controles Anterior/Siguiente e indicador
+  "X–Y de N · Página X de Y". La lista completa ya se carga en memoria vía
+  `listarInvitaciones`, así que se pagina en cliente con `useState` sin
+  nuevas consultas. Las acciones Reenviar/Revocar por fila se mantienen
+  intactas.
+- **Paginación + enriquecimiento en "Auditoría reciente"** — misma
+  paginación en cliente (10 por página). El tope de carga sube de 80 a 100
+  registros. Cada evento ahora muestra:
+  - **Usuario**: `actor_id` resuelto a "Nombre Apellido" con una pastilla
+    de rol (admin/implementador/cliente). Todos los `actor_id` distintos se
+    resuelven en UNA sola consulta a `profiles` con `.in('id', ids)`;
+    `actor_id` nulo → "Sistema".
+  - **Acción legible + módulo**: diccionario de códigos de `accion` a
+    etiquetas en español; los códigos no mapeados se muestran con guiones
+    bajos como espacios y capitalizados. Si `detalle.modulo_key` existe, se
+    muestra el nombre bonito vía `moduloCatalogo(...).nombre`.
+  - **Fecha y hora** en hora Colombia con `formatoFechaHoraCO`.
+  - **Detalle expandible** (acordeón con `ChevronDown`) que renderiza de
+    forma amigable `campos_modificados` (chips), nombre de archivo, versión
+    de acta, estado de correo (verde/rojo), destinatarios y motivo, más un
+    bloque de respaldo con el JSON restante en formato key: value. No se
+    muestran `actor_id` ni ids crudos.
+
 ## [1.0.29] — 2026-07-23 — Módulo Notificaciones y comunicaciones
 
 ### Añadido
