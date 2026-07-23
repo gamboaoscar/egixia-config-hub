@@ -9,61 +9,41 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppSectionRouteImport } from './routes/app.$section'
-import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
-import { Route as AppCatalogoRouteImport } from './routes/app.catalogo'
-import { Route as AppConfiguracionRouteImport } from './routes/app.configuracion'
-import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
-import { Route as AppRevisionesRouteImport } from './routes/app.revisiones'
-import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
-import { Route as GuiasPortalDeProveedoresRouteImport } from './routes/guias.portal-de-proveedores'
-import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as MiProyectoRouteImport } from './routes/mi-proyecto'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as MiProyectoIndexRouteImport } from './routes/mi-proyecto.index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as MiProyectoMiPerfilRouteImport } from './routes/mi-proyecto.mi-perfil'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as AppInvitacionesIndexRouteImport } from './routes/app.invitaciones.index'
-import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
-import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
-import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
-import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nuevo'
-import { Route as MiProyectoModuloModuloIdRouteImport } from './routes/mi-proyecto.modulo.$moduloId'
+import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
+import { Route as GuiasPortalDeProveedoresRouteImport } from './routes/guias.portal-de-proveedores'
+import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
+import { Route as AppRevisionesRouteImport } from './routes/app.revisiones'
+import { Route as AppMiPerfilRouteImport } from './routes/app.mi-perfil'
+import { Route as AppConfiguracionRouteImport } from './routes/app.configuracion'
+import { Route as AppCatalogoRouteImport } from './routes/app.catalogo'
+import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
+import { Route as AppSectionRouteImport } from './routes/app.$section'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as MiProyectoProyectosIndexRouteImport } from './routes/mi-proyecto.proyectos.index'
+import { Route as AppProyectosIndexRouteImport } from './routes/app.proyectos.index'
+import { Route as AppInvitacionesIndexRouteImport } from './routes/app.invitaciones.index'
 import { Route as MiProyectoProyectosIdRouteImport } from './routes/mi-proyecto.proyectos.$id'
+import { Route as MiProyectoModuloModuloIdRouteImport } from './routes/mi-proyecto.modulo.$moduloId'
+import { Route as AppProyectosNuevoRouteImport } from './routes/app.proyectos.nuevo'
+import { Route as AppProyectosIdRouteImport } from './routes/app.proyectos.$id'
+import { Route as AppModuloModuloIdRouteImport } from './routes/app.modulo.$moduloId'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MiProyectoRoute = MiProyectoRouteImport.update({
-  id: '/mi-proyecto',
-  path: '/mi-proyecto',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -71,72 +51,29 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const MiProyectoRoute = MiProyectoRouteImport.update({
+  id: '/mi-proyecto',
+  path: '/mi-proyecto',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSectionRoute = AppSectionRouteImport.update({
-  id: '/$section',
-  path: '/$section',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAuditoriaRoute = AppAuditoriaRouteImport.update({
-  id: '/auditoria',
-  path: '/auditoria',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCatalogoRoute = AppCatalogoRouteImport.update({
-  id: '/catalogo',
-  path: '/catalogo',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConfiguracionRoute = AppConfiguracionRouteImport.update({
-  id: '/configuracion',
-  path: '/configuracion',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMiPerfilRoute = AppMiPerfilRouteImport.update({
-  id: '/mi-perfil',
-  path: '/mi-perfil',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRevisionesRoute = AppRevisionesRouteImport.update({
-  id: '/revisiones',
-  path: '/revisiones',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppUsuariosRoute = AppUsuariosRouteImport.update({
-  id: '/usuarios',
-  path: '/usuarios',
-  getParentRoute: () => AppRoute,
-} as any)
-const GuiasPortalDeProveedoresRoute =
-  GuiasPortalDeProveedoresRouteImport.update({
-    id: '/guias/portal-de-proveedores',
-    path: '/guias/portal-de-proveedores',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
-  id: '/invitacion/$token',
-  path: '/invitacion/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MiProyectoIndexRoute = MiProyectoIndexRouteImport.update({
@@ -144,52 +81,73 @@ const MiProyectoIndexRoute = MiProyectoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MiProyectoRoute,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
 const MiProyectoMiPerfilRoute = MiProyectoMiPerfilRouteImport.update({
   id: '/mi-perfil',
   path: '/mi-perfil',
   getParentRoute: () => MiProyectoRoute,
 } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
+const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
+  id: '/invitacion/$token',
+  path: '/invitacion/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93InvokeToolToolRoute =
-  Char91DotmcpChar93InvokeToolToolRouteImport.update({
-    id: '/.mcp/invoke-tool/$tool',
-    path: '/.mcp/invoke-tool/$tool',
+const GuiasPortalDeProveedoresRoute =
+  GuiasPortalDeProveedoresRouteImport.update({
+    id: '/guias/portal-de-proveedores',
+    path: '/guias/portal-de-proveedores',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AppInvitacionesIndexRoute = AppInvitacionesIndexRouteImport.update({
-  id: '/invitaciones/',
-  path: '/invitaciones/',
+const AppUsuariosRoute = AppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => AppRoute,
 } as any)
-const AppModuloModuloIdRoute = AppModuloModuloIdRouteImport.update({
-  id: '/modulo/$moduloId',
-  path: '/modulo/$moduloId',
+const AppRevisionesRoute = AppRevisionesRouteImport.update({
+  id: '/revisiones',
+  path: '/revisiones',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProyectosIndexRoute = AppProyectosIndexRouteImport.update({
-  id: '/proyectos/',
-  path: '/proyectos/',
+const AppMiPerfilRoute = AppMiPerfilRouteImport.update({
+  id: '/mi-perfil',
+  path: '/mi-perfil',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProyectosIdRoute = AppProyectosIdRouteImport.update({
-  id: '/proyectos/$id',
-  path: '/proyectos/$id',
+const AppConfiguracionRoute = AppConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProyectosNuevoRoute = AppProyectosNuevoRouteImport.update({
-  id: '/proyectos/nuevo',
-  path: '/proyectos/nuevo',
+const AppCatalogoRoute = AppCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
   getParentRoute: () => AppRoute,
 } as any)
-const MiProyectoModuloModuloIdRoute =
-  MiProyectoModuloModuloIdRouteImport.update({
-    id: '/modulo/$moduloId',
-    path: '/modulo/$moduloId',
-    getParentRoute: () => MiProyectoRoute,
+const AppAuditoriaRoute = AppAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSectionRoute = AppSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => AppRoute,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const MiProyectoProyectosIndexRoute =
   MiProyectoProyectosIndexRouteImport.update({
@@ -197,10 +155,52 @@ const MiProyectoProyectosIndexRoute =
     path: '/proyectos/',
     getParentRoute: () => MiProyectoRoute,
   } as any)
+const AppProyectosIndexRoute = AppProyectosIndexRouteImport.update({
+  id: '/proyectos/',
+  path: '/proyectos/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInvitacionesIndexRoute = AppInvitacionesIndexRouteImport.update({
+  id: '/invitaciones/',
+  path: '/invitaciones/',
+  getParentRoute: () => AppRoute,
+} as any)
 const MiProyectoProyectosIdRoute = MiProyectoProyectosIdRouteImport.update({
   id: '/proyectos/$id',
   path: '/proyectos/$id',
   getParentRoute: () => MiProyectoRoute,
+} as any)
+const MiProyectoModuloModuloIdRoute =
+  MiProyectoModuloModuloIdRouteImport.update({
+    id: '/modulo/$moduloId',
+    path: '/modulo/$moduloId',
+    getParentRoute: () => MiProyectoRoute,
+  } as any)
+const AppProyectosNuevoRoute = AppProyectosNuevoRouteImport.update({
+  id: '/proyectos/nuevo',
+  path: '/proyectos/nuevo',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProyectosIdRoute = AppProyectosIdRouteImport.update({
+  id: '/proyectos/$id',
+  path: '/proyectos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppModuloModuloIdRoute = AppModuloModuloIdRouteImport.update({
+  id: '/modulo/$moduloId',
+  path: '/modulo/$moduloId',
+  getParentRoute: () => AppRoute,
+} as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -419,39 +419,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mi-proyecto': {
-      id: '/mi-proyecto'
-      path: '/mi-proyecto'
-      fullPath: '/mi-proyecto'
-      preLoaderRoute: typeof MiProyectoRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -461,95 +433,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/mi-proyecto': {
+      id: '/mi-proyecto'
+      path: '/mi-proyecto'
+      fullPath: '/mi-proyecto'
+      preLoaderRoute: typeof MiProyectoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/': {
-      id: '/app/'
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
       path: '/'
-      fullPath: '/app/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/$section': {
-      id: '/app/$section'
-      path: '/$section'
-      fullPath: '/app/$section'
-      preLoaderRoute: typeof AppSectionRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/auditoria': {
-      id: '/app/auditoria'
-      path: '/auditoria'
-      fullPath: '/app/auditoria'
-      preLoaderRoute: typeof AppAuditoriaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/catalogo': {
-      id: '/app/catalogo'
-      path: '/catalogo'
-      fullPath: '/app/catalogo'
-      preLoaderRoute: typeof AppCatalogoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/configuracion': {
-      id: '/app/configuracion'
-      path: '/configuracion'
-      fullPath: '/app/configuracion'
-      preLoaderRoute: typeof AppConfiguracionRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/mi-perfil': {
-      id: '/app/mi-perfil'
-      path: '/mi-perfil'
-      fullPath: '/app/mi-perfil'
-      preLoaderRoute: typeof AppMiPerfilRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/revisiones': {
-      id: '/app/revisiones'
-      path: '/revisiones'
-      fullPath: '/app/revisiones'
-      preLoaderRoute: typeof AppRevisionesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/usuarios': {
-      id: '/app/usuarios'
-      path: '/usuarios'
-      fullPath: '/app/usuarios'
-      preLoaderRoute: typeof AppUsuariosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/guias/portal-de-proveedores': {
-      id: '/guias/portal-de-proveedores'
-      path: '/guias/portal-de-proveedores'
-      fullPath: '/guias/portal-de-proveedores'
-      preLoaderRoute: typeof GuiasPortalDeProveedoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/invitacion/$token': {
-      id: '/invitacion/$token'
-      path: '/invitacion/$token'
-      fullPath: '/invitacion/$token'
-      preLoaderRoute: typeof InvitacionTokenRouteImport
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mi-proyecto/': {
@@ -559,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiProyectoIndexRouteImport
       parentRoute: typeof MiProyectoRoute
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/mi-proyecto/mi-perfil': {
       id: '/mi-proyecto/mi-perfil'
       path: '/mi-perfil'
@@ -566,19 +489,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MiProyectoMiPerfilRouteImport
       parentRoute: typeof MiProyectoRoute
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/invitacion/$token': {
+      id: '/invitacion/$token'
+      path: '/invitacion/$token'
+      fullPath: '/invitacion/$token'
+      preLoaderRoute: typeof InvitacionTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/guias/portal-de-proveedores': {
+      id: '/guias/portal-de-proveedores'
+      path: '/guias/portal-de-proveedores'
+      fullPath: '/guias/portal-de-proveedores'
+      preLoaderRoute: typeof GuiasPortalDeProveedoresRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/usuarios': {
+      id: '/app/usuarios'
+      path: '/usuarios'
+      fullPath: '/app/usuarios'
+      preLoaderRoute: typeof AppUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/revisiones': {
+      id: '/app/revisiones'
+      path: '/revisiones'
+      fullPath: '/app/revisiones'
+      preLoaderRoute: typeof AppRevisionesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/mi-perfil': {
+      id: '/app/mi-perfil'
+      path: '/mi-perfil'
+      fullPath: '/app/mi-perfil'
+      preLoaderRoute: typeof AppMiPerfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/configuracion': {
+      id: '/app/configuracion'
+      path: '/configuracion'
+      fullPath: '/app/configuracion'
+      preLoaderRoute: typeof AppConfiguracionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/catalogo': {
+      id: '/app/catalogo'
+      path: '/catalogo'
+      fullPath: '/app/catalogo'
+      preLoaderRoute: typeof AppCatalogoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/auditoria': {
+      id: '/app/auditoria'
+      path: '/auditoria'
+      fullPath: '/app/auditoria'
+      preLoaderRoute: typeof AppAuditoriaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/$section': {
+      id: '/app/$section'
+      path: '/$section'
+      fullPath: '/app/$section'
+      preLoaderRoute: typeof AppSectionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-proyecto/proyectos/': {
+      id: '/mi-proyecto/proyectos/'
+      path: '/proyectos'
+      fullPath: '/mi-proyecto/proyectos/'
+      preLoaderRoute: typeof MiProyectoProyectosIndexRouteImport
+      parentRoute: typeof MiProyectoRoute
+    }
+    '/app/proyectos/': {
+      id: '/app/proyectos/'
+      path: '/proyectos'
+      fullPath: '/app/proyectos/'
+      preLoaderRoute: typeof AppProyectosIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/invitaciones/': {
       id: '/app/invitaciones/'
@@ -587,18 +587,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInvitacionesIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/modulo/$moduloId': {
-      id: '/app/modulo/$moduloId'
-      path: '/modulo/$moduloId'
-      fullPath: '/app/modulo/$moduloId'
-      preLoaderRoute: typeof AppModuloModuloIdRouteImport
-      parentRoute: typeof AppRoute
+    '/mi-proyecto/proyectos/$id': {
+      id: '/mi-proyecto/proyectos/$id'
+      path: '/proyectos/$id'
+      fullPath: '/mi-proyecto/proyectos/$id'
+      preLoaderRoute: typeof MiProyectoProyectosIdRouteImport
+      parentRoute: typeof MiProyectoRoute
     }
-    '/app/proyectos/': {
-      id: '/app/proyectos/'
-      path: '/proyectos'
-      fullPath: '/app/proyectos/'
-      preLoaderRoute: typeof AppProyectosIndexRouteImport
+    '/mi-proyecto/modulo/$moduloId': {
+      id: '/mi-proyecto/modulo/$moduloId'
+      path: '/modulo/$moduloId'
+      fullPath: '/mi-proyecto/modulo/$moduloId'
+      preLoaderRoute: typeof MiProyectoModuloModuloIdRouteImport
+      parentRoute: typeof MiProyectoRoute
+    }
+    '/app/proyectos/nuevo': {
+      id: '/app/proyectos/nuevo'
+      path: '/proyectos/nuevo'
+      fullPath: '/app/proyectos/nuevo'
+      preLoaderRoute: typeof AppProyectosNuevoRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/proyectos/$id': {
@@ -608,33 +615,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProyectosIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/proyectos/nuevo': {
-      id: '/app/proyectos/nuevo'
-      path: '/proyectos/nuevo'
-      fullPath: '/app/proyectos/nuevo'
-      preLoaderRoute: typeof AppProyectosNuevoRouteImport
+    '/app/modulo/$moduloId': {
+      id: '/app/modulo/$moduloId'
+      path: '/modulo/$moduloId'
+      fullPath: '/app/modulo/$moduloId'
+      preLoaderRoute: typeof AppModuloModuloIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/mi-proyecto/modulo/$moduloId': {
-      id: '/mi-proyecto/modulo/$moduloId'
-      path: '/modulo/$moduloId'
-      fullPath: '/mi-proyecto/modulo/$moduloId'
-      preLoaderRoute: typeof MiProyectoModuloModuloIdRouteImport
-      parentRoute: typeof MiProyectoRoute
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/mi-proyecto/proyectos/': {
-      id: '/mi-proyecto/proyectos/'
-      path: '/proyectos'
-      fullPath: '/mi-proyecto/proyectos/'
-      preLoaderRoute: typeof MiProyectoProyectosIndexRouteImport
-      parentRoute: typeof MiProyectoRoute
-    }
-    '/mi-proyecto/proyectos/$id': {
-      id: '/mi-proyecto/proyectos/$id'
-      path: '/proyectos/$id'
-      fullPath: '/mi-proyecto/proyectos/$id'
-      preLoaderRoute: typeof MiProyectoProyectosIdRouteImport
-      parentRoute: typeof MiProyectoRoute
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
