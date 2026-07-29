@@ -5,15 +5,13 @@ import type { ModuloDefinicion } from "../tipos";
  *
  * Configura el motor de verificación de proveedores contra listas
  * restrictivas (LAFT/SAGRILAFT): proveedor del servicio, entidades que se
- * validan, reglas de filtro y alcance de alertas. Los parámetros técnicos
- * (URL del webservice, correo del oficial de cumplimiento, ambiente y
- * manual) suelen definirse por cliente durante la implementación.
+ * validan, parámetros del motor de verificación y reglas de alerta.
  */
 export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
   key: "verificacion_cumplimiento",
   nombre: "Verificación y Cumplimiento",
   descripcion:
-    "Configura el motor de verificación de proveedores contra listas restrictivas (LAFT/SAGRILAFT) y sus reglas de alerta.",
+    "Configura el motor de verificación de proveedores contra listas restrictivas (LAFT/SAGRILAFT), las entidades a validar y las reglas de alerta.",
   secciones: [
     // -------- 1. Servicio de verificación --------
     {
@@ -42,7 +40,8 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
     {
       key: "entidades",
       titulo: "Entidades a verificar",
-      descripcion: "Actores del proceso que se validan contra listas.",
+      descripcion:
+        "Actores del proceso que se validan contra listas restrictivas.",
       campos: [
         {
           key: "entidades_verificar",
@@ -61,59 +60,11 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 3. Reglas y alertas --------
+    // -------- 3. Motor de verificación --------
     {
-      key: "reglas",
-      titulo: "Reglas y alertas",
+      key: "motor",
+      titulo: "Motor de verificación",
       campos: [
-        {
-          key: "criterios_filtro",
-          label: "Criterios de filtro",
-          tipo: "textarea",
-          placeholder:
-            "Ej.: verificar solo proveedores con contratos activos o compras superiores a cierto monto.",
-          guia: {
-            que: "Reglas que determinan qué registros se envían a verificación.",
-          },
-        },
-        {
-          key: "alcance_alertas",
-          label: "Alcance de alertas",
-          tipo: "radio_tarjetas",
-          opciones: [
-            {
-              valor: "riesgo_real",
-              etiqueta: "Solo listas que generan riesgo real",
-              descripcion:
-                "El portal solo notifica coincidencias en listas que implican un riesgo relevante de cumplimiento.",
-            },
-            {
-              valor: "todas",
-              etiqueta: "Todas las coincidencias",
-              descripcion:
-                "El portal notifica cualquier coincidencia detectada, sin importar la lista.",
-            },
-          ],
-          guia: {
-            que: "Qué coincidencias generarán alerta para el equipo de cumplimiento.",
-          },
-        },
-      ],
-    },
-    // -------- 4. Parámetros técnicos (por proyecto) --------
-    {
-      key: "tecnico",
-      titulo: "Parámetros técnicos (por proyecto — opcional)",
-      descripcion:
-        "Estos datos suelen definirse por cliente durante la implementación; déjalos vacíos si aún no aplican.",
-      campos: [
-        {
-          key: "tecnico_info",
-          label: "Sobre estos parámetros",
-          tipo: "info",
-          aviso:
-            "Estos valores no son estándar: se definen por proyecto durante la implementación con el equipo de EGIXIA. Si aún no los tienes, deja los campos vacíos.",
-        },
         {
           key: "url_webservice",
           label: "URL del webservice",
@@ -126,8 +77,9 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
         },
         {
           key: "correo_laft",
-          label: "Correo del oficial de cumplimiento (LAFT)",
+          label: "Correo LAFT (oficial de cumplimiento)",
           tipo: "email",
+          requerido: true,
           placeholder: "cumplimiento@tuempresa.com",
           guia: {
             que: "Correo del oficial de cumplimiento que recibirá las alertas.",
@@ -158,6 +110,35 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
           guia: {
             que: "Manual técnico del servicio de verificación, si lo tienes.",
             formato: "PDF.",
+          },
+        },
+      ],
+    },
+    // -------- 4. Reglas y alertas --------
+    {
+      key: "reglas",
+      titulo: "Reglas y alertas",
+      campos: [
+        {
+          key: "criterios_filtro",
+          label: "Criterios de filtro",
+          tipo: "textarea",
+          placeholder:
+            "Ej.: verificar solo proveedores con contratos activos o compras superiores a cierto monto.",
+          guia: {
+            que: "Reglas que determinan qué registros se envían a verificación.",
+          },
+        },
+        {
+          key: "alertas_automaticas",
+          label: "Alertas automáticas",
+          tipo: "radio_tarjetas",
+          opciones: [
+            { valor: "si", etiqueta: "Sí" },
+            { valor: "no", etiqueta: "No" },
+          ],
+          guia: {
+            que: "Define si el portal genera alertas automáticas ante coincidencias en listas restrictivas.",
           },
         },
       ],
