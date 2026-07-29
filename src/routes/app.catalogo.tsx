@@ -959,7 +959,7 @@ const AYUDA_TIPOS = ["image/png", "image/jpeg"];
 function slugArchivo(nombre: string): string {
   return nombre
     .normalize("NFD")
-    .replace(new RegExp("[" + String.fromCharCode(0x0300) + "-" + String.fromCharCode(0x036f) + "]", "g"), "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
