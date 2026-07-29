@@ -11,9 +11,9 @@ import type { ModuloDefinicion } from "../tipos";
  */
 export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
   key: "matriz_documental",
-  nombre: "Matriz documental de proveedores",
+  nombre: "Registro de Proveedores",
   descripcion:
-    "Define qué documentos exigirá tu portal a los proveedores, según su tipo, con obligatoriedad y vigencia.",
+    "Define cómo se registran tus proveedores en el portal: formularios por tipo, documentos exigidos, preguntas PEP y responsables.",
   secciones: [
     // -------- 1. Tipos de proveedor --------
     {
@@ -61,7 +61,21 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 2. Documentos exigidos --------
+    // -------- 2. Plantilla de proveedores --------
+    {
+      key: "plantilla",
+      titulo: "Plantilla de proveedores",
+      campos: [
+        {
+          key: "plantilla_info",
+          label: "Plantilla oficial de creación de proveedores",
+          tipo: "info",
+          aviso:
+            "La descarga de la plantilla oficial de creación de proveedores se habilitará una vez EGIXIA confirme la versión vigente (PlantillaCreacionProveedoresV7-500.xlsx). Por ahora, solicítala al equipo de implementación.",
+        },
+      ],
+    },
+    // -------- 3. Documentos exigidos --------
     {
       key: "documentos",
       titulo: "Documentos exigidos",
@@ -151,7 +165,180 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 3. Políticas de la matriz --------
+    // -------- 5. Tipos de formulario --------
+    {
+      key: "tipos_formulario",
+      titulo: "Tipos de formulario",
+      descripcion:
+        "Variantes del formulario de registro según la categoría del proveedor.",
+      campos: [
+        {
+          key: "tipos_formulario",
+          label: "Formularios habilitados",
+          tipo: "checkbox_multiple",
+          requerido: true,
+          opciones: [
+            { valor: "juridica_nacional", etiqueta: "Persona Jurídica Nacional" },
+            { valor: "natural_nacional", etiqueta: "Persona Natural Nacional" },
+            {
+              valor: "juridica_internacional",
+              etiqueta: "Persona Jurídica Internacional",
+            },
+            {
+              valor: "natural_internacional",
+              etiqueta: "Persona Natural Internacional",
+            },
+          ],
+          guia: {
+            que: "Marca las variantes del formulario de registro que habilitarás en el portal.",
+          },
+        },
+      ],
+    },
+    // -------- 6. Tipo de acceso --------
+    {
+      key: "tipo_acceso",
+      titulo: "Tipo de acceso",
+      descripcion: "Cómo pueden registrarse los proveedores.",
+      campos: [
+        {
+          key: "tipo_acceso",
+          label: "Modalidades de registro habilitadas",
+          tipo: "checkbox_multiple",
+          requerido: true,
+          opciones: [
+            {
+              valor: "landing_publica",
+              etiqueta: "Landing pública (registro abierto)",
+            },
+            {
+              valor: "por_invitacion",
+              etiqueta: "Registro por invitación (correo con paquete de documentos)",
+            },
+          ],
+          guia: {
+            que: "Marca las formas en que un proveedor podrá iniciar su registro en el portal.",
+          },
+        },
+      ],
+    },
+    // -------- 7. Preguntas PEP --------
+    {
+      key: "pep",
+      titulo: "Preguntas PEP",
+      descripcion:
+        "Cuestionario de Persona Expuesta Políticamente que verá el proveedor (si aplica).",
+      campos: [
+        {
+          key: "pep_info",
+          label: "Sobre las preguntas PEP",
+          tipo: "info",
+          aviso:
+            "Las preguntas PEP (Persona Expuesta Políticamente) son obligatorias para ciertos proveedores según la normativa de conocimiento del tercero. Define aquí las preguntas que verá el proveedor durante el registro.",
+        },
+        {
+          key: "tabla_pep",
+          label: "Preguntas PEP",
+          tipo: "tabla",
+          columnas: [
+            {
+              key: "pregunta",
+              label: "Pregunta",
+              tipo: "texto",
+              requerido: true,
+              guia: {
+                que: "Texto de la pregunta PEP que verá el proveedor.",
+              },
+            },
+            {
+              key: "texto_observacion",
+              label: "Texto de observación",
+              tipo: "texto",
+              guia: {
+                que: "Aclaración o ayuda que acompaña a la pregunta (opcional).",
+              },
+            },
+            {
+              key: "obligatoria",
+              label: "Obligatoria",
+              tipo: "select",
+              requerido: true,
+              opciones: [
+                { valor: "si", etiqueta: "Sí" },
+                { valor: "no", etiqueta: "No" },
+              ],
+              guia: {
+                que: "Si el proveedor está obligado a responder la pregunta para completar el registro.",
+              },
+            },
+          ],
+          guia: {
+            que: "Una fila por cada pregunta PEP del cuestionario.",
+          },
+        },
+      ],
+    },
+    // -------- 8. Términos de registro --------
+    {
+      key: "terminos_registro",
+      titulo: "Términos de registro",
+      descripcion: "Documento que el proveedor acepta al registrarse.",
+      campos: [
+        {
+          key: "terminos_registro",
+          label: "Términos y condiciones de registro",
+          tipo: "archivo",
+          archivo: {
+            bucket: "documentos",
+            formatosPermitidos: ["application/pdf", ".pdf"],
+            tamanoMaxMB: 10,
+          },
+          guia: {
+            que: "Documento de términos y condiciones que el proveedor acepta al registrarse.",
+            formato: "PDF.",
+          },
+        },
+      ],
+    },
+    // -------- 9. Correos responsables --------
+    {
+      key: "responsables_registro",
+      titulo: "Correos responsables",
+      descripcion:
+        "Buzones internos que reciben notificación de cada nuevo registro.",
+      campos: [
+        {
+          key: "tabla_responsables",
+          label: "Responsables de registro",
+          tipo: "tabla",
+          columnas: [
+            {
+              key: "correo",
+              label: "Correo",
+              tipo: "email",
+              requerido: true,
+              placeholder: "responsable@tuempresa.com",
+              guia: {
+                que: "Buzón interno que recibirá la notificación de nuevos registros.",
+                formato: "Correo corporativo válido.",
+              },
+            },
+            {
+              key: "notifica",
+              label: "Qué recibe",
+              tipo: "texto",
+              guia: {
+                que: "Qué tipo de registros o notificaciones recibe este buzón.",
+              },
+            },
+          ],
+          guia: {
+            que: "Una fila por cada buzón que recibirá notificación de nuevos registros.",
+          },
+        },
+      ],
+    },
+    // -------- 10. Políticas de la matriz --------
     {
       key: "politicas",
       titulo: "Políticas de la matriz",
