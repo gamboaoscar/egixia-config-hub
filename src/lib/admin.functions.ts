@@ -67,6 +67,7 @@ const moduloKeyEnum = z.enum([
   "seguridad",
   "usuarios_internos",
   "matriz_documental",
+  "verificacion_cumplimiento",
   "maestros_compras",
   "integracion_erp",
   "notificaciones",
