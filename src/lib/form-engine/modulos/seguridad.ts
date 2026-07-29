@@ -71,7 +71,6 @@ export const MODULO_SEGURIDAD: ModuloDefinicion = {
           key: "pass_espera",
           label: "Tiempo mínimo entre cambios (días)",
           tipo: "numero",
-          requerido: true,
           placeholder: "0",
           validacion: { min: 0 },
           guia: {

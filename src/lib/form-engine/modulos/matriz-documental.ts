@@ -71,7 +71,25 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
           label: "Plantilla oficial de creación de proveedores",
           tipo: "info",
           aviso:
-            "La descarga de la plantilla oficial de creación de proveedores se habilitará una vez EGIXIA confirme la versión vigente (PlantillaCreacionProveedoresV7-500.xlsx). Por ahora, solicítala al equipo de implementación.",
+            "Plantilla oficial de creación de proveedores. La versión vigente (p. ej. PlantillaCreacionProveedoresV7-500.xlsx) se confirma con EGIXIA.",
+        },
+        {
+          key: "plantilla_proveedores",
+          label: "Plantilla de proveedores",
+          tipo: "archivo",
+          requerido: true,
+          archivo: {
+            bucket: "documentos",
+            formatosPermitidos: [
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              ".xlsx",
+              ".xls",
+            ],
+          },
+          guia: {
+            que: "Archivo base para la carga de datos del proveedor.",
+            formato: "Excel (.xlsx o .xls).",
+          },
         },
       ],
     },
