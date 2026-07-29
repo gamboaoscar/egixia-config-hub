@@ -157,7 +157,7 @@ const COLUMNAS: ColumnaTabla[] = [
 
 export const MODULO_SOCIEDADES: ModuloDefinicion = {
   key: "sociedades",
-  nombre: "Creación de sociedades",
+  nombre: "Creación de Sociedades",
   descripcion:
     "Registra cada sociedad del grupo que participará en el portal. Puedes añadir y eliminar filas dinámicamente.",
   secciones: [

@@ -148,7 +148,6 @@ export const MODULO_INTEGRACION_ERP: ModuloDefinicion = {
               opciones: [
                 { valor: "api", etiqueta: "API REST" },
                 { valor: "odata", etiqueta: "OData" },
-                { valor: "rfc", etiqueta: "RFC/BAPI" },
                 { valor: "sftp", etiqueta: "SFTP" },
                 { valor: "archivo", etiqueta: "Archivo plano" },
               ],

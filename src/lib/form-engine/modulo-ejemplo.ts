@@ -6,6 +6,7 @@ import { MODULO_SOCIEDADES } from "./modulos/sociedades";
 import { MODULO_SEGURIDAD } from "./modulos/seguridad";
 import { MODULO_USUARIOS_INTERNOS } from "./modulos/usuarios-internos";
 import { MODULO_MATRIZ_DOCUMENTAL } from "./modulos/matriz-documental";
+import { MODULO_VERIFICACION_CUMPLIMIENTO } from "./modulos/verificacion-cumplimiento";
 import { MODULO_MAESTROS_COMPRAS } from "./modulos/maestros-compras";
 import { MODULO_INTEGRACION_ERP } from "./modulos/integracion-erp";
 import { MODULO_NOTIFICACIONES } from "./modulos/notificaciones";
@@ -22,6 +23,7 @@ const REGISTRO: Record<string, ModuloDefinicion> = {
   seguridad: MODULO_SEGURIDAD,
   usuarios_internos: MODULO_USUARIOS_INTERNOS,
   matriz_documental: MODULO_MATRIZ_DOCUMENTAL,
+  verificacion_cumplimiento: MODULO_VERIFICACION_CUMPLIMIENTO,
   maestros_compras: MODULO_MAESTROS_COMPRAS,
   integracion_erp: MODULO_INTEGRACION_ERP,
   notificaciones: MODULO_NOTIFICACIONES,

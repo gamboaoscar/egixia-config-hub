@@ -16,6 +16,7 @@ export type ModuloKey =
   | "seguridad"
   | "usuarios_internos"
   | "matriz_documental"
+  | "verificacion_cumplimiento"
   | "maestros_compras"
   | "integracion_erp"
   | "notificaciones";
@@ -39,7 +40,7 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
   },
   sociedades: {
     key: "sociedades",
-    nombre: "Sociedades",
+    nombre: "Creación de Sociedades",
     descripcion: "Sociedades del grupo que participarán en el portal.",
     icon: Building2,
     secciones: [
@@ -68,14 +69,33 @@ export const MODULOS_CATALOGO: Record<ModuloKey, ModuloCatalogo> = {
   },
   matriz_documental: {
     key: "matriz_documental",
-    nombre: "Matriz documental de proveedores",
+    nombre: "Registro de Proveedores",
     descripcion:
-      "Documentos que tu portal exigirá a los proveedores, según su tipo.",
+      "Define cómo se registran tus proveedores en el portal: formularios por tipo, documentos exigidos, preguntas PEP y responsables.",
     icon: FileCheck2,
     secciones: [
       "Tipos de proveedor",
+      "Plantilla de proveedores",
       "Documentos exigidos",
+      "Tipos de formulario",
+      "Tipo de acceso",
+      "Preguntas PEP",
+      "Términos de registro",
+      "Correos responsables",
       "Políticas de la matriz",
+    ],
+  },
+  verificacion_cumplimiento: {
+    key: "verificacion_cumplimiento",
+    nombre: "Verificación y Cumplimiento",
+    descripcion:
+      "Verificación de proveedores contra listas restrictivas (LAFT/SAGRILAFT) y reglas de alerta.",
+    icon: ShieldCheck,
+    secciones: [
+      "Servicio de verificación",
+      "Entidades a verificar",
+      "Reglas y alertas",
+      "Parámetros técnicos",
     ],
   },
   maestros_compras: {
