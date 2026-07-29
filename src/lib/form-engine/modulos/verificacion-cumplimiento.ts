@@ -17,6 +17,8 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
     {
       key: "servicio",
       titulo: "Servicio de verificación",
+      descripcion:
+        "Servicio externo de screening contratado para validar terceros contra listas restrictivas.",
       campos: [
         {
           key: "proveedor_servicio",
@@ -64,11 +66,14 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
     {
       key: "motor",
       titulo: "Motor de verificación",
+      descripcion:
+        "Datos técnicos de la integración con el servicio de verificación.",
       campos: [
         {
           key: "url_webservice",
           label: "URL del webservice",
           tipo: "url",
+          validacion: { url_https: true },
           placeholder: "https://api.proveedor-verificacion.com/...",
           guia: {
             que: "Endpoint del servicio de verificación que se integrará con el portal.",
@@ -118,6 +123,8 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
     {
       key: "reglas",
       titulo: "Reglas y alertas",
+      descripcion:
+        "Qué se envía a verificación y cómo se notifican las coincidencias.",
       campos: [
         {
           key: "criterios_filtro",
@@ -134,8 +141,17 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
           label: "Alertas automáticas",
           tipo: "radio_tarjetas",
           opciones: [
-            { valor: "si", etiqueta: "Sí" },
-            { valor: "no", etiqueta: "No" },
+            {
+              valor: "si",
+              etiqueta: "Sí",
+              descripcion:
+                "El portal notifica automáticamente ante coincidencias o riesgos.",
+            },
+            {
+              valor: "no",
+              etiqueta: "No",
+              descripcion: "La revisión de coincidencias es manual.",
+            },
           ],
           guia: {
             que: "Define si el portal genera alertas automáticas ante coincidencias en listas restrictivas.",

@@ -65,6 +65,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
     {
       key: "plantilla",
       titulo: "Plantilla de proveedores",
+      descripcion: "Plantilla oficial para la carga de datos de proveedores.",
       campos: [
         {
           key: "plantilla_info",
@@ -85,6 +86,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
               ".xlsx",
               ".xls",
             ],
+            tamanoMaxMB: 10,
           },
           guia: {
             que: "Archivo base para la carga de datos del proveedor.",
@@ -183,7 +185,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 5. Tipos de formulario --------
+    // -------- 4. Tipos de formulario --------
     {
       key: "tipos_formulario",
       titulo: "Tipos de formulario",
@@ -213,7 +215,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 6. Tipo de acceso --------
+    // -------- 5. Tipo de acceso --------
     {
       key: "tipo_acceso",
       titulo: "Tipo de acceso",
@@ -240,7 +242,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 7. Preguntas PEP --------
+    // -------- 6. Preguntas PEP --------
     {
       key: "pep",
       titulo: "Preguntas PEP",
@@ -296,7 +298,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 8. Términos de registro --------
+    // -------- 7. Términos de registro --------
     {
       key: "terminos_registro",
       titulo: "Términos de registro",
@@ -318,7 +320,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 9. Correos responsables --------
+    // -------- 8. Correos responsables --------
     {
       key: "responsables_registro",
       titulo: "Correos responsables",
@@ -356,7 +358,7 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
         },
       ],
     },
-    // -------- 10. Políticas de la matriz --------
+    // -------- 9. Políticas de la matriz --------
     {
       key: "politicas",
       titulo: "Políticas de la matriz",
