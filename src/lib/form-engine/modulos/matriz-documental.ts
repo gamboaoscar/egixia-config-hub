@@ -69,10 +69,20 @@ export const MODULO_MATRIZ_DOCUMENTAL: ModuloDefinicion = {
       campos: [
         {
           key: "plantilla_info",
-          label: "Plantilla oficial de creación de proveedores",
+          label: "Plantillas oficiales de proveedores",
           tipo: "info",
           aviso:
-            "Plantilla oficial de creación de proveedores. La versión vigente (p. ej. PlantillaCreacionProveedoresV7-500.xlsx) se confirma con EGIXIA.",
+            "Descarga la plantilla oficial, diligénciala y luego cárgala en el campo de abajo.",
+          descargas: [
+            {
+              etiqueta: "Plantilla de creación de proveedores (V8.0)",
+              url: "/plantillas/PlantillaCreacionProveedoresV8.0.xlsx",
+            },
+            {
+              etiqueta: "Plantilla de actualización de proveedores (V6.0)",
+              url: "/plantillas/PlantillaActualizacionProveedorV6.0.xlsx",
+            },
+          ],
         },
         {
           key: "plantilla_proveedores",

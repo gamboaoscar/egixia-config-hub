@@ -1,9 +1,9 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -54,6 +54,23 @@ export function CampoRenderer({
         <div className="font-medium">{campo.label}</div>
         {campo.aviso && (
           <p className="mt-1 text-xs text-muted-foreground">{campo.aviso}</p>
+        )}
+        {campo.descargas && campo.descargas.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {campo.descargas.map((descarga) => (
+              <a
+                key={descarga.url}
+                href={descarga.url}
+                download
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                )}
+              >
+                <Download />
+                {descarga.etiqueta}
+              </a>
+            ))}
+          </div>
         )}
       </div>
     );

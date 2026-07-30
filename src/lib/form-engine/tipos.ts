@@ -168,6 +168,12 @@ export interface CampoDefinicion {
   /** Aviso informativo suave que se muestra debajo del control. */
   aviso?: string;
   /**
+   * Enlaces de descarga mostrados en un campo `tipo: "info"`.
+   * Cada entrada se renderiza como un botón/enlace de descarga hacia un
+   * archivo estático (p. ej. una plantilla oficial en `public/`).
+   */
+  descargas?: { etiqueta: string; url: string }[];
+  /**
    * Si `false`, el campo está desactivado por configuración del proyecto:
    * no se renderiza y no cuenta para el progreso. Por defecto: `true`.
    */
