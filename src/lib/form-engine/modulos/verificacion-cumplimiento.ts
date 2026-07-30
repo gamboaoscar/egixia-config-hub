@@ -70,6 +70,13 @@ export const MODULO_VERIFICACION_CUMPLIMIENTO: ModuloDefinicion = {
         "Datos técnicos de la integración con el servicio de verificación.",
       campos: [
         {
+          key: "motor_info",
+          label: "Datos definidos con EGIXIA",
+          tipo: "info",
+          aviso:
+            "Estos datos (URL del webservice, correo LAFT y ambiente) los define EGIXIA junto con tu equipo durante la ejecución del proyecto. Puedes dejarlos vacíos por ahora; te acompañaremos para completarlos.",
+        },
+        {
           key: "url_webservice",
           label: "URL del webservice",
           tipo: "url",
