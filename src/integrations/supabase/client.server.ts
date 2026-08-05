@@ -19,8 +19,19 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
+    // Deriva la URL del request de forma robusta para distinguir Storage de BD/Auth.
+    const url = typeof input === 'string' ? input : (input instanceof URL ? input.href : (input as Request).url);
+    const isStorage = url.includes('/storage/v1/');
+
+    // FIX manual: la API de Storage con service_role EXIGE Authorization: Bearer <key>.
+    // Para llaves nuevas (sb_secret_/sb_publishable_) el cliente borraba ese header, dejando
+    // a Storage sin credenciales service_role y rechazando la subida del acta (BD/Auth siguen
+    // funcionando vía apikey). Mantenemos EXACTAMENTE el comportamiento previo para BD/Auth
+    // (!isStorage) y solo en Storage forzamos el Authorization Bearer service_role.
+    if (isStorage) {
+      headers.set('Authorization', `Bearer ${supabaseKey}`);
+    } else if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
+      // New Supabase API keys are opaque strings, not bearer JWTs.
       headers.delete('Authorization');
     }
 

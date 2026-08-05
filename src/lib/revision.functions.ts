@@ -260,14 +260,24 @@ export const enviarModuloARevision = createServerFn({ method: "POST" })
     }
 
     const ahora = new Date().toISOString();
-    // Generamos y persistimos el acta ANTES de cambiar el estado, para
-    // que un fallo del PDF no deje el módulo marcado como enviado sin
-    // acta asociada.
-    const { version, urlFirmada } = await generarActa(
-      supabaseAdmin,
-      modulo.id,
-      userId,
-    );
+    // Desacople: intentamos generar el acta, pero un fallo NO debe bloquear
+    // el envío a revisión. El acta se regenerará luego vía el auto-repair
+    // existente al descargarla. La validación de requeridos ya ocurrió arriba
+    // y SÍ bloquea si faltan campos.
+    let version: number | undefined;
+    let urlFirmada: string | null | undefined;
+    try {
+      ({ version, urlFirmada } = await generarActa(
+        supabaseAdmin,
+        modulo.id,
+        userId,
+      ));
+    } catch (err) {
+      console.error(
+        "[enviarModuloARevision] generarActa fallo, se continua sin bloquear el envio:",
+        err,
+      );
+    }
 
     const { error: updErr } = await supabaseAdmin
       .from("proyecto_modulos")
@@ -817,11 +827,24 @@ export const reenviarModulo = createServerFn({ method: "POST" })
       .eq("estado", "abierta");
     if (obsErr) throw new Error("No se pudieron marcar las observaciones como resueltas.");
 
-    const { version, urlFirmada } = await generarActa(
-      supabaseAdmin,
-      modulo.id,
-      userId,
-    );
+    // Desacople: intentamos generar el acta, pero un fallo NO debe bloquear
+    // el reenvío a revisión. El acta se regenerará luego vía el auto-repair
+    // existente al descargarla. La validación de requeridos ya ocurrió arriba
+    // y SÍ bloquea si faltan campos.
+    let version: number | undefined;
+    let urlFirmada: string | null | undefined;
+    try {
+      ({ version, urlFirmada } = await generarActa(
+        supabaseAdmin,
+        modulo.id,
+        userId,
+      ));
+    } catch (err) {
+      console.error(
+        "[reenviarModulo] generarActa fallo, se continua sin bloquear el envio:",
+        err,
+      );
+    }
 
     const { error: updErr } = await supabaseAdmin
       .from("proyecto_modulos")

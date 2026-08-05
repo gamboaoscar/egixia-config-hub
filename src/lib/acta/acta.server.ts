@@ -336,7 +336,14 @@ export async function renderYSubirActa(
       contentType: "application/pdf",
       upsert: true,
     });
-  if (upErr) throw new Error(`No se pudo guardar el acta: ${upErr.message}`);
+  if (upErr) {
+    console.error("[renderYSubirActa] upload actas FAILED", {
+      path,
+      message: upErr.message,
+      status: (upErr as any)?.statusCode,
+    });
+    throw new Error(`No se pudo guardar el acta: ${upErr.message}`);
+  }
 
   const archivoUrl = `${BUCKET_ACTAS}/${path}`;
   const { error: insErr } = await supabaseAdmin.from("actas").insert({
@@ -345,7 +352,14 @@ export async function renderYSubirActa(
     archivo_url: archivoUrl,
     generada_por: actorId,
   });
-  if (insErr) throw new Error(`No se pudo registrar el acta: ${insErr.message}`);
+  if (insErr) {
+    console.error("[renderYSubirActa] insert actas FAILED", {
+      path,
+      message: insErr.message,
+      status: (insErr as any)?.code,
+    });
+    throw new Error(`No se pudo registrar el acta: ${insErr.message}`);
+  }
 
   return { version, storagePath: path, archivoUrl };
 }
